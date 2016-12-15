@@ -3,6 +3,15 @@ import numpy as np
 from six import with_metaclass # required for python 2/3 compatibility
 
 class IntegralsBase(with_metaclass(abc.ABCMeta, object)):
+  """Abstract base class defining a consistent interface for integrals.
+
+  Not sure if this is good OO design, but it made sense to me.
+
+  Attributes:
+    basis_label: A string (e.g. 'sto-3g') identifying the basis set.
+    molecule: An scfexchange.Molecule object.  Together with `self.basis_label`,
+      this specifies the atomic orbitals entering the integral computation.
+  """
 
   def __init__(self, molecule, basis_label):
     self.molecule = molecule
