@@ -1,7 +1,7 @@
 import numpy as np
-from .integrals import IntegralsBase
 import psi4.core
 from psi4.core import Molecule as Psi4Molecule
+from .integrals import IntegralsBase
 
 class Integrals(IntegralsBase):
   """Interface to Psi4 integrals.

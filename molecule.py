@@ -1,4 +1,5 @@
 import numpy as np
+import atomdata
 
 bohr2angstrom = 0.52917721067
 
@@ -6,36 +7,54 @@ class Molecule(object):
   """A class to store information about a chemical system.
 
   Attributes:
-    natoms: An integer indicating the number of atoms in the molecule.
-    labels: A tuple of strings indicating the atomic symbol of each atom.
-    coordinates: An natoms x 3 array indicating the Cartesian coordinates of
-      each atom.
-    units: Either 'angstrom' or 'bohr', indicating the units of
+    natoms (int): The number of atoms.
+    labels (`tuple` of `str`s): Atomic symbols.
+    coordinates (`np.ndarray`): An `self.natoms` x 3 array of Cartesian
+      coordinates corresponding to the atoms in `self.labels`.
+    units (str): Either 'angstrom' or 'bohr', indicating the units of
       `self.coordinates`.
-    charge: An integer indicating the total charge of the molecule.
-    multiplicity: An integer indicating the spin state of the molecule, 2*S + 1.
+    charge (int): Total molecular charge.
+    multiplicity (int): `2*S+1` where `S` is the spin-magnitude quantum number.
+    nelec (int): The number of electrons.
+    nalpha (int): The number of alpha-spin electrons.
+    nbeta (int): The number of beta-spin electrons.
   """
 
   def __init__(self, labels, coordinates, units = "angstrom", charge = 0,
                multiplicity = 1):
+    """Initialize this Molecule object.
+    """
     self.natoms = len(labels)
     self.labels = tuple(labels)
     self.coordinates = np.array(coordinates)
     self.units = str(units.lower())
     self.charge = int(charge)
     self.multiplicity = int(multiplicity)
+
     if not self.units in ("angstrom", "bohr"):
-      raise Exception("{:s} is not a valid entry for self.units.  "
-                      "Try 'bohr' or 'angstrom'.".format(self.units))
+      raise ValueError("{:s} is not a valid entry for self.units.  "
+                       "Try 'bohr' or 'angstrom'.".format(self.units))
     if not self.coordinates.shape == (self.natoms, 3):
-      raise Exception("Coordinate array should have shape ({:d}, 3), not {:s}."
-                      .format(self.natoms, str(self.coordinates.shape)))
+      raise ValueError("Coordinate array should have shape ({:d}, 3), not {:s}."
+                       .format(self.natoms, str(self.coordinates.shape)))
+
+    # Determine the number of electrons, based on the number of protons and the
+    # total charge.
+    nprot = sum(atomdata.get_charge(label) for label in self.labels)
+    self.nelec = nprot - self.charge
+
+    # Assuming a high-spin open-shell electronic state, so that S = M_S,
+    # determine the number of alpha and beta electrons.
+    nunpaired = self.multiplicity - 1
+    npaired = (self.nelec - nunpaired) / 2
+    self.nalpha = npaired + nunpaired
+    self.nbeta  = npaired
 
   def set_units(self, units):
     """Convert `self.coordinates` to different units.
 
     Args:
-      units: A string, either 'bohr' or 'angstrom'.
+      units (str): Either 'bohr' or 'angstrom'.
     """
     if units == "angstrom" and self.units == "bohr":
       self.units  = "angstrom"
@@ -48,12 +67,12 @@ class Molecule(object):
                       "Try 'bohr' or 'angstrom'.".format(self.units))
 
   def __iter__(self):
-    """Iterate over atomic labels and coordinates.
-    """
+    """Iterate over atomic labels and coordinates."""
     for label, coordinate in zip(self.labels, self.coordinates):
       yield label, coordinate
 
   def __str__(self):
+    """Display the molecular geometry as a string."""
     geom_string = "units {:s}\n".format(self.units)
     geom_line_template = "{:2s} {: >15.10f} {: >15.10f} {: >15.10f}\n"
     for label, coordinate in self:
