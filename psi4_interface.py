@@ -1,13 +1,13 @@
 import numpy as np
 import psi4.core
 from psi4.core import Molecule as Psi4Molecule
-from .integrals import IntegralsBase
+from .integrals import IntegralsCommonInterface
 
-class Integrals(IntegralsBase):
+class Integrals(IntegralsCommonInterface):
   """Interface to Psi4 integrals.
 
   Attributes:
-    _mints_helper: A `psi4.core.MintsHelper` object, used to call the molecular
+    _mints_helper (:obj:`psi.core.MintsHelper`): Used to call the molecular
       integrals code in Psi4.
   """
   def __init__(self, molecule, basis_label):
@@ -15,11 +15,15 @@ class Integrals(IntegralsBase):
 
     Calls base class constructor and then builds Psi4's `MintsHelper` object.
     """
-    IntegralsBase.__init__(self, molecule, basis_label)
 
-    psi4_molecule = Psi4Molecule.create_molecule_from_string(str(self.molecule))
+    psi4_molecule = Psi4Molecule.create_molecule_from_string(str(molecule))
     basisset = psi4.core.BasisSet.build(psi4_molecule, "BASIS", basis_label)
     self._mints_helper = psi4.core.MintsHelper(basisset)
+    self.molecule = molecule
+    self.basis_label = basis_label
+    self.nbf = int(self._mints_helper.nbf())
+
+    IntegralsCommonInterface.__init__(self)
 
   def get_ao_1e_overlap_integrals(self):
     return np.array(self._mints_helper.ao_overlap())

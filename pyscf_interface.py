@@ -1,21 +1,23 @@
-from .integrals import IntegralsBase
+from .integrals import IntegralsCommonInterface
 from pyscf.gto import Mole as PySCFMolecule
 
-class Integrals(IntegralsBase):
+class Integrals(IntegralsCommonInterface):
   """Interface to PySCF integrals.
 
   Attributes:
-    _pyscf_molecule: A `pyscf.gto.Mole` object, used to access PySCF integrals.
-    _nbf: An integer specifying the number of basis functions.
+    _pyscf_molecule (:obj:`pyscf.gto.Mole`): Used to access PySCF integrals.
   """
 
   def __init__(self, molecule, basis_label):
-    IntegralsBase.__init__(self, molecule, basis_label)
     self._pyscf_molecule = PySCFMolecule(atom = list(iter(molecule)),
-                                         unit = self.molecule.units,
+                                         unit = molecule.units,
                                          basis = basis_label)
     self._pyscf_molecule.build()
-    self._nbf = self._pyscf_molecule.nao_nr()
+
+    self.molecule = molecule
+    self.basis_label = basis_label
+    self.nbf = int(self._pyscf_molecule.nao_nr())
+    IntegralsCommonInterface.__init__(self)
 
   def get_ao_1e_overlap_integrals(self):
     return self._pyscf_molecule.intor('cint1e_ovlp_sph')
@@ -30,7 +32,7 @@ class Integrals(IntegralsBase):
     # PySCF returns these as a nbf*nbf x nbf*nbf matrix, so reshape and
     # transpose from chemist's to physicist's notation
     return (self._pyscf_molecule.intor('cint2e_sph')
-            .reshape((self._nbf, self._nbf, self._nbf, self._nbf))
+            .reshape((self.nbf, self.nbf, self.nbf, self.nbf))
             .transpose((0, 2, 1, 3)))
 
 
