@@ -17,7 +17,6 @@ class Integrals(IntegralsCommonInterface):
     self.molecule = molecule
     self.basis_label = basis_label
     self.nbf = int(self._pyscf_molecule.nao_nr())
-    IntegralsCommonInterface.__init__(self)
 
   def get_ao_1e_overlap_integrals(self):
     return self._pyscf_molecule.intor('cint1e_ovlp_sph')
@@ -34,6 +33,7 @@ class Integrals(IntegralsCommonInterface):
     return (self._pyscf_molecule.intor('cint2e_sph')
             .reshape((self.nbf, self.nbf, self.nbf, self.nbf))
             .transpose((0, 2, 1, 3)))
+
 
 
 if __name__ == "__main__":

@@ -1,14 +1,9 @@
 from .molecule import Molecule
-from abc import abstractmethod
-from contracts import contract, ContractsMeta, with_metaclass
-
-class AttributeContractNotRespected(Exception):                                               
-                                                                                 
-  def __init__(self, message):                                                   
-    Exception.__init__(self, message)                                            
+from .util import (abstractmethod, contract, with_metaclass,
+                   check_common_attributes, AttributeContractMeta)
 
 
-class IntegralsCommonInterface(with_metaclass(ContractsMeta, object)):
+class IntegralsCommonInterface(with_metaclass(AttributeContractMeta, object)):
   """Abstract base class defining a consistent interface for integrals.
 
   Not sure if this is good OO design, but it made sense to me.
@@ -25,21 +20,9 @@ class IntegralsCommonInterface(with_metaclass(ContractsMeta, object)):
     'nbf': int
   }
 
-  def __init__(self):
-    """
-    Make sure the common attributes of IntegralsBase have been defined.
-
-    Assuming subclasses always call IntegralsCommonInterface.__init__() at the
-    very end of their own __init__() methods, checks to make sure all of the
-    common attributes have been initialized 
-    """
-    for attr, attr_type in IntegralsCommonInterface._common_attributes.items():
-      if not (hasattr(self, attr) and
-              isinstance(getattr(self, attr), attr_type)):
-        raise AttributeContractNotRespected(
-                "Attribute '{:s}' must be initialized with type '{:s}'."
-                .format(attr, attr_type.__name__))
-    
+  def _check_common_attributes(self):
+    """Make sure the common attributes of IntegralsBase have been defined."""
+    check_common_attributes(self, IntegralsCommonInterface._common_attributes)
 
   @abstractmethod
   @contract(returns='array[NxN](float64)')

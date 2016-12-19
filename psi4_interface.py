@@ -23,8 +23,6 @@ class Integrals(IntegralsCommonInterface):
     self.basis_label = basis_label
     self.nbf = int(self._mints_helper.nbf())
 
-    IntegralsCommonInterface.__init__(self)
-
   def get_ao_1e_overlap_integrals(self):
     return np.array(self._mints_helper.ao_overlap())
 
