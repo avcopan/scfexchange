@@ -2,6 +2,7 @@ import numpy as np
 import psi4.core
 from psi4.core import Molecule as Psi4Molecule
 from .integrals import IntegralsCommonInterface
+from .hf import HartreeFockCommonInterface
 
 class Integrals(IntegralsCommonInterface):
   """Interface to Psi4 integrals.
@@ -35,6 +36,14 @@ class Integrals(IntegralsCommonInterface):
   def get_ao_2e_repulsion_integrals(self):
     # transpose from chemist's to physicist's notation
     return np.array(self._mints_helper.ao_eri()).transpose((0, 2, 1, 3))
+
+
+class HartreeFock(HartreeFockCommonInterface):
+  """Interface to Psi4 Hartree-Fock code.
+
+  Attributes:
+  """
+  pass
 
 if __name__ == "__main__":
   import numpy as np

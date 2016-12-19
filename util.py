@@ -6,7 +6,7 @@ class AttributeContractMeta(ContractsMeta):
 
   def __call__(cls, *args, **kwargs):
     instance = ContractsMeta.__call__(cls, *args, **kwargs)
-    instance._check_common_attributes()
+    instance._check_attribute_contract()
     return instance
 
 class AttributeContractNotRespected(Exception):
@@ -15,7 +15,7 @@ class AttributeContractNotRespected(Exception):
   def __init__(self, message):
     Exception.__init__(self, message)
 
-def check_common_attributes(instance, attribute_dictionary):                     
+def check_attributes(instance, attribute_dictionary):                     
   """Check whether an instance has a given set of attributes.                    
                                                                                  
   Args:                                                                          
