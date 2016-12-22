@@ -34,3 +34,18 @@ def check_attributes(instance, attribute_dictionary):
               "Attribute '{:s}' must be initialized with type '{:s}'."
               .format(attr, attr_type.__name__))
 
+def with_doc(docstring):
+  """Decorator for adding to the docstring from another source.
+
+  I got this from sunqm's pyscf.lib.misc.with_doc.
+
+  Args:
+    docstring (str): String to be added to function documentation.
+  """
+  def replace_docstring(function):
+    function.__doc__ = docstring
+    return function
+
+  return replace_docstring
+
+

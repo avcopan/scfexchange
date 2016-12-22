@@ -1044,5 +1044,5 @@ atomic_masses = [
 
 
 if __name__ == "__main__":
-  print(get_charge("UUO"))
-  print(get_mass("UUO"))
+  print(get_charge("UUO293"))
+  print(get_mass("UUO293"))
