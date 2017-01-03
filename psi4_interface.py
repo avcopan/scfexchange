@@ -1,7 +1,7 @@
 import numpy as np
 import psi4.core
 from .integrals import IntegralsInterface
-from .orbitals import MolecularOrbitalsInterface
+from .orbitals import OrbitalsInterface
 from .util import with_doc
 
 class Integrals(IntegralsInterface):
@@ -67,22 +67,22 @@ Interface to Psi4 integrals.
             else IntegralsInterface.convert_2e_ao_to_aso(ao_2e_repulsion))
 
 
-class MolecularOrbitals(MolecularOrbitalsInterface): 
-  __doc__ = """**MolecularOrbitalsInterface.__doc__**
+class Orbitals(OrbitalsInterface): 
+  __doc__ = """**OrbitalsInterface.__doc__**
 
 {:s}
 
-**MolecularOrbitals.__doc__**
+**Orbitals.__doc__**
 
 Interface for accessing Psi4 molecular orbitals.
 
   Attributes:
     _psi4_hf (:obj:`psi4.core.HF`): Used to access Psi4 orbitals.
 
-  """.format(MolecularOrbitalsInterface.__doc__)
+  """.format(OrbitalsInterface.__doc__)
 
   def __init__(self, integrals, using_restricted_orbitals = False):
-    """Initialize MolecularOrbitals object (PySCF interface).
+    """Initialize Orbitals object (PySCF interface).
 
     Args:
       integrals (:obj:`scfexchange.pyscf_interface.Integrals`): AO integrals.
@@ -138,7 +138,7 @@ if __name__ == "__main__":
   s = integrals.get_ao_1e_overlap()
   g = integrals.get_ao_2e_repulsion()
 
-  orbitals = MolecularOrbitals(integrals)
+  orbitals = Orbitals(integrals)
   print(orbitals.mso_coefficients.round(1))
   print(orbitals.mso_energies)
   print(orbitals.get_mo_2e_repulsion().shape)

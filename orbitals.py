@@ -4,13 +4,13 @@ from .integrals import IntegralsInterface
 from .util import (abstractmethod, contract, with_metaclass, check_attributes,
                    AttributeContractMeta)
 
-class MolecularOrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
+class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
   """Abstract base class defining a consistent interface for molecular orbitals.
 
   Due to limitations of the ABC/PyContracts libraries, initialization is not
   subject to contract.  Here's the desired signature:
 
-  >>>  class MolecularOrbitals(MolecularOrbitalsInterface): 
+  >>>  class Orbitals(OrbitalsInterface): 
   >>>    def __init__(self, integrals, using_restricted_orbitals = False)
   >>>      self.integrals = integrals
   >>>      self.using_restricted_orbitals = using_restricted_orbitals
@@ -37,7 +37,7 @@ class MolecularOrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
 
   def _check_attribute_contract(self):
     """Make sure common attributes are correctly initialized."""
-    check_attributes(self, MolecularOrbitalsInterface._attributes)
+    check_attributes(self, OrbitalsInterface._attributes)
 
   def _get_mso_energies_and_coefficients(self):
     mso_energies = np.concatenate(self.mo_energies)
@@ -127,7 +127,7 @@ if __name__ == "__main__":
   from .molecule import Molecule
   from .pyscf_interface import Integrals
 
-  class MolecularOrbitals(MolecularOrbitalsInterface):
+  class Orbitals(OrbitalsInterface):
 
     def __init__(self, integrals):
       self.integrals = integrals
@@ -152,7 +152,7 @@ if __name__ == "__main__":
 
   integrals = Integrals(molecule, "sto-3g")
 
-  mo = MolecularOrbitals(integrals)
+  mo = Orbitals(integrals)
   h = mo.get_mo_1e_core_hamiltonian()
   g = mo.get_mo_2e_repulsion()
   print(h.shape)

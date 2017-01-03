@@ -16,6 +16,8 @@ class Molecule(object):
     charge (int): Total molecular charge.
     multiplicity (int): `2*S+1` where `S` is the spin-magnitude quantum number.
     nelec (int): The number of electrons.
+    ncore (int): The number of core electrons.  In the (rare) case that the
+      molecule has been ionized past its valence shell, this is set to None.
     nalpha (int): The number of alpha-spin electrons.
     nbeta (int): The number of beta-spin electrons.
   """
@@ -42,6 +44,12 @@ class Molecule(object):
     # total charge.
     nprot = sum(atomdata.get_charge(label) for label in self.labels)
     self.nelec = nprot - self.charge
+
+    # Determine the number of core electrons.  If the molecule has been ionized
+    # past its valence shell, leave this undefined.
+    self.ncore = sum(atomdata.get_ncore(label) for label in self.labels)
+    if self.nelec < self.ncore:
+      self.ncore = None
 
     # Assuming a high-spin open-shell electronic state, so that S = M_S,
     # determine the number of alpha and beta electrons.

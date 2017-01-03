@@ -22,10 +22,31 @@ def get_mass(mass_label):
       mass number identifying the isotope.
   """
   try:
-   return atomic_masses[mass_labels.index(mass_label.upper())]
+   return atomic_masses_lookup[mass_labels.index(mass_label.upper())]
   except:
     raise ValueError("Label {:s} does not identify an atom or isotope"
                      .format(mass_label))
+
+def get_ncore(mass_label):
+  """Determine the numer of core electrons from the isotope label.
+
+  Args:
+    mass_label: A string containing an atomic symbol, followed by an optional
+      mass number identifying the isotope.
+  """
+  try:
+    charge_label = re.search(r'([A-Za-z]{1,3})[0-9]{0,3}', mass_label).group(1)
+    return atomic_cores_lookup[charge_labels.index(charge_label.upper())]
+  except:
+    raise ValueError("Label {:s} does not identify an atom or isotope"
+                     .format(mass_label))
+
+period_lengths = [2, 8, 8, 18, 18, 32, 32]
+
+atomic_cores = ([sum(period_lengths[:period])] * period_length for
+                period, period_length in enumerate(period_lengths))
+
+atomic_cores_lookup = sum(atomic_cores, [0])
 
 charge_labels = [
 "X", "H", "HE", "LI", "BE", "B", "C", "N", "O", "F", "NE", "NA", "MG",
@@ -413,7 +434,7 @@ mass_labels = [
 "UUP288", "UUP289", "UUP290", "UUP291", "UUH", "UUH289", "UUH290", "UUH291",
 "UUH292", "UUS", "UUS291", "UUS292", "UUO", "UUO293"]
 
-atomic_masses = [
+atomic_masses_lookup = [
 0.0, 1.00782503207, 1.00782503207, 2.01410177785, 3.01604927767, 4.027806424,
 5.035311488, 6.044942594, 7.052749, 4.00260325415, 3.01602931914, 4.00260325415,
 5.012223624, 6.018889124, 7.028020618, 8.033921897, 9.043950286, 10.052398837,
@@ -1046,3 +1067,5 @@ atomic_masses = [
 if __name__ == "__main__":
   print(get_charge("UUO293"))
   print(get_mass("UUO293"))
+  print(get_ncore("FR"))
+  print(get_ncore("RN"))
