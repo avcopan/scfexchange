@@ -34,6 +34,33 @@ def check_attributes(instance, attribute_dictionary):
               "Attribute '{:s}' must be initialized with type '{:s}'."
               .format(attr, attr_type.__name__))
 
+def process_options(changes, defaults):
+  """Fill in default option values and complain about invalid option keys.
+
+  Args:
+    changes (dict): A dictionary containing a subset of the keys in defaults,
+      with changes from the default values.
+    defaults (dict): A dictionary containing the full list of option keys, with
+      default values.
+
+  Raises:
+    Exception: If a key in `changes` is not in the list of valid keys.
+    ValueError: If a value in `changes` has incorrect type.
+
+  Returns:
+    A copy of the `defaults` dictionary, updated by `changes`.
+  """
+  for key, val in changes.items():
+    if not key in defaults:
+      raise Exception("'{:s}' is not a valid option key for this class."
+                      .format(key))
+    elif not isinstance(val, type(defaults[key])):
+      raise ValueError("The value for option '{:s}' has incorrect type '{:s}'."
+                       .format(key, type(val).__name__))
+  options = defaults.copy()
+  options.update(changes)
+  return options
+
 def with_doc(docstring):
   """Decorator for adding to the docstring from another source.
 

@@ -81,25 +81,34 @@ Interface for accessing PySCF molecular orbitals.
 
   """.format(OrbitalsInterface.__doc__)
 
-  def __init__(self, integrals, using_restricted_orbitals = False):
+  def __init__(self, integrals, **options):
     """Initialize Orbitals object (PySCF interface).
 
     Args:
       integrals (:obj:`scfexchange.pyscf_interface.Integrals`): AO integrals.
-      using_restricted_orbitals (bool): Whether to use RHF/ROHF or UHF.
+      restrict_spin (:obj:`bool`, optional): Whether or not to use spin-
+        restricted orbitals.  Default is True.
+      n_iterations (:obj:`int`, optional): Maximum number of iterations allowed
+        before considering the orbitals unconverged.  Default is 20.
+      e_threshold (:obj:`float`, optional): Energy convergence threshold.
+        Default is 1e-7.
     """
     if not isinstance(integrals, Integrals):
       raise ValueError("Please use an integrals object from this interface.")
-    if using_restricted_orbitals:
+    self.integrals = integrals
+    self.options = self._process_options(options)
+    if self.options['restrict_spin']:
       self._pyscf_hf = pyscf.scf.RHF(integrals._pyscf_molecule)
     else:
       self._pyscf_hf = pyscf.scf.UHF(integrals._pyscf_molecule)
+    self._pyscf_hf.conv_tol = self.options['e_threshold']
+    self._pyscf_hf.max_cycle = self.options['n_iterations']
     self._pyscf_hf.kernel()
-
-    self.integrals = integrals
-    self.using_restricted_orbitals = using_restricted_orbitals
     self.mo_energies = self._pyscf_hf.mo_energy
     self.mo_coefficients = self._pyscf_hf.mo_coeff
+    if self.options['restrict_spin']:
+      self.mo_energies = np.array([self.mo_energies] * 2)
+      self.mo_coefficients = np.array([self.mo_coefficients] * 2)
     self.mso_energies, self.mso_coefficients = \
       self._get_mso_energies_and_coefficients()
 
@@ -123,7 +132,12 @@ if __name__ == "__main__":
   s = integrals.get_ao_1e_overlap()
   g = integrals.get_ao_2e_repulsion()
 
-  orbitals = Orbitals(integrals)
+  options = {
+    'restrict_spin': True,
+    'n_iterations': 20,
+    'e_threshold': 1e-12
+  }
+  orbitals = Orbitals(integrals, **options)
   print(orbitals.mso_coefficients.round(1))
   print(orbitals.mso_energies)
   print(orbitals.get_mo_2e_repulsion().shape)

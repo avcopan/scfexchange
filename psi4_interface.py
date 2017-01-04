@@ -81,23 +81,30 @@ Interface for accessing Psi4 molecular orbitals.
 
   """.format(OrbitalsInterface.__doc__)
 
-  def __init__(self, integrals, using_restricted_orbitals = False):
+  def __init__(self, integrals, **options):
     """Initialize Orbitals object (PySCF interface).
 
     Args:
       integrals (:obj:`scfexchange.pyscf_interface.Integrals`): AO integrals.
-      using_restricted_orbitals (bool): Whether to use RHF/ROHF or UHF.
+      restrict_spin (:obj:`bool`, optional): Whether or not to use spin-
+        restricted orbitals.  Default is True.
+      n_iterations (:obj:`int`, optional): Maximum number of iterations allowed
+        before considering the orbitals unconverged.  Default is 20.
+      e_threshold (:obj:`float`, optional): Energy convergence threshold.
+        Default is 1e-7.
     """
     if not isinstance(integrals, Integrals):
       raise ValueError("Please use an integrals object from this interface.")
     self.integrals = integrals
-    self.using_restricted_orbitals = using_restricted_orbitals
+    self.options = self._process_options(options)
     # build psi4 HF object and compute the energy
     wfn = psi4.core.Wavefunction.build(integrals._psi4_molecule,
                                        integrals.basis_label)
     sf, _ = psi4.driver.dft_functional.build_superfunctional("HF")
     psi4.core.set_global_option("guess", "gwh")
-    if using_restricted_orbitals:
+    psi4.core.set_global_option("e_convergence", self.options['e_threshold'])
+    psi4.core.set_global_option("maxiter", self.options['n_iterations'])
+    if self.options['restrict_spin']:
       if integrals.molecule.multiplicity is 1:
         psi4.core.set_global_option("reference", "RHF")
         self._psi4_hf = psi4.core.RHF(wfn, sf)
@@ -138,7 +145,12 @@ if __name__ == "__main__":
   s = integrals.get_ao_1e_overlap()
   g = integrals.get_ao_2e_repulsion()
 
-  orbitals = Orbitals(integrals)
+  options = {
+    'restrict_spin': True,
+    'n_iterations': 20,
+    'e_threshold': 1e-12
+  }
+  orbitals = Orbitals(integrals, **options)
   print(orbitals.mso_coefficients.round(1))
   print(orbitals.mso_energies)
   print(orbitals.get_mo_2e_repulsion().shape)
