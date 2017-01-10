@@ -87,12 +87,11 @@ Interface for accessing PySCF molecular orbitals.
     Args:
       integrals (:obj:`scfexchange.pyscf_interface.Integrals`): AO integrals.
       restrict_spin (:obj:`bool`, optional): Use spin-restricted orbitals?
-        Default is True.
       n_iterations (:obj:`int`, optional): Maximum number of iterations allowed
-        before considering the orbitals unconverged.  Default is 20.
+        before considering the orbitals unconverged.
       e_threshold (:obj:`float`, optional): Energy convergence threshold.
-        Default is 1e-7.
     """
+
     if not isinstance(integrals, Integrals):
       raise ValueError("Please use an integrals object from this interface.")
     self.integrals = integrals
@@ -142,3 +141,4 @@ if __name__ == "__main__":
   print(orbitals.mso_energies)
   print(orbitals.get_mo_2e_repulsion().shape)
   print(orbitals.get_mo_2e_repulsion('spinor').shape)
+  print(Orbitals.__init__.__doc__)
