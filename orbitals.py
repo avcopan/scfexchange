@@ -42,8 +42,8 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
 
   _option_defaults = {
     'restrict_spin': True,
-    'n_iterations': 20,
-    'e_threshold': 1e-7
+    'n_iterations': 40,
+    'e_threshold': 1e-9
   }
 
   def _check_attribute_contract(self):
