@@ -139,7 +139,7 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
     else:
       c1 = c2 = self.get_mo_coefficients(mo_type = mo_block)
     ctr = lambda a, b: np.tensordot(a, b, axes = (0, 0))
-    return ctr(ctr(ctr(ctr(g, c2), c1), c2), c1)
+    return ctr(ctr(ctr(ctr(g, c1), c2), c1), c2)
 
 
 if __name__ == "__main__":
