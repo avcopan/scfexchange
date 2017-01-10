@@ -45,7 +45,7 @@ Interface to PySCF integrals.
 
   @with_doc(IntegralsInterface.get_ao_1e_potential.__doc__)
   def get_ao_1e_potential(self, spinor = False):
-    ao_1e_potential = self._pyscf_molecule.intor('cint1e_nuc_sphi')
+    ao_1e_potential = self._pyscf_molecule.intor('cint1e_nuc_sph')
     return (ao_1e_potential if not spinor
             else IntegralsInterface.convert_1e_ao_to_aso(ao_1e_potential))
 
@@ -86,8 +86,8 @@ Interface for accessing PySCF molecular orbitals.
 
     Args:
       integrals (:obj:`scfexchange.pyscf_interface.Integrals`): AO integrals.
-      restrict_spin (:obj:`bool`, optional): Whether or not to use spin-
-        restricted orbitals.  Default is True.
+      restrict_spin (:obj:`bool`, optional): Use spin-restricted orbitals?
+        Default is True.
       n_iterations (:obj:`int`, optional): Maximum number of iterations allowed
         before considering the orbitals unconverged.  Default is 20.
       e_threshold (:obj:`float`, optional): Energy convergence threshold.

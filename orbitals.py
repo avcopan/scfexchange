@@ -18,7 +18,7 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
 
   Attributes:
     integrals (:obj:`scfexchange.integrals.Integrals`): Contributions to the
-      Hamiltonian operator, in the atomic orbital basis.
+      Hamiltonian operator, in the molecular orbital basis.
     options (dict): A dictionary of options, by keyword argument.
     mo_coefficients (np.ndarray): Molecular orbital coefficients, given as a
       2 x nbf x nbf array of alpha and beta spatial MOs.
@@ -31,7 +31,7 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
       array of length 2*nbf which is sorted in increasing order.
   """
 
-  _attributes = {
+  _attribute_types = {
     'integrals': IntegralsInterface,
     'options': dict,
     'mo_energies': np.ndarray,
@@ -40,7 +40,7 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
     'mso_coefficients': np.ndarray
   }
 
-  _options = {
+  _option_defaults = {
     'restrict_spin': True,
     'n_iterations': 20,
     'e_threshold': 1e-7
@@ -48,10 +48,10 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
 
   def _check_attribute_contract(self):
     """Make sure common attributes are correctly initialized."""
-    check_attributes(self, OrbitalsInterface._attributes)
+    check_attributes(self, OrbitalsInterface._attribute_types)
 
   def _process_options(self, options):
-    return process_options(options, OrbitalsInterface._options)
+    return process_options(options, OrbitalsInterface._option_defaults)
 
   def _get_mso_energies_and_coefficients(self):
     mso_energies = np.concatenate(self.mo_energies)
@@ -59,7 +59,7 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
     sorting_indices = mso_energies.argsort()
     return mso_energies[sorting_indices], mso_coefficients[:, sorting_indices]
 
-  def get_mo_energies(self, mo_type = 'alpha'):
+  def get_mo_energies(self, mo_type = 'spinor'):
     """Return the molecular orbital energies.
 
     Args:
@@ -75,7 +75,7 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
       raise ValueError("Invalid mo_type argument '{:s}'.  Please use 'alpha', "
                        "'beta', or 'spinor'.".format(mo_type))
 
-  def get_mo_coefficients(self, mo_type = 'alpha'):
+  def get_mo_coefficients(self, mo_type = 'spinor'):
     """Return the molecular orbital coefficients.
 
     Args:
@@ -91,49 +91,55 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
       raise ValueError("Invalid mo_type argument '{:s}'.  Please use 'alpha', "
                        "'beta', or 'spinor'.".format(mo_type))
 
-  def get_mo_1e_kinetic(self, mo_type = 'alpha'):
+  def get_mo_1e_kinetic(self, mo_block = 'spinor'):
     """Compute kinetic energy operator in the molecular orbital basis.
 
     Args:
-      mo_type (str): Molecular orbital type, 'alpha', 'beta', or 'spinor'.
+      mo_block (str): Molecular orbital block, 'alpha', 'beta', or 'spinor'.
 
     Returns:
       A nbf x nbf array of kinetic energy operator integrals,
       < mu(1) | - 1 / 2 * nabla_1^2 | nu(1) >.
     """
-    t = self.integrals.get_ao_1e_kinetic(spinor = (mo_type is 'spinor'))
-    c = self.get_mo_coefficients(mo_type = mo_type)
+    t = self.integrals.get_ao_1e_kinetic(spinor = (mo_block is 'spinor'))
+    c = self.get_mo_coefficients(mo_type = mo_block)
     return c.T.dot(t.dot(c))
 
-  def get_mo_1e_potential(self, mo_type = 'alpha'):
-    """Compute nuclear potential operator in the atomic orbital basis.
+  def get_mo_1e_potential(self, mo_block = 'spinor'):
+    """Compute nuclear potential operator in the molecular orbital basis.
 
     Args:
-      mo_type (str): Molecular orbital type, 'alpha', 'beta', or 'spinor'.
+      mo_block (str): Molecular orbital block, 'alpha', 'beta', or 'spinor'.
 
     Returns:
       A nbf x nbf array of nuclear potential operator integrals,
       < mu(1) | sum_A Z_A / r_1A | nu(1) >.
     """
-    v = self.integrals.get_ao_1e_potential(spinor = (mo_type is 'spinor'))
-    c = self.get_mo_coefficients(mo_type = mo_type)
+    v = self.integrals.get_ao_1e_potential(spinor = (mo_block is 'spinor'))
+    c = self.get_mo_coefficients(mo_type = mo_block)
     return c.T.dot(v.dot(c))
 
-  def get_mo_2e_repulsion(self, mo_type = 'alpha'):
-    """Compute electron-repulsion operator in the atomic orbital basis.
+  def get_mo_2e_repulsion(self, mo_block = 'spinor'):
+    """Compute electron-repulsion operator in the molecular orbital basis.
 
     Args:
-      mo_type (str): Molecular orbital type, 'alpha', 'beta', or 'spinor'.
+      mo_block (str): Molecular orbital block, 'alpha', 'beta', 'mixed', or
+        'spinor'.  The 'mixed' block refers to the mixed alpha/beta block of the
+        repulsion integrals, i.e. <a b | a b>.
 
     Returns:
       A nbf x nbf x nbf x nbf array of electron
       repulsion operator integrals,
       < mu(1) nu(2) | 1 / r_12 | rh(1) si(2) >.
     """
-    g = self.integrals.get_ao_2e_repulsion(spinor = (mo_type is 'spinor'))
-    c = self.get_mo_coefficients(mo_type = mo_type)
+    g = self.integrals.get_ao_2e_repulsion(spinor = (mo_block is 'spinor'))
+    if mo_block is 'mixed':
+      c1 = self.get_mo_coefficients(mo_type = 'alpha')
+      c2 = self.get_mo_coefficients(mo_type = 'beta')
+    else:
+      c1 = c2 = self.get_mo_coefficients(mo_type = mo_block)
     ctr = lambda a, b: np.tensordot(a, b, axes = (0, 0))
-    return ctr(ctr(ctr(ctr(g, c), c), c), c)
+    return ctr(ctr(ctr(ctr(g, c2), c1), c2), c1)
 
 
 if __name__ == "__main__":

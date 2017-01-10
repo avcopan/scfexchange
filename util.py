@@ -15,50 +15,50 @@ class AttributeContractNotRespected(Exception):
   def __init__(self, message):
     Exception.__init__(self, message)
 
-def check_attributes(instance, attribute_dictionary):                     
+def check_attributes(instance, attribute_types):
   """Check whether an instance has a given set of attributes.                    
                                                                                  
   Args:                                                                          
     instance (object): An instance of a class.                                   
-    attribute_dictionary (dict): A list of attribute names (keys, type `str`)    
-      and along with their desired type (values, type `type`).                   
-                                                                                 
-  Raises:                                                                        
-    ClassAttributeNotRespected: Raised when `instance` is either missing an      
+    attribute_types (dict): A list of attribute names (keys, type `str`), along
+      with their desired type (values, type `type`).
+
+  Raises:
+    AttributeContractNotRespected: Raised when `instance` is either missing an      
       attribute or has initialized it with the wrong type.                       
   """                                                                            
-  for attr, attr_type in attribute_dictionary.items():
+  for attr, attr_type in attribute_types.items():
     if not (hasattr(instance, attr) and
             isinstance(getattr(instance, attr), attr_type)):
       raise AttributeContractNotRespected(
               "Attribute '{:s}' must be initialized with type '{:s}'."
               .format(attr, attr_type.__name__))
 
-def process_options(changes, defaults):
+def process_options(specified_options, default_options):
   """Fill in default option values and complain about invalid option keys.
 
   Args:
-    changes (dict): A dictionary containing a subset of the keys in defaults,
-      with changes from the default values.
-    defaults (dict): A dictionary containing the full list of option keys, with
-      default values.
+    specified_options (dict): A dictionary containing a subset of the keys in
+      default_options, specifying changes to the default values.
+    default_options (dict): A dictionary containing the full list of option
+      keys, along with their default values.
 
   Raises:
-    Exception: If a key in `changes` is not in the list of valid keys.
-    ValueError: If a value in `changes` has incorrect type.
+    Exception: If a key in `specified_options` is not in the list of valid keys.
+    ValueError: If a value in `specified_options` has incorrect type.
 
   Returns:
-    A copy of the `defaults` dictionary, updated by `changes`.
+    A copy of the `default_options` dictionary, updated by `specified_options`.
   """
-  for key, val in changes.items():
-    if not key in defaults:
+  for key, val in specified_options.items():
+    if not key in default_options:
       raise Exception("'{:s}' is not a valid option key for this class."
                       .format(key))
-    elif not isinstance(val, type(defaults[key])):
+    elif not isinstance(val, type(default_options[key])):
       raise ValueError("The value for option '{:s}' has incorrect type '{:s}'."
                        .format(key, type(val).__name__))
-  options = defaults.copy()
-  options.update(changes)
+  options = default_options.copy()
+  options.update(specified_options)
   return options
 
 def with_doc(docstring):

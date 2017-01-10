@@ -1,5 +1,5 @@
 import numpy as np
-import atomdata
+from . import atomdata
 
 bohr2angstrom = 0.52917721067
 

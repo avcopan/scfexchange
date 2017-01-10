@@ -25,7 +25,7 @@ class IntegralsInterface(with_metaclass(AttributeContractMeta, object)):
     nbf (int): The number of basis functions.
   """
 
-  _attributes = {
+  _attribute_types = {
     'basis_label': str,
     'molecule': Molecule,
     'nbf': int
@@ -33,7 +33,7 @@ class IntegralsInterface(with_metaclass(AttributeContractMeta, object)):
 
   def _check_attribute_contract(self):
     """Make sure common attributes are correctly initialized."""
-    check_attributes(self, IntegralsInterface._attributes)
+    check_attributes(self, IntegralsInterface._attribute_types)
 
   @abstractmethod
   @contract(spinor = 'bool', returns = 'array[NxN](float64)')
