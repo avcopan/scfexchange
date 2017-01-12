@@ -91,11 +91,13 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
       raise ValueError("Invalid mo_type argument '{:s}'.  Please use 'alpha', "
                        "'beta', or 'spinor'.".format(mo_type))
 
-  def get_mo_1e_kinetic(self, mo_block = 'spinor'):
+  def get_mo_1e_kinetic(self, mo_block = 'spinor', mo_rotation = None):
     """Compute kinetic energy operator in the molecular orbital basis.
 
     Args:
       mo_block (str): Molecular orbital block, 'alpha', 'beta', or 'spinor'.
+      mo_rotation (np.ndarray): Molecular orbital rotation to be applied to the
+        MO coefficients prior to transformation.
 
     Returns:
       A nbf x nbf array of kinetic energy operator integrals,
@@ -103,13 +105,17 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
     """
     t = self.integrals.get_ao_1e_kinetic(spinor = (mo_block is 'spinor'))
     c = self.get_mo_coefficients(mo_type = mo_block)
+    if not mo_rotation is None:
+      c = c.dot(mo_rotation)
     return c.T.dot(t.dot(c))
 
-  def get_mo_1e_potential(self, mo_block = 'spinor'):
+  def get_mo_1e_potential(self, mo_block = 'spinor', mo_rotation = None):
     """Compute nuclear potential operator in the molecular orbital basis.
 
     Args:
       mo_block (str): Molecular orbital block, 'alpha', 'beta', or 'spinor'.
+      mo_rotation (np.ndarray): Molecular orbital rotation to be applied to the
+        MO coefficients prior to transformation.
 
     Returns:
       A nbf x nbf array of nuclear potential operator integrals,
@@ -117,15 +123,21 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
     """
     v = self.integrals.get_ao_1e_potential(spinor = (mo_block is 'spinor'))
     c = self.get_mo_coefficients(mo_type = mo_block)
+    if not mo_rotation is None:
+      c = c.dot(mo_rotation)
     return c.T.dot(v.dot(c))
 
-  def get_mo_2e_repulsion(self, mo_block = 'spinor'):
+  def get_mo_2e_repulsion(self, mo_block = 'spinor', mo_rotation = None):
     """Compute electron-repulsion operator in the molecular orbital basis.
 
     Args:
       mo_block (str): Molecular orbital block, 'alpha', 'beta', 'mixed', or
         'spinor'.  The 'mixed' block refers to the mixed alpha/beta block of the
         repulsion integrals, i.e. <a b | a b>.
+      mo_rotation (tuple or np.ndarray): Molecular orbital rotation to be
+        applied to the MO coefficients prior to transformation.  If mo_block is
+        'mixed', this should be a pair of rotation matrices for the alpha and
+        beta coefficients, respectively.
 
     Returns:
       A nbf x nbf x nbf x nbf array of electron
@@ -136,8 +148,14 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
     if mo_block is 'mixed':
       c1 = self.get_mo_coefficients(mo_type = 'alpha')
       c2 = self.get_mo_coefficients(mo_type = 'beta')
+      if not mo_rotation is None:
+        u1, u2 = mo_rotation
+        c1 = c1.dot(u1)
+        c2 = c2.dot(u2)
     else:
       c1 = c2 = self.get_mo_coefficients(mo_type = mo_block)
+      if not mo_rotation is None:
+        c1 = c2 = c1.rotate(mo_rotation)
     ctr = lambda a, b: np.tensordot(a, b, axes = (0, 0))
     return ctr(ctr(ctr(ctr(g, c1), c2), c1), c2)
 

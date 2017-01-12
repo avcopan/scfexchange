@@ -145,7 +145,7 @@ if __name__ == "__main__":
   g = integrals.get_ao_2e_repulsion()
 
   options = {
-    'restrict_spin': True,
+    'restrict_spin': False,
     'n_iterations': 20,
     'e_threshold': 1e-12
   }
