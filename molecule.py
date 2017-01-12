@@ -1,7 +1,7 @@
 import numpy as np
 from . import atomdata
 
-bohr2angstrom = 0.52917721067
+bohr2angstrom = 0.52917720859
 
 class Molecule(object):
   """A class to store information about a chemical system.
@@ -15,6 +15,7 @@ class Molecule(object):
       `self.coordinates`.
     charge (int): Total molecular charge.
     multiplicity (int): `2*S+1` where `S` is the spin-magnitude quantum number.
+    nuclear_repulsion_energy (float): The nuclear repulsion energy.
     nelec (int): The number of electrons.
     ncore (int): The number of core electrons.  In the (rare) case that the
       molecule has been ionized past its valence shell, this is set to None.
@@ -40,6 +41,9 @@ class Molecule(object):
       raise ValueError("Coordinate array should have shape ({:d}, 3), not {:s}."
                        .format(self.natoms, str(self.coordinates.shape)))
 
+    # Determine the nuclear repulsion energy.
+    self.nuclear_repulsion_energy = self._get_nuclear_repulsion_energy()
+
     # Determine the number of electrons, based on the number of protons and the
     # total charge.
     nprot = sum(atomdata.get_charge(label) for label in self.labels)
@@ -57,6 +61,23 @@ class Molecule(object):
     npaired = (self.nelec - nunpaired) / 2
     self.nalpha = npaired + nunpaired
     self.nbeta  = npaired
+
+  def _get_nuclear_repulsion_energy(self):
+    """Calculate the nuclear repulsion energy.
+
+    Returns:
+      float: The nuclear repulsion energy.
+    """
+    z = list(atomdata.get_charge(label) for label in self.labels)
+    r = (self.coordinates if self.units is 'bohr'
+         else self.coordinates / bohr2angstrom)
+    print(z)
+    print(r)
+    nuclear_repulsion_energy = 0
+    for a in range(self.natoms):
+      for b in range(a):
+        nuclear_repulsion_energy += z[a]*z[b]/np.linalg.norm(r[a] - r[b])
+    return nuclear_repulsion_energy
 
   def set_units(self, units):
     """Convert `self.coordinates` to different units.
@@ -111,3 +132,4 @@ if __name__ == "__main__":
                  multiplicity = multiplicity)
   mol.set_units("bohr")
   print(list(iter(mol)))
+  print(mol.nuclear_repulsion_energy)
