@@ -155,7 +155,7 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
     else:
       c1 = c2 = self.get_mo_coefficients(mo_type = mo_block)
       if not mo_rotation is None:
-        c1 = c2 = c1.rotate(mo_rotation)
+        c1 = c2 = c1.dot(mo_rotation)
     ctr = lambda a, b: np.tensordot(a, b, axes = (0, 0))
     return ctr(ctr(ctr(ctr(g, c1), c2), c1), c2)
 

@@ -71,8 +71,6 @@ class Molecule(object):
     z = list(atomdata.get_charge(label) for label in self.labels)
     r = (self.coordinates if self.units is 'bohr'
          else self.coordinates / bohr2angstrom)
-    print(z)
-    print(r)
     nuclear_repulsion_energy = 0
     for a in range(self.natoms):
       for b in range(a):
