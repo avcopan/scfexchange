@@ -20,6 +20,13 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
     integrals (:obj:`scfexchange.integrals.Integrals`): Contributions to the
       Hamiltonian operator, in the molecular orbital basis.
     options (dict): A dictionary of options, by keyword argument.
+    nspocc (int): The number of occupied (unfrozen) spin-orbitals, i.e. the
+      number of singly-occupied orbitals plus two times the number of doubly-
+      occupied orbitals.
+    nspvir (int): The number of virtual spin-orbitals.
+    nsporb (int): The total number of (unfrozen) spin-orbitals, which equals
+      two times the number of basis functions minus two times the number of
+      frozen orbitals.
     mo_coefficients (np.ndarray): Molecular orbital coefficients, given as a
       2 x nbf x nbf array of alpha and beta spatial MOs.
     mso_coeffieicnts (np.ndarray): Molecular spin-orbital coefficients, given as
@@ -34,6 +41,9 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
   _attribute_types = {
     'integrals': IntegralsInterface,
     'options': dict,
+    'nspocc': int,
+    'nspvir': int,
+    'nsporb': int,
     'mo_energies': np.ndarray,
     'mo_coefficients': np.ndarray,
     'mso_energies': np.ndarray,
@@ -43,12 +53,25 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
   _option_defaults = {
     'restrict_spin': True,
     'n_iterations': 40,
-    'e_threshold': 1e-9
+    'e_threshold': 1e-12,
+    'd_threshold': 1e-6,
+    'freeze_core': False,
+    'n_frozen_orbitals': 0
   }
 
   def _check_attribute_contract(self):
     """Make sure common attributes are correctly initialized."""
     check_attributes(self, OrbitalsInterface._attribute_types)
+
+  def _determine_n_frozen_orbitals(self):
+    nfrz = (0 if not self.options['freeze_core'] else
+            self.integrals.molecule.ncore)
+    if self.options['n_frozen_orbitals'] != 0:
+      nfrz = self.options['n_frozen_orbitals']
+    if nfrz is None:
+      raise Exception("Could not determine the number of frozen orbitals.  "
+                      "Please set this value using 'n_frozen_orbitals'.")
+    return nfrz
 
   def _process_options(self, options):
     return process_options(options, OrbitalsInterface._option_defaults)

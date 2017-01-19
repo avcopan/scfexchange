@@ -90,24 +90,37 @@ Interface for accessing PySCF molecular orbitals.
       n_iterations (:obj:`int`, optional): Maximum number of iterations allowed
         before considering the orbitals unconverged.
       e_threshold (:obj:`float`, optional): Energy convergence threshold.
+      d_threshold (:obj:`float`, optional): Density convergence threshold, based
+        on the norm of the orbital gradient.
+      freeze_core (:obj:`bool`, optional): Whether or not to cut core orbitals
+        out of the MO coefficients.
+      n_frozen_orbitals (:obj:`int`, optional): How many core orbitals to cut
+        out from the MO coefficients.
     """
 
     if not isinstance(integrals, Integrals):
       raise ValueError("Please use an integrals object from this interface.")
     self.integrals = integrals
     self.options = self._process_options(options)
+    # Determine the number of frozen, occupied, virtual orbitals.
+    nfrz = self._determine_n_frozen_orbitals()
+    self.nspocc = self.integrals.molecule.nelec - 2 * nfrz
+    self.nsporb = 2 * (self.integrals.nbf - nfrz)
+    self.nspvir = self.nsporb - self.nspocc
+    # Build PySCF HF object and compute the energy.
     if self.options['restrict_spin']:
       self._pyscf_hf = pyscf.scf.RHF(integrals._pyscf_molecule)
     else:
       self._pyscf_hf = pyscf.scf.UHF(integrals._pyscf_molecule)
     self._pyscf_hf.conv_tol = self.options['e_threshold']
+    self._pyscf_hf.conv_tol_grad = self.options['d_threshold']
     self._pyscf_hf.max_cycle = self.options['n_iterations']
     self._pyscf_hf.kernel()
-    self.mo_energies = self._pyscf_hf.mo_energy
-    self.mo_coefficients = self._pyscf_hf.mo_coeff
+    self.mo_energies = self._pyscf_hf.mo_energy[:, nfrz:]
+    self.mo_coefficients = self._pyscf_hf.mo_coeff[:, :, nfrz:]
     if self.options['restrict_spin']:
-      self.mo_energies = np.array([self.mo_energies] * 2)
-      self.mo_coefficients = np.array([self.mo_coefficients] * 2)
+      self.mo_energies = np.array([self.mo_energies] * 2)[:, nfrz:]
+      self.mo_coefficients = np.array([self.mo_coefficients] * 2)[:, :, nfrz:]
     self.mso_energies, self.mso_coefficients = \
       self._get_mso_energies_and_coefficients()
 

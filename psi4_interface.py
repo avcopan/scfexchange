@@ -90,18 +90,30 @@ Interface for accessing Psi4 molecular orbitals.
       n_iterations (:obj:`int`, optional): Maximum number of iterations allowed
         before considering the orbitals unconverged.
       e_threshold (:obj:`float`, optional): Energy convergence threshold.
+      d_threshold (:obj:`float`, optional): Density convergence threshold, based
+        on the norm of the orbital gradient.
+      freeze_core (:obj:`bool`, optional): Whether or not to cut core orbitals
+        out of the MO coefficients.
+      n_frozen_orbitals (:obj:`int`, optional): How many core orbitals to cut
+        out from the MO coefficients.
     """
 
     if not isinstance(integrals, Integrals):
       raise ValueError("Please use an integrals object from this interface.")
     self.integrals = integrals
     self.options = self._process_options(options)
-    # build psi4 HF object and compute the energy
+    # Determine the number of frozen, occupied, virtual orbitals.
+    nfrz = self._determine_n_frozen_orbitals()
+    self.nspocc = self.integrals.molecule.nelec - 2 * nfrz
+    self.nsporb = 2 * (self.integrals.nbf - nfrz)
+    self.nspvir = self.nsporb - self.nspocc
+    # Build Psi4 HF object and compute the energy.
     wfn = psi4.core.Wavefunction.build(integrals._psi4_molecule,
                                        integrals.basis_label)
     sf, _ = psi4.driver.dft_functional.build_superfunctional("HF")
     psi4.core.set_global_option("guess", "gwh")
     psi4.core.set_global_option("e_convergence", self.options['e_threshold'])
+    psi4.core.set_global_option("d_convergence", self.options['d_threshold'])
     psi4.core.set_global_option("maxiter", self.options['n_iterations'])
     if self.options['restrict_spin']:
       if integrals.molecule.multiplicity is 1:
@@ -114,11 +126,11 @@ Interface for accessing Psi4 molecular orbitals.
       psi4.core.set_global_option("reference", "UHF")
       self._psi4_hf = psi4.core.UHF(wfn, sf)
     self._psi4_hf.compute_energy()
-    # get MO energies and coefficients and put them in the right format
-    mo_alpha_energies = self._psi4_hf.epsilon_a().to_array()
-    mo_beta_energies = self._psi4_hf.epsilon_b().to_array()
-    mo_alpha_coeffs = np.array(self._psi4_hf.Ca())
-    mo_beta_coeffs = np.array(self._psi4_hf.Cb())
+    # Get MO energies and coefficients and put them in the right format
+    mo_alpha_energies = self._psi4_hf.epsilon_a().to_array()[nfrz:]
+    mo_beta_energies = self._psi4_hf.epsilon_b().to_array()[nfrz:]
+    mo_alpha_coeffs = np.array(self._psi4_hf.Ca())[:, nfrz:]
+    mo_beta_coeffs = np.array(self._psi4_hf.Cb())[:, nfrz:]
     self.mo_energies = np.array([mo_alpha_energies, mo_beta_energies])
     self.mo_coefficients = np.array([mo_alpha_coeffs, mo_beta_coeffs])
     self.mso_energies, self.mso_coefficients = \
