@@ -36,6 +36,10 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
       array.
     mso_energies (np.ndarray): Molecular spin-orbital energies, given as an
       array of length 2*nbf which is sorted in increasing order.
+    core_mo_energies (np.ndarray): Energies of the frozen core orbitals.
+    core_mo_coefficients (np.ndarray): Coefficients of the frozen core orbitals.
+    core_energy (float): Hartree-Fock energy of the frozen core, including
+      nuclear repulsion energy.
   """
 
   _attribute_types = {
@@ -47,7 +51,10 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
     'mo_energies': np.ndarray,
     'mo_coefficients': np.ndarray,
     'mso_energies': np.ndarray,
-    'mso_coefficients': np.ndarray
+    'mso_coefficients': np.ndarray,
+    'core_mo_energies': np.ndarray,
+    'core_mo_coefficients': np.ndarray,
+    'core_energy': float
   }
 
   _option_defaults = {
@@ -63,6 +70,15 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
     """Make sure common attributes are correctly initialized."""
     check_attributes(self, OrbitalsInterface._attribute_types)
 
+  def _process_options(self, options):
+    return process_options(options, OrbitalsInterface._option_defaults)
+
+  def _get_mso_energies_and_coefficients(self):
+    mso_energies = np.concatenate(self.mo_energies)
+    mso_coefficients = spla.block_diag(*self.mo_coefficients)
+    sorting_indices = mso_energies.argsort()
+    return mso_energies[sorting_indices], mso_coefficients[:, sorting_indices]
+
   def _determine_n_frozen_orbitals(self):
     nfrz = (0 if not self.options['freeze_core'] else
             self.integrals.molecule.ncore)
@@ -73,14 +89,18 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
                       "Please set this value using 'n_frozen_orbitals'.")
     return nfrz
 
-  def _process_options(self, options):
-    return process_options(options, OrbitalsInterface._option_defaults)
-
-  def _get_mso_energies_and_coefficients(self):
-    mso_energies = np.concatenate(self.mo_energies)
-    mso_coefficients = spla.block_diag(*self.mo_coefficients)
-    sorting_indices = mso_energies.argsort()
-    return mso_energies[sorting_indices], mso_coefficients[:, sorting_indices]
+  def _compute_core_energy(self):
+    c1, c2 = self.core_mo_coefficients
+    d1 = c1.dot(c1.T)
+    d2 = c2.dot(c2.T)
+    h = (  self.integrals.get_ao_1e_kinetic(spinor = False)
+         + self.integrals.get_ao_1e_potential(spinor = False))
+    g = self.integrals.get_ao_2e_repulsion(spinor = False)
+    j = np.tensordot(g, d1 + d2, axes = [(1, 3), (1, 0)])
+    k1 = np.tensordot(g, d1, axes = [(1, 2), (1, 0)])
+    k2 = np.tensordot(g, d2, axes = [(1, 2), (1, 0)])
+    core_energy = np.sum((h + j/2)*(d1 + d2) - k1*d1/2 - k2*d2/2)
+    return core_energy + self.integrals.molecule.nuclear_repulsion_energy
 
   def get_mo_energies(self, mo_type = 'spinor'):
     """Return the molecular orbital energies.

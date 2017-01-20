@@ -127,14 +127,19 @@ Interface for accessing Psi4 molecular orbitals.
       self._psi4_hf = psi4.core.UHF(wfn, sf)
     self._psi4_hf.compute_energy()
     # Get MO energies and coefficients and put them in the right format
-    mo_alpha_energies = self._psi4_hf.epsilon_a().to_array()[nfrz:]
-    mo_beta_energies = self._psi4_hf.epsilon_b().to_array()[nfrz:]
-    mo_alpha_coeffs = np.array(self._psi4_hf.Ca())[:, nfrz:]
-    mo_beta_coeffs = np.array(self._psi4_hf.Cb())[:, nfrz:]
-    self.mo_energies = np.array([mo_alpha_energies, mo_beta_energies])
-    self.mo_coefficients = np.array([mo_alpha_coeffs, mo_beta_coeffs])
+    mo_alpha_energies = self._psi4_hf.epsilon_a().to_array()
+    mo_beta_energies = self._psi4_hf.epsilon_b().to_array()
+    mo_alpha_coeffs = np.array(self._psi4_hf.Ca())
+    mo_beta_coeffs = np.array(self._psi4_hf.Cb())
+    mo_energies = np.array([mo_alpha_energies, mo_beta_energies])
+    mo_coefficients = np.array([mo_alpha_coeffs, mo_beta_coeffs])
+    self.mo_energies = mo_energies[:, nfrz:]
+    self.mo_coefficients = mo_coefficients[:, :, nfrz:]
+    self.core_mo_energies = mo_energies[:, :nfrz]
+    self.core_mo_coefficients = mo_coefficients[:, :, :nfrz]
     self.mso_energies, self.mso_coefficients = \
       self._get_mso_energies_and_coefficients()
+    self.core_energy = self._compute_core_energy()
 
 
 if __name__ == "__main__":
@@ -142,8 +147,8 @@ if __name__ == "__main__":
   from .molecule import Molecule
 
   units = "angstrom"
-  charge = +1
-  multiplicity = 2
+  charge = 0
+  multiplicity = 1
   labels = ("O", "H", "H")
   coordinates = np.array([[0.000,  0.000, -0.066],
                           [0.000, -0.759,  0.522],
@@ -159,7 +164,8 @@ if __name__ == "__main__":
   options = {
     'restrict_spin': False,
     'n_iterations': 20,
-    'e_threshold': 1e-12
+    'e_threshold': 1e-12,
+    'n_frozen_orbitals': 5
   }
   orbitals = Orbitals(integrals, **options)
   print(orbitals.mso_coefficients.round(1))
@@ -167,3 +173,4 @@ if __name__ == "__main__":
   print(orbitals.get_mo_2e_repulsion().shape)
   print(orbitals.get_mo_2e_repulsion('spinor').shape)
   print(Orbitals.__init__.__doc__)
+  print(orbitals.core_energy)

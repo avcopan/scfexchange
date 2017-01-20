@@ -116,13 +116,18 @@ Interface for accessing PySCF molecular orbitals.
     self._pyscf_hf.conv_tol_grad = self.options['d_threshold']
     self._pyscf_hf.max_cycle = self.options['n_iterations']
     self._pyscf_hf.kernel()
-    self.mo_energies = self._pyscf_hf.mo_energy[:, nfrz:]
-    self.mo_coefficients = self._pyscf_hf.mo_coeff[:, :, nfrz:]
+    mo_energies = self._pyscf_hf.mo_energy
+    mo_coefficients = self._pyscf_hf.mo_coeff
     if self.options['restrict_spin']:
-      self.mo_energies = np.array([self.mo_energies] * 2)[:, nfrz:]
-      self.mo_coefficients = np.array([self.mo_coefficients] * 2)[:, :, nfrz:]
+      mo_energies = np.array([mo_energies] * 2)
+      mo_coefficients = np.array([mo_coefficients] * 2)
+    self.mo_energies = mo_energies[:, nfrz:]
+    self.mo_coefficients = mo_coefficients[:, :, nfrz:]
+    self.core_mo_energies = mo_energies[:, :nfrz]
+    self.core_mo_coefficients = mo_coefficients[:, :, :nfrz]
     self.mso_energies, self.mso_coefficients = \
       self._get_mso_energies_and_coefficients()
+    self.core_energy = self._compute_core_energy()
 
 
 if __name__ == "__main__":
@@ -130,8 +135,8 @@ if __name__ == "__main__":
   from .molecule import Molecule
 
   units = "angstrom"
-  charge = +1
-  multiplicity = 2
+  charge = 0
+  multiplicity = 1
   labels = ("O", "H", "H")
   coordinates = np.array([[0.000,  0.000, -0.066],
                           [0.000, -0.759,  0.522],
@@ -140,18 +145,18 @@ if __name__ == "__main__":
   mol = Molecule(labels, coordinates, units = units, charge = charge,
                  multiplicity = multiplicity)
 
-  integrals = Integrals(mol, "sto-3g")
+  integrals = Integrals(mol, "cc-pvdz")
   s = integrals.get_ao_1e_overlap()
   g = integrals.get_ao_2e_repulsion()
 
   options = {
     'restrict_spin': False,
     'n_iterations': 20,
-    'e_threshold': 1e-12
+    'e_threshold': 1e-12,
+    'd_threshold': 1e-8,
+    'n_frozen_orbitals': 5
   }
   orbitals = Orbitals(integrals, **options)
-  print(orbitals.mso_coefficients.round(1))
-  print(orbitals.mso_energies)
-  print(orbitals.get_mo_2e_repulsion().shape)
-  print(orbitals.get_mo_2e_repulsion('spinor').shape)
+  print(orbitals.get_mo_2e_repulsion(mo_block = 'spinor').shape)
   print(Orbitals.__init__.__doc__)
+  print(orbitals.core_energy)
