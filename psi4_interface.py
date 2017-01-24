@@ -20,7 +20,7 @@ Interface to Psi4 integrals.
   """.format(IntegralsInterface.__doc__)
 
   def __init__(self, molecule, basis_label):
-    """Initialize Integrals object (PySCF interface).
+    """Initialize Integrals object (Psi4 interface).
 
     Args:
       molecule (:obj:`scfexchange.molecule.Molecule`): The molecule.
@@ -82,7 +82,7 @@ Interface for accessing Psi4 molecular orbitals.
   """.format(OrbitalsInterface.__doc__)
 
   def __init__(self, integrals, **options):
-    """Initialize Orbitals object (PySCF interface).
+    """Initialize Orbitals object (Psi4 interface).
 
     Args:
       integrals (:obj:`scfexchange.pyscf_interface.Integrals`): AO integrals.
@@ -102,11 +102,9 @@ Interface for accessing Psi4 molecular orbitals.
       raise ValueError("Please use an integrals object from this interface.")
     self.integrals = integrals
     self.options = self._process_options(options)
-    # Determine the number of frozen, occupied, virtual orbitals.
-    nfrz = self._determine_n_frozen_orbitals()
-    self.nspocc = self.integrals.molecule.nelec - 2 * nfrz
-    self.nsporb = 2 * (self.integrals.nbf - nfrz)
-    self.nspvir = self.nsporb - self.nspocc
+    # Determine the orbital counts (total, frozen, and occupied)
+    self.nfrz, self.norb, (self.naocc, self.nbocc) = self._count_orbitals()
+    print(self._count_orbitals())
     # Build Psi4 HF object and compute the energy.
     wfn = psi4.core.Wavefunction.build(integrals._psi4_molecule,
                                        integrals.basis_label)
@@ -133,18 +131,19 @@ Interface for accessing Psi4 molecular orbitals.
     mo_beta_coeffs = np.array(self._psi4_hf.Cb())
     mo_energies = np.array([mo_alpha_energies, mo_beta_energies])
     mo_coefficients = np.array([mo_alpha_coeffs, mo_beta_coeffs])
-    self.mo_energies = mo_energies[:, nfrz:]
-    self.mo_coefficients = mo_coefficients[:, :, nfrz:]
-    self.core_mo_energies = mo_energies[:, :nfrz]
-    self.core_mo_coefficients = mo_coefficients[:, :, :nfrz]
+    self.mo_energies = mo_energies[:, self.nfrz:]
+    self.mo_coefficients = mo_coefficients[:, :, self.nfrz:]
+    self.core_mo_energies = mo_energies[:, :self.nfrz]
+    self.core_mo_coefficients = mo_coefficients[:, :, :self.nfrz]
     self.mso_energies, self.mso_coefficients = \
       self._get_mso_energies_and_coefficients()
+    self.ao_core_field = self._compute_ao_1e_core_field()
     self.core_energy = self._compute_core_energy()
-
 
 if __name__ == "__main__":
   import numpy as np
-  from .molecule import Molecule
+  from . import Molecule
+  from avcdiis import DIIS
 
   units = "angstrom"
   charge = 0
@@ -156,21 +155,26 @@ if __name__ == "__main__":
 
   mol = Molecule(labels, coordinates, units = units, charge = charge,
                  multiplicity = multiplicity)
-
-  integrals = Integrals(mol, "sto-3g")
-  s = integrals.get_ao_1e_overlap()
-  g = integrals.get_ao_2e_repulsion()
-
-  options = {
-    'restrict_spin': False,
-    'n_iterations': 20,
-    'e_threshold': 1e-12,
-    'n_frozen_orbitals': 5
+  integrals = Integrals(mol, "cc-pvdz")
+  orbital_options = {
+    'freeze_core': False,
+    'n_frozen_orbitals': 1,
+    'e_threshold': 1e-14,
+    'n_iterations': 50,
+    'restrict_spin': False
   }
-  orbitals = Orbitals(integrals, **options)
-  print(orbitals.mso_coefficients.round(1))
-  print(orbitals.mso_energies)
-  print(orbitals.get_mo_2e_repulsion().shape)
-  print(orbitals.get_mo_2e_repulsion('spinor').shape)
-  print(Orbitals.__init__.__doc__)
-  print(orbitals.core_energy)
+  orbitals = Orbitals(integrals, **orbital_options)
+  core_energy = orbitals.core_energy
+  nocc = orbitals.naocc + orbitals.nbocc
+  o = slice(None, nocc)
+  h = (orbitals.get_mo_1e_kinetic() + orbitals.get_mo_1e_potential())[o, o]
+  g = orbitals.get_mo_2e_repulsion()[o,o,o,o]
+  g = g - g.transpose((0, 2, 1, 3))
+  valence_energy = np.trace(h) + 1./2 * np.einsum("ijij", g)
+  v = orbitals.get_mo_1e_core_field()[o, o]
+  core_valence_energy = np.trace(v)
+  total_energy = valence_energy + core_energy + core_valence_energy
+  print("Core energy:            {:20.15f}".format(core_energy))
+  print("Valence energy:         {:20.15f}".format(valence_energy))
+  print("C-V interaction energy: {:20.15f}".format(core_valence_energy))
+  print("Total energy:           {:20.15f}".format(total_energy))

@@ -20,13 +20,14 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
     integrals (:obj:`scfexchange.integrals.Integrals`): Contributions to the
       Hamiltonian operator, in the molecular orbital basis.
     options (dict): A dictionary of options, by keyword argument.
-    nspocc (int): The number of occupied (unfrozen) spin-orbitals, i.e. the
-      number of singly-occupied orbitals plus two times the number of doubly-
-      occupied orbitals.
-    nspvir (int): The number of virtual spin-orbitals.
-    nsporb (int): The total number of (unfrozen) spin-orbitals, which equals
-      two times the number of basis functions minus two times the number of
-      frozen orbitals.
+    nfrz (int): The number of frozen (spatial) orbitals.  This can be set with
+      the option 'n_frozen_orbitals'.  Alternatively, if 'freeze_core' is True
+      and the number of frozen orbitals is not set, this defaults to the number
+      of core orbitals, as determined by the molecule object.
+    norb (int): The total number of non-frozen (spatial) orbitals.  That is, the
+      number of basis functions minus the number of frozen orbitals.
+    naocc (int): The number of occupied non-frozen alpha orbitals.
+    nbocc (int): The number of occupied non-frozen beta orbitals.
     mo_coefficients (np.ndarray): Molecular orbital coefficients, given as a
       2 x nbf x nbf array of alpha and beta spatial MOs.
     mso_coeffieicnts (np.ndarray): Molecular spin-orbital coefficients, given as
@@ -45,9 +46,10 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
   _attribute_types = {
     'integrals': IntegralsInterface,
     'options': dict,
-    'nspocc': int,
-    'nspvir': int,
-    'nsporb': int,
+    'nfrz': int,
+    'norb': int,
+    'naocc': int,
+    'nbocc': int,
     'mo_energies': np.ndarray,
     'mo_coefficients': np.ndarray,
     'mso_energies': np.ndarray,
@@ -79,7 +81,14 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
     sorting_indices = mso_energies.argsort()
     return mso_energies[sorting_indices], mso_coefficients[:, sorting_indices]
 
-  def _determine_n_frozen_orbitals(self):
+  def _count_orbitals(self):
+    """Count the number of frozen, unfrozen, and occupied orbitals.
+
+    Returns:
+      int, int, (int, int) corresponding to the number of frozen, unfrozen, and
+        occupied (alpha, beta) orbitals.
+    """
+    # First, determine the number of frozen core orbitals
     nfrz = (0 if not self.options['freeze_core'] else
             self.integrals.molecule.ncore)
     if self.options['n_frozen_orbitals'] != 0:
@@ -87,19 +96,34 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
     if nfrz is None:
       raise Exception("Could not determine the number of frozen orbitals.  "
                       "Please set this value using 'n_frozen_orbitals'.")
-    return nfrz
+    # Now, determine the rest
+    norb = self.integrals.nbf - nfrz
+    naocc = self.integrals.molecule.nalpha - nfrz
+    nbocc = self.integrals.molecule.nbeta  - nfrz
+    return nfrz, norb, (naocc, nbocc)
 
-  def _compute_core_energy(self):
-    c1, c2 = self.core_mo_coefficients
-    d1 = c1.dot(c1.T)
-    d2 = c2.dot(c2.T)
+  def _compute_ao_1e_core_density(self):
+    ca, cb = self.core_mo_coefficients
+    da = ca.dot(ca.T)
+    db = cb.dot(cb.T)
+    return da, db
+
+  def _compute_ao_1e_core_field(self):
+    da, db = self._compute_ao_1e_core_density()
     h = (  self.integrals.get_ao_1e_kinetic(spinor = False)
          + self.integrals.get_ao_1e_potential(spinor = False))
     g = self.integrals.get_ao_2e_repulsion(spinor = False)
-    j = np.tensordot(g, d1 + d2, axes = [(1, 3), (1, 0)])
-    k1 = np.tensordot(g, d1, axes = [(1, 2), (1, 0)])
-    k2 = np.tensordot(g, d2, axes = [(1, 2), (1, 0)])
-    core_energy = np.sum((h + j/2)*(d1 + d2) - k1*d1/2 - k2*d2/2)
+    j  = np.tensordot(g, da + db, axes = [(1, 3), (1, 0)])
+    va = j - np.tensordot(g, da, axes = [(1, 2), (1, 0)])
+    vb = j - np.tensordot(g, db, axes = [(1, 2), (1, 0)])
+    return va, vb
+
+  def _compute_core_energy(self):
+    da, db = self._compute_ao_1e_core_density()
+    va, vb = self.ao_core_field
+    h = (  self.integrals.get_ao_1e_kinetic(spinor = False)
+         + self.integrals.get_ao_1e_potential(spinor = False))
+    core_energy = np.sum((h + va/2) * da + (h + vb/2) * db)
     return core_energy + self.integrals.molecule.nuclear_repulsion_energy
 
   def get_mo_energies(self, mo_type = 'spinor'):
@@ -133,6 +157,29 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
     else:
       raise ValueError("Invalid mo_type argument '{:s}'.  Please use 'alpha', "
                        "'beta', or 'spinor'.".format(mo_type))
+
+  def get_mo_1e_core_field(self, mo_block = 'spinor', mo_rotation = None):
+    """Compute mean-field of the core electrons in the molecular orbital basis.
+
+    Args:
+      mo_block (str): Molecular orbital block, 'alpha', 'beta', or 'spinor'.
+      mo_rotation (np.ndarray): Molecular orbital rotation to be applied to the
+        MO coefficients prior to transformation.
+
+    Returns:
+      A nbf x nbf array of kinetic energy operator integrals,
+      < mu(1) | j_a + j_b + k_a | nu(1) >.
+    """
+    c = self.get_mo_coefficients(mo_type = mo_block)
+    if mo_block is 'alpha':
+      v = self.ao_core_field[0]
+    elif mo_block is 'beta':
+      v = self.ao_core_field[1]
+    elif mo_block is 'spinor':
+      v = spla.block_diag(*self.ao_core_field)
+    if not mo_rotation is None:
+      c = c.dot(mo_rotation)
+    return c.T.dot(v.dot(c))
 
   def get_mo_1e_kinetic(self, mo_block = 'spinor', mo_rotation = None):
     """Compute kinetic energy operator in the molecular orbital basis.
@@ -202,44 +249,3 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
     ctr = lambda a, b: np.tensordot(a, b, axes = (0, 0))
     return ctr(ctr(ctr(ctr(g, c1), c2), c1), c2)
 
-
-if __name__ == "__main__":
-  import numpy as np
-  from .molecule import Molecule
-  from .pyscf_interface import Integrals
-
-  class Orbitals(OrbitalsInterface):
-
-    def __init__(self, integrals, **options):
-      self.integrals = integrals
-      self.options = self._process_options(options)
-      self.mo_energies = np.zeros((5,))
-      self.mo_coefficients = np.zeros((5, 5))
-      self.mso_energies = np.zeros((10,))
-      self.mso_coefficients = np.zeros((10, 10))
-
-    def get_mo_1e_core_hamiltonian(self, spin = ''):
-      return np.zeros((5, 5))
-
-    def get_mo_2e_repulsion(self, spin = ''):
-      return np.zeros((5, 5, 5, 5))
- 
-  units = "angstrom"
-  charge = +1
-  multiplicity = 2
-  labels = ("O", "H", "H")
-  coordinates = np.array([[0.000,  0.000, -0.066],
-                          [0.000, -0.759,  0.522],
-                          [0.000,  0.759,  0.522]])
-
-  molecule = Molecule(labels, coordinates, units = units, charge = charge,
-                      multiplicity = multiplicity)
-
-  integrals = Integrals(molecule, "sto-3g")
-
-  orbitals = Orbitals(integrals)
-  h = orbitals.get_mo_1e_core_hamiltonian()
-  g = orbitals.get_mo_2e_repulsion()
-  print(h.shape)
-  print(g.shape)
-  print(orbitals.options)
