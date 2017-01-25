@@ -130,12 +130,8 @@ Interface for accessing Psi4 molecular orbitals.
     mo_beta_energies = self._psi4_hf.epsilon_b().to_array()
     mo_alpha_coeffs = np.array(self._psi4_hf.Ca())
     mo_beta_coeffs = np.array(self._psi4_hf.Cb())
-    mo_energies = np.array([mo_alpha_energies, mo_beta_energies])
-    mo_coefficients = np.array([mo_alpha_coeffs, mo_beta_coeffs])
-    self.mo_energies = mo_energies[:, self.nfrz:]
-    self.mo_coefficients = mo_coefficients[:, :, self.nfrz:]
-    self.core_mo_energies = mo_energies[:, :self.nfrz]
-    self.core_mo_coefficients = mo_coefficients[:, :, :self.nfrz]
+    self.mo_energies = np.array([mo_alpha_energies, mo_beta_energies])
+    self.mo_coefficients = np.array([mo_alpha_coeffs, mo_beta_coeffs])
     # Build spin-orbital energy and coefficient arrays, sorted by orbital energy
     mso_energies = np.concatenate(self.mo_energies)
     mso_coefficients = spla.block_diag(*self.mo_coefficients)
@@ -143,8 +139,8 @@ Interface for accessing Psi4 molecular orbitals.
     self.mso_energies = mso_energies[sorting_indices]
     self.mso_coefficients = mso_coefficients[:, sorting_indices]
     # Get the core field and energy
-    self.ao_core_field = self._compute_ao_1e_core_field()
-    self.core_energy = self._compute_core_energy()
+    #self.ao_core_field = self._compute_ao_1e_core_field()
+    #self.core_energy = self._compute_core_energy()
 
 if __name__ == "__main__":
   import numpy as np
@@ -170,17 +166,17 @@ if __name__ == "__main__":
     'restrict_spin': False
   }
   orbitals = Orbitals(integrals, **orbital_options)
-  core_energy = orbitals.core_energy
+  #core_energy = orbitals.core_energy
   nocc = orbitals.naocc + orbitals.nbocc
   o = slice(None, nocc)
   h = (orbitals.get_mo_1e_kinetic() + orbitals.get_mo_1e_potential())[o, o]
   g = orbitals.get_mo_2e_repulsion()[o,o,o,o]
   g = g - g.transpose((0, 2, 1, 3))
   valence_energy = np.trace(h) + 1./2 * np.einsum("ijij", g)
-  v = orbitals.get_mo_1e_core_field()[o, o]
-  core_valence_energy = np.trace(v)
-  total_energy = valence_energy + core_energy + core_valence_energy
-  print("Core energy:            {:20.15f}".format(core_energy))
+  #v = orbitals.get_mo_1e_core_field()[o, o]
+  #core_valence_energy = np.trace(v)
+  #total_energy = valence_energy + core_energy + core_valence_energy
+  #print("Core energy:            {:20.15f}".format(core_energy))
   print("Valence energy:         {:20.15f}".format(valence_energy))
-  print("C-V interaction energy: {:20.15f}".format(core_valence_energy))
-  print("Total energy:           {:20.15f}".format(total_energy))
+  #print("C-V interaction energy: {:20.15f}".format(core_valence_energy))
+  #print("Total energy:           {:20.15f}".format(total_energy))

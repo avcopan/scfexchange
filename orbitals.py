@@ -53,10 +53,8 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
     'mo_energies': np.ndarray,
     'mo_coefficients': np.ndarray,
     'mso_energies': np.ndarray,
-    'mso_coefficients': np.ndarray,
-    'core_mo_energies': np.ndarray,
-    'core_mo_coefficients': np.ndarray,
-    'core_energy': float
+    'mso_coefficients': np.ndarray#,
+    #'core_energy': float
   }
 
   _option_defaults = {
@@ -91,11 +89,12 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
       raise Exception("Could not determine the number of frozen orbitals.  "
                       "Please set this value using 'n_frozen_orbitals'.")
     # Now, determine the rest
-    norb = self.integrals.nbf - nfrz
-    naocc = self.integrals.molecule.nalpha - nfrz
-    nbocc = self.integrals.molecule.nbeta  - nfrz
+    norb = int(self.integrals.nbf - nfrz)
+    naocc = int(self.integrals.molecule.nalpha - nfrz)
+    nbocc = int(self.integrals.molecule.nbeta  - nfrz)
     return nfrz, norb, (naocc, nbocc)
 
+  '''
   def _compute_ao_1e_core_density(self):
     ca, cb = self.core_mo_coefficients
     da = ca.dot(ca.T)
@@ -119,35 +118,88 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
          + self.integrals.get_ao_1e_potential(spinor = False))
     core_energy = np.sum((h + va/2) * da + (h + vb/2) * db)
     return core_energy + self.integrals.molecule.nuclear_repulsion_energy
+  '''
 
-  def get_mo_energies(self, mo_type = 'spinor'):
+  def get_mo_slice(self, mo_type = 'spinor', mo_block = 'ov'):
+    """Return the slice for a specific block of molecular orbitals.
+
+    Args:
+      mo_type (str): Molecular orbital type, 'alpha', 'beta', or 'spinor'.
+      mo_block (str): Any contiguous combination of 'c' (core), 'o' (occupied),
+        and 'v' (virtual): 'c', 'o', 'v', 'co', 'ov', or 'cov'.  Defaults to
+        'ov', which denotes all unfrozen orbitals.
+
+    Returns:
+      A `slice` object with appropriate start and end points for the specified
+      MO type and block.
+    """
+    # Check the arguments to make sure all is kosher
+    if not mo_type in ('spinor', 'alpha', 'beta'):
+      raise ValueError("Invalid mo_type argument '{:s}'.  Please use 'alpha', "
+                       "'beta', or 'spinor'.".format(mo_type))
+    if not mo_block in ('c', 'o', 'v', 'co', 'ov', 'cov'):
+      raise ValueError("Invalid mo_block argument '{:s}'.  Please use 'c', "
+                       "'o', 'v', 'co', 'ov', or 'cov'.".format(mo_block))
+    # Assign slice start point
+    if mo_block.startswith('c'):
+      start = None
+    elif mo_type is 'spinor':
+      start = 2 * self.nfrz if mo_block.startswith('o') else self.naocc + self.nbocc
+    elif mo_type is 'alpha':
+      start = self.nfrz if mo_block.startswith('o') else self.naocc
+    elif mo_type is 'beta':
+      start = self.nfrz if mo_block.startswith('o') else self.nbocc
+    # Assign slice end point
+    if mo_block.endswith('v'):
+      end = None
+    elif mo_type is 'spinor':
+      end = 2 * self.nfrz if mo_block.endswith('c') else self.naocc + self.nbocc
+    elif mo_type is 'alpha':
+      end = self.nfrz if mo_block.endswith('c') else self.naocc
+    elif mo_type is 'beta':
+      end = self.nfrz if mo_block.endswith('c') else self.nbocc
+
+    return slice(start, end)
+
+  def get_mo_energies(self, mo_type = 'spinor', mo_block = 'ov'):
     """Return the molecular orbital energies.
 
     Args:
       mo_type (str): Molecular orbital type, 'alpha', 'beta', or 'spinor'.
-    """
-    if mo_type is 'alpha':
-      return self.mo_energies[0]
-    elif mo_type is 'beta':
-      return self.mo_energies[1]
-    elif mo_type is 'spinor':
-      return self.mso_energies
-    else:
-      raise ValueError("Invalid mo_type argument '{:s}'.  Please use 'alpha', "
-                       "'beta', or 'spinor'.".format(mo_type))
+      mo_block (str): Any contiguous combination of 'c' (core), 'o' (occupied),
+        and 'v' (virtual): 'c', 'o', 'v', 'co', 'ov', or 'cov'.  Defaults to
+        'ov', which denotes all unfrozen orbitals.
 
-  def get_mo_coefficients(self, mo_type = 'spinor'):
+    Returns:
+      An array of orbital energies for the given MO type and block.
+    """
+    slc = self.get_mo_slice(mo_type = mo_type, mo_block = mo_block)
+    if mo_type is 'alpha':
+      return self.mo_energies[0][slc]
+    elif mo_type is 'beta':
+      return self.mo_energies[1][slc]
+    elif mo_type is 'spinor':
+      return self.mso_energies[slc]
+
+  def get_mo_coefficients(self, mo_type = 'spinor', mo_block = 'ov'):
     """Return the molecular orbital coefficients.
 
     Args:
       mo_type (str): Molecular orbital type, 'alpha', 'beta', or 'spinor'.
+      mo_block (str): Any contiguous combination of 'c' (core), 'o' (occupied),
+        and 'v' (virtual): 'c', 'o', 'v', 'co', 'ov', or 'cov'.  Defaults to
+        'ov', which denotes all unfrozen orbitals.
+
+    Returns:
+      An array of orbital coefficients for the given MO type and block.
     """
+    slc = self.get_mo_slice(mo_type = mo_type, mo_block = mo_block)
     if mo_type is 'alpha':
-      return self.mo_coefficients[0]
+      return self.mo_coefficients[0][:, slc]
     elif mo_type is 'beta':
-      return self.mo_coefficeints[1]
+      return self.mo_coefficients[1][:, slc]
     elif mo_type is 'spinor':
-      return self.mso_coefficients
+      return self.mso_coefficients[:, slc]
     else:
       raise ValueError("Invalid mo_type argument '{:s}'.  Please use 'alpha', "
                        "'beta', or 'spinor'.".format(mo_type))
