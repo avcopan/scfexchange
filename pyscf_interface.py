@@ -118,13 +118,17 @@ Interface for accessing PySCF molecular orbitals.
     if self.options['restrict_spin']:
       mo_energies = np.array([mo_energies] * 2)
       mo_coefficients = np.array([mo_coefficients] * 2)
-    print(mo_coefficients.shape)
     self.mo_energies = mo_energies[:, self.nfrz:]
     self.mo_coefficients = mo_coefficients[:, :, self.nfrz:]
     self.core_mo_energies = mo_energies[:, :self.nfrz]
     self.core_mo_coefficients = mo_coefficients[:, :, :self.nfrz]
-    self.mso_energies, self.mso_coefficients = \
-      self._get_mso_energies_and_coefficients()
+    # Build spin-orbital energy and coefficient arrays, sorted by orbital energy
+    mso_energies = np.concatenate(self.mo_energies)
+    mso_coefficients = spla.block_diag(*self.mo_coefficients)
+    sorting_indices = mso_energies.argsort()
+    self.mso_energies = mso_energies[sorting_indices]
+    self.mso_coefficients = mso_coefficients[:, sorting_indices]
+    # Get the core field and energy
     self.ao_core_field = self._compute_ao_1e_core_field()
     self.core_energy = self._compute_core_energy()
 

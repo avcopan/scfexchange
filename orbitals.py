@@ -75,12 +75,6 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
   def _process_options(self, options):
     return process_options(options, OrbitalsInterface._option_defaults)
 
-  def _get_mso_energies_and_coefficients(self):
-    mso_energies = np.concatenate(self.mo_energies)
-    mso_coefficients = spla.block_diag(*self.mo_coefficients)
-    sorting_indices = mso_energies.argsort()
-    return mso_energies[sorting_indices], mso_coefficients[:, sorting_indices]
-
   def _count_orbitals(self):
     """Count the number of frozen, unfrozen, and occupied orbitals.
 
