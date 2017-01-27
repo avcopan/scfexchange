@@ -94,15 +94,32 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
     nbocc = int(self.integrals.molecule.nbeta  - nfrz)
     return nfrz, norb, (naocc, nbocc)
 
-  def _compute_ao_1e_core_density(self):
-    ca = self.get_mo_coefficients(mo_type = 'alpha', mo_block = 'c')
-    cb = self.get_mo_coefficients(mo_type =  'beta', mo_block = 'c')
-    da = ca.dot(ca.T)
-    db = cb.dot(cb.T)
-    return da, db
+  def _get_ao_1e_density_matrix(self, mo_type = 'spinor', mo_block = 'ov',
+                                r_matrix = None):
+    """Return the one-particle density matrix *in the AO basis*.
+
+    Args:
+      mo_type (str): Molecular orbital type, 'alpha', 'beta', or 'spinor'.
+      mo_block (str): Any contiguous combination of 'c' (core), 'o' (occupied),
+        and 'v' (virtual): 'c', 'o', 'v', 'co', 'ov', or 'cov'.  Defaults to
+        'ov', which denotes all unfrozen orbitals.
+      r_matrix (np.ndarray or tuple): Molecular orbital rotation to be applied
+        to the MO coefficients prior to transformation.  Must have the full
+        dimension of the spatial or spin-orbital basis, including frozen
+        orbitals.  For spatial orbitals, this can be a pair of arrays, one for
+        each spin.
+
+    Returns:
+      An array containing the one-particle density matrix.
+    """
+    c = self.get_mo_coefficients(mo_type = mo_type, mo_block = mo_block,
+                                 r_matrix = r_matrix)
+    d = c.dot(c.T)
+    return d
 
   def _compute_ao_1e_core_field(self):
-    da, db = self._compute_ao_1e_core_density()
+    da = self._get_ao_1e_density_matrix('alpha', mo_block = 'c')
+    db = self._get_ao_1e_density_matrix('beta',  mo_block = 'c')
     h = (  self.integrals.get_ao_1e_kinetic(spinor = False)
          + self.integrals.get_ao_1e_potential(spinor = False))
     g = self.integrals.get_ao_2e_repulsion(spinor = False)
@@ -112,7 +129,8 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
     return va, vb
 
   def _compute_core_energy(self):
-    da, db = self._compute_ao_1e_core_density()
+    da = self._get_ao_1e_density_matrix('alpha', mo_block = 'c')
+    db = self._get_ao_1e_density_matrix('beta',  mo_block = 'c')
     va, vb = self.ao_core_field
     h = (  self.integrals.get_ao_1e_kinetic(spinor = False)
          + self.integrals.get_ao_1e_potential(spinor = False))
@@ -143,20 +161,20 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
     if mo_block.startswith('c'):
       start = None
     elif mo_type is 'spinor':
-      start = 2 * self.nfrz if mo_block.startswith('o') else self.naocc + self.nbocc
+      start = 2 * self.nfrz if mo_block.startswith('o') else 2 * self.nfrz + self.naocc + self.nbocc
     elif mo_type is 'alpha':
-      start = self.nfrz if mo_block.startswith('o') else self.naocc
+      start = self.nfrz if mo_block.startswith('o') else self.nfrz + self.naocc
     elif mo_type is 'beta':
-      start = self.nfrz if mo_block.startswith('o') else self.nbocc
+      start = self.nfrz if mo_block.startswith('o') else self.nfrz + self.nbocc
     # Assign slice end point
     if mo_block.endswith('v'):
       end = None
     elif mo_type is 'spinor':
-      end = 2 * self.nfrz if mo_block.endswith('c') else self.naocc + self.nbocc
+      end = 2 * self.nfrz if mo_block.endswith('c') else 2 * self.nfrz + self.naocc + self.nbocc
     elif mo_type is 'alpha':
-      end = self.nfrz if mo_block.endswith('c') else self.naocc
+      end = self.nfrz if mo_block.endswith('c') else self.nfrz + self.naocc
     elif mo_type is 'beta':
-      end = self.nfrz if mo_block.endswith('c') else self.nbocc
+      end = self.nfrz if mo_block.endswith('c') else self.nfrz + self.nbocc
 
     return slice(start, end)
 
@@ -180,7 +198,8 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
     elif mo_type is 'spinor':
       return self.mso_energies[slc]
 
-  def get_mo_coefficients(self, mo_type = 'spinor', mo_block = 'ov', r_matrix = None):
+  def get_mo_coefficients(self, mo_type = 'spinor', mo_block = 'ov',
+                          r_matrix = None):
     """Return the molecular orbital coefficients.
 
     Args:
@@ -197,97 +216,132 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
     Returns:
       An array of orbital coefficients for the given MO type and block.
     """
-    if not isinstance(r_matrix, np.ndarray) or (mo_type in ('alpha', 'beta') and
-                                                hasattr(r_matrix, 'len') and
-                                                getattr(r_matrix, 'len') is 2):
+    slc = self.get_mo_slice(mo_type = mo_type, mo_block = mo_block)
+    try:
+      if mo_type is 'alpha':
+        c = self.mo_coefficients[0]
+        if not r_matrix is None:
+          r = r_matrix if isinstance(r_matrix, np.ndarray) else r_matrix[0]
+          c = c.dot(r)
+      elif mo_type is 'beta':
+        c = self.mo_coefficients[1]
+        if not r_matrix is None:
+          r = r_matrix if isinstance(r_matrix, np.ndarray) else r_matrix[1]
+          c = c.dot(r)
+      elif mo_type is 'spinor':
+        c = self.mso_coefficients
+        if not r_matrix is None:
+          r = r_matrix
+          c = c.dot(r)
+      return c[:, slc]
+    except:
       raise ValueError("'r_matrix' must either be numpy array or a pair of "
                        "numpy arrays for each spin.")
-    slc = self.get_mo_slice(mo_type = mo_type, mo_block = mo_block)
-    if mo_type is 'alpha':
-      c = self.mo_coefficients[0]
-      if not r_matrix is None:
-        r = r_matrix if isinstance(r_matrix, np.ndarray) else r_matrix[0]
-        c = c.dot(r)
-    elif mo_type is 'beta':
-      c = self.mo_coefficients[1]
-      if not r_matrix is None:
-        r = r_matrix if isinstance(r_matrix, np.ndarray) else r_matrix[1]
-        c = c.dot(r)
-    elif mo_type is 'spinor':
-      c = self.mso_coefficients
-      if not r_matrix is None:
-        r = r_matrix
 
-  def get_mo_1e_core_field(self, mo_type = 'spinor', r_matrix = None):
+  def get_mo_1e_core_field(self, mo_type = 'spinor', mo_block = ('ov', 'ov'),
+                           r_matrix = None):
     """Compute mean-field of the core electrons in the molecular orbital basis.
 
     Args:
       mo_type (str): Molecular orbital type, 'alpha', 'beta', or 'spinor'.
-      r_matrix (np.ndarray): Molecular orbital rotation to be applied to the
-        MO coefficients prior to transformation.
+      mo_block (tuple): A pair of strings indicating a subset of MOs for each
+        axis.  The MO subspaces are indicated by a contiguous combination of
+        'c' (core), 'o' (occupied), and 'v' (virtual): 'c', 'o', 'v', 'co',
+        'ov', or 'cov'.
+      r_matrix (np.ndarray or tuple): Molecular orbital rotation to be applied
+        to the MO coefficients prior to transformation.  Must have the full
+        dimension of the spatial or spin-orbital basis, including frozen
+        orbitals.  For spatial orbitals, this can be a pair of arrays, one for
+        each spin.
 
     Returns:
       A nbf x nbf array of kinetic energy operator integrals,
       < mu(1) | j_a + j_b + k_a | nu(1) >.
     """
-    c = self.get_mo_coefficients(mo_type = mo_type)
+    c1 = self.get_mo_coefficients(mo_type = mo_type, mo_block = mo_block[0],
+                                  r_matrix = r_matrix)
+    c2 = self.get_mo_coefficients(mo_type = mo_type, mo_block = mo_block[1],
+                                  r_matrix = r_matrix)
     if mo_type is 'alpha':
       v = self.ao_core_field[0]
     elif mo_type is 'beta':
       v = self.ao_core_field[1]
     elif mo_type is 'spinor':
       v = spla.block_diag(*self.ao_core_field)
-    if not r_matrix is None:
-      c = c.dot(r_matrix)
-    return c.T.dot(v.dot(c))
+    return c1.T.dot(v.dot(c2))
 
-  def get_mo_1e_kinetic(self, mo_type = 'spinor', r_matrix = None):
+  def get_mo_1e_kinetic(self, mo_type = 'spinor', mo_block = ('ov', 'ov'),
+                        r_matrix = None):
     """Compute kinetic energy operator in the molecular orbital basis.
 
     Args:
       mo_type (str): Molecular orbital type, 'alpha', 'beta', or 'spinor'.
-      r_matrix (np.ndarray): Molecular orbital rotation to be applied to the
-        MO coefficients prior to transformation.
+      mo_block (tuple): A pair of strings indicating a subset of MOs for each
+        axis.  The MO subspaces are indicated by a contiguous combination of
+        'c' (core), 'o' (occupied), and 'v' (virtual): 'c', 'o', 'v', 'co',
+        'ov', or 'cov'.
+      r_matrix (np.ndarray or tuple): Molecular orbital rotation to be applied
+        to the MO coefficients prior to transformation.  Must have the full
+        dimension of the spatial or spin-orbital basis, including frozen
+        orbitals.  For spatial orbitals, this can be a pair of arrays, one for
+        each spin.
 
     Returns:
       A nbf x nbf array of kinetic energy operator integrals,
       < mu(1) | - 1 / 2 * nabla_1^2 | nu(1) >.
     """
+    c1 = self.get_mo_coefficients(mo_type = mo_type, mo_block = mo_block[0],
+                                  r_matrix = r_matrix)
+    c2 = self.get_mo_coefficients(mo_type = mo_type, mo_block = mo_block[1],
+                                  r_matrix = r_matrix)
     t = self.integrals.get_ao_1e_kinetic(spinor = (mo_type is 'spinor'))
-    c = self.get_mo_coefficients(mo_type = mo_type)
-    if not r_matrix is None:
-      c = c.dot(r_matrix)
-    return c.T.dot(t.dot(c))
+    return c1.T.dot(t.dot(c2))
 
-  def get_mo_1e_potential(self, mo_type = 'spinor', r_matrix = None):
+  def get_mo_1e_potential(self, mo_type = 'spinor', mo_block = ('ov', 'ov'),
+                          r_matrix = None):
     """Compute nuclear potential operator in the molecular orbital basis.
 
     Args:
       mo_type (str): Molecular orbital type, 'alpha', 'beta', or 'spinor'.
-      r_matrix (np.ndarray): Molecular orbital rotation to be applied to the
-        MO coefficients prior to transformation.
+      mo_block (tuple): A pair of strings indicating a subset of MOs for each
+        axis.  The MO subspaces are indicated by a contiguous combination of
+        'c' (core), 'o' (occupied), and 'v' (virtual): 'c', 'o', 'v', 'co',
+        'ov', or 'cov'.
+      r_matrix (np.ndarray or tuple): Molecular orbital rotation to be applied
+        to the MO coefficients prior to transformation.  Must have the full
+        dimension of the spatial or spin-orbital basis, including frozen
+        orbitals.  For spatial orbitals, this can be a pair of arrays, one for
+        each spin.
 
     Returns:
       A nbf x nbf array of nuclear potential operator integrals,
       < mu(1) | sum_A Z_A / r_1A | nu(1) >.
     """
+    c1 = self.get_mo_coefficients(mo_type = mo_type, mo_block = mo_block[0],
+                                  r_matrix = r_matrix)
+    c2 = self.get_mo_coefficients(mo_type = mo_type, mo_block = mo_block[1],
+                                  r_matrix = r_matrix)
     v = self.integrals.get_ao_1e_potential(spinor = (mo_type is 'spinor'))
-    c = self.get_mo_coefficients(mo_type = mo_type)
-    if not r_matrix is None:
-      c = c.dot(r_matrix)
-    return c.T.dot(v.dot(c))
+    return c1.T.dot(v.dot(c2))
 
-  def get_mo_2e_repulsion(self, mo_type = 'spinor', r_matrix = None):
+  def get_mo_2e_repulsion(self, mo_type = 'spinor',
+                          mo_block = ('ov', 'ov', 'ov', 'ov'),
+                          r_matrix = None):
     """Compute electron-repulsion operator in the molecular orbital basis.
 
     Args:
       mo_type (str): Molecular orbital type, 'alpha', 'beta', 'mixed', or
         'spinor'.  The 'mixed' block refers to the mixed alpha/beta block of the
         repulsion integrals, i.e. <a b | a b>.
-      r_matrix (tuple or np.ndarray): Molecular orbital rotation to be
-        applied to the MO coefficients prior to transformation.  If mo_type is
-        'mixed', this should be a pair of rotation matrices for the alpha and
-        beta coefficients, respectively.
+      mo_block (tuple): A tuple of four strings indicating a subset of MOs for
+        each axis.  The MO subspaces are indicated by a contiguous combination
+        of 'c' (core), 'o' (occupied), and 'v' (virtual): 'c', 'o', 'v', 'co',
+        'ov', or 'cov'.
+      r_matrix (np.ndarray or tuple): Molecular orbital rotation to be applied
+        to the MO coefficients prior to transformation.  Must have the full
+        dimension of the spatial or spin-orbital basis, including frozen
+        orbitals.  For spatial orbitals, this can be a pair of arrays, one for
+        each spin.
 
     Returns:
       A nbf x nbf x nbf x nbf array of electron
@@ -296,16 +350,23 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
     """
     g = self.integrals.get_ao_2e_repulsion(spinor = (mo_type is 'spinor'))
     if mo_type is 'mixed':
-      c1 = self.get_mo_coefficients(mo_type = 'alpha')
-      c2 = self.get_mo_coefficients(mo_type = 'beta')
-      if not r_matrix is None:
-        u1, u2 = r_matrix
-        c1 = c1.dot(u1)
-        c2 = c2.dot(u2)
+      c1 = self.get_mo_coefficients(mo_type = 'alpha', mo_block = mo_block[0],
+                                    r_matrix = r_matrix)
+      c2 = self.get_mo_coefficients(mo_type = 'beta',  mo_block = mo_block[1],
+                                    r_matrix = r_matrix)
+      c3 = self.get_mo_coefficients(mo_type = 'alpha', mo_block = mo_block[2],
+                                    r_matrix = r_matrix)
+      c4 = self.get_mo_coefficients(mo_type = 'beta',  mo_block = mo_block[3],
+                                    r_matrix = r_matrix)
     else:
-      c1 = c2 = self.get_mo_coefficients(mo_type = mo_type)
-      if not r_matrix is None:
-        c1 = c2 = c1.dot(r_matrix)
+      c1 = self.get_mo_coefficients(mo_type = mo_type, mo_block = mo_block[0],
+                                    r_matrix = r_matrix)
+      c2 = self.get_mo_coefficients(mo_type = mo_type, mo_block = mo_block[1],
+                                    r_matrix = r_matrix)
+      c3 = self.get_mo_coefficients(mo_type = mo_type, mo_block = mo_block[2],
+                                    r_matrix = r_matrix)
+      c4 = self.get_mo_coefficients(mo_type = mo_type, mo_block = mo_block[3],
+                                    r_matrix = r_matrix)
     ctr = lambda a, b: np.tensordot(a, b, axes = (0, 0))
     return ctr(ctr(ctr(ctr(g, c1), c2), c1), c2)
 
