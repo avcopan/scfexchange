@@ -53,8 +53,10 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
     'mo_energies': np.ndarray,
     'mo_coefficients': np.ndarray,
     'mso_energies': np.ndarray,
-    'mso_coefficients': np.ndarray#,
-    #'core_energy': float
+    'mso_coefficients': np.ndarray,
+    'ao_core_field': np.ndarray,
+    'core_energy': float,
+    'hf_energy': float
   }
 
   _option_defaults = {
@@ -126,7 +128,7 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
     j  = np.tensordot(g, da + db, axes = [(1, 3), (1, 0)])
     va = j - np.tensordot(g, da, axes = [(1, 2), (1, 0)])
     vb = j - np.tensordot(g, db, axes = [(1, 2), (1, 0)])
-    return va, vb
+    return np.array([va, vb])
 
   def _compute_core_energy(self):
     da = self._get_ao_1e_density_matrix('alpha', mo_block = 'c')

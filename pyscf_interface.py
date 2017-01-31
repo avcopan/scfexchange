@@ -113,6 +113,7 @@ Interface for accessing PySCF molecular orbitals.
     self._pyscf_hf.conv_tol_grad = self.options['d_threshold']
     self._pyscf_hf.max_cycle = self.options['n_iterations']
     self._pyscf_hf.kernel()
+    self.hf_energy = self._pyscf_hf.e_tot
     self.mo_energies = self._pyscf_hf.mo_energy
     self.mo_coefficients = self._pyscf_hf.mo_coeff
     if self.options['restrict_spin']:
@@ -155,7 +156,6 @@ if __name__ == "__main__":
   h = orbitals.get_mo_1e_kinetic(mo_type = 'spinor', mo_block = ('o', 'o')) + \
       orbitals.get_mo_1e_potential(mo_type = 'spinor', mo_block = ('o', 'o'))
   g = orbitals.get_mo_2e_repulsion(mo_type = 'spinor', mo_block = ('o', 'o', 'o', 'o'))
-  print(g.shape)
   g = g - g.transpose((0, 2, 1, 3))
   valence_energy = np.trace(h) + 1./2 * np.einsum("ijij", g)
   v = orbitals.get_mo_1e_core_field(mo_type = 'spinor', mo_block = ('o', 'o'))
@@ -165,21 +165,5 @@ if __name__ == "__main__":
   print("Valence energy:         {:20.15f}".format(valence_energy))
   print("C-V interaction energy: {:20.15f}".format(core_valence_energy))
   print("Total energy:           {:20.15f}".format(total_energy))
-  print(orbitals.get_mo_coefficients(mo_type = 'spinor', mo_block = 'c'  ).shape)
-  print(orbitals.get_mo_coefficients(mo_type = 'spinor', mo_block = 'o'  ).shape)
-  print(orbitals.get_mo_coefficients(mo_type = 'spinor', mo_block = 'v'  ).shape)
-  print(orbitals.get_mo_coefficients(mo_type = 'spinor', mo_block = 'co' ).shape)
-  print(orbitals.get_mo_coefficients(mo_type = 'spinor', mo_block = 'ov' ).shape)
-  print(orbitals.get_mo_coefficients(mo_type = 'spinor', mo_block = 'cov').shape)
-  print(orbitals.get_mo_coefficients(mo_type = 'alpha', mo_block = 'c'   ).shape)
-  print(orbitals.get_mo_coefficients(mo_type = 'alpha', mo_block = 'o'   ).shape)
-  print(orbitals.get_mo_coefficients(mo_type = 'alpha', mo_block = 'v'   ).shape)
-  print(orbitals.get_mo_coefficients(mo_type = 'alpha', mo_block = 'co'  ).shape)
-  print(orbitals.get_mo_coefficients(mo_type = 'alpha', mo_block = 'ov'  ).shape)
-  print(orbitals.get_mo_coefficients(mo_type = 'alpha', mo_block = 'cov' ).shape)
-  print(orbitals.get_mo_coefficients(mo_type = 'beta', mo_block = 'c'    ).shape)
-  print(orbitals.get_mo_coefficients(mo_type = 'beta', mo_block = 'o'    ).shape)
-  print(orbitals.get_mo_coefficients(mo_type = 'beta', mo_block = 'v'    ).shape)
-  print(orbitals.get_mo_coefficients(mo_type = 'beta', mo_block = 'co'   ).shape)
-  print(orbitals.get_mo_coefficients(mo_type = 'beta', mo_block = 'ov'   ).shape)
-  print(orbitals.get_mo_coefficients(mo_type = 'beta', mo_block = 'cov'  ).shape)
+  print("Total energy:           {:20.15f}".format(orbitals.hf_energy))
+  print(np.allclose(total_energy, orbitals.hf_energy, rtol=1e-09, atol=1e-10))

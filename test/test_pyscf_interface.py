@@ -82,3 +82,20 @@ def test__get_mo_coefficients():
   assert(orbitals.get_mo_coefficients(mo_type = 'beta', mo_block = 'ov'   ).shape == (24, 23))
   assert(orbitals.get_mo_coefficients(mo_type = 'beta', mo_block = 'cov'  ).shape == (24, 24))
 
+def test__frozen_core():
+  h = orbitals.get_mo_1e_kinetic(mo_type = 'spinor', mo_block = ('o', 'o')) + \
+      orbitals.get_mo_1e_potential(mo_type = 'spinor', mo_block = ('o', 'o'))
+  v = orbitals.get_mo_1e_core_field(mo_type = 'spinor', mo_block = ('o', 'o'))
+  g = orbitals.get_mo_2e_repulsion(mo_type = 'spinor', mo_block = ('o', 'o', 'o', 'o'))
+  g = g - g.transpose((0, 2, 1, 3))
+  core_energy = orbitals.core_energy
+  valence_energy = np.trace(h) + 1./2 * np.einsum("ijij", g)
+  core_valence_energy = np.trace(v)
+  total_energy = valence_energy + core_energy + core_valence_energy
+
+  assert(np.allclose(total_energy,         orbitals.hf_energy, rtol=1e-09, atol=1e-10))
+  assert(np.allclose(core_energy,         -52.142619206770597, rtol=1e-09, atol=1e-10))
+  assert(np.allclose(valence_energy,      -37.824261852446270, rtol=1e-09, atol=1e-10))
+  assert(np.allclose(core_valence_energy,  14.334755387019705, rtol=1e-09, atol=1e-10))
+  assert(np.allclose(total_energy,        -75.632125672197162, rtol=1e-09, atol=1e-10))
+
