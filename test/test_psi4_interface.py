@@ -83,10 +83,10 @@ def test__get_mo_coefficients():
   assert(orbitals.get_mo_coefficients(mo_type = 'beta', mo_block = 'cov'  ).shape == (24, 24))
 
 def test__frozen_core():
-  h = orbitals.get_mo_1e_kinetic(mo_type = 'spinor', mo_block = ('o', 'o')) + \
-      orbitals.get_mo_1e_potential(mo_type = 'spinor', mo_block = ('o', 'o'))
-  v = orbitals.get_mo_1e_core_field(mo_type = 'spinor', mo_block = ('o', 'o'))
-  g = orbitals.get_mo_2e_repulsion(mo_type = 'spinor', mo_block = ('o', 'o', 'o', 'o'))
+  h = orbitals.get_mo_1e_kinetic(mo_type = 'spinor', mo_block = 'o,o') + \
+      orbitals.get_mo_1e_potential(mo_type = 'spinor', mo_block = 'o,o')
+  v = orbitals.get_mo_1e_core_field(mo_type = 'spinor', mo_block = 'o,o')
+  g = orbitals.get_mo_2e_repulsion(mo_type = 'spinor', mo_block = 'o,o,o,o')
   g = g - g.transpose((0, 2, 1, 3))
   core_energy = orbitals.core_energy
   valence_energy = np.trace(h) + 1./2 * np.einsum("ijij", g)

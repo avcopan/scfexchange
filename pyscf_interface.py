@@ -153,12 +153,12 @@ if __name__ == "__main__":
   }
   orbitals = Orbitals(integrals, **orbital_options)
   core_energy = orbitals.core_energy
-  h = orbitals.get_mo_1e_kinetic(mo_type = 'spinor', mo_block = ('o', 'o')) + \
-      orbitals.get_mo_1e_potential(mo_type = 'spinor', mo_block = ('o', 'o'))
-  g = orbitals.get_mo_2e_repulsion(mo_type = 'spinor', mo_block = ('o', 'o', 'o', 'o'))
+  h = orbitals.get_mo_1e_kinetic(mo_type = 'spinor', mo_block = 'o,o') + \
+      orbitals.get_mo_1e_potential(mo_type = 'spinor', mo_block = 'o,o')
+  g = orbitals.get_mo_2e_repulsion(mo_type = 'spinor', mo_block = 'o,o,o,o')
   g = g - g.transpose((0, 2, 1, 3))
   valence_energy = np.trace(h) + 1./2 * np.einsum("ijij", g)
-  v = orbitals.get_mo_1e_core_field(mo_type = 'spinor', mo_block = ('o', 'o'))
+  v = orbitals.get_mo_1e_core_field(mo_type = 'spinor', mo_block = 'o,o')
   core_valence_energy = np.trace(v)
   total_energy = valence_energy + core_energy + core_valence_energy
   print("Core energy:            {:20.15f}".format(core_energy))
