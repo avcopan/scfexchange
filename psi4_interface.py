@@ -105,7 +105,6 @@ Interface for accessing Psi4 molecular orbitals.
     self.options = self._process_options(options)
     # Determine the orbital counts (total, frozen, and occupied)
     self.nfrz, self.norb, (self.naocc, self.nbocc) = self._count_orbitals()
-    print(self._count_orbitals())
     # Build Psi4 HF object and compute the energy.
     wfn = psi4.core.Wavefunction.build(integrals._psi4_molecule,
                                        integrals.basis_label)

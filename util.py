@@ -30,8 +30,6 @@ def check_attributes(instance, attribute_types):
   for attr, attr_type in attribute_types.items():
     if not (hasattr(instance, attr) and
             isinstance(getattr(instance, attr), attr_type)):
-      print(hasattr(instance, attr))
-      print(getattr(instance, attr))
       raise AttributeContractNotRespected(
               "Attribute '{:s}' must be initialized with type '{:s}'."
               .format(attr, attr_type.__name__))
