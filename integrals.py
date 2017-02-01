@@ -78,12 +78,14 @@ class IntegralsInterface(with_metaclass(AttributeContractMeta, object)):
     return
 
   @abstractmethod
-  @contract(spinor = 'bool', returns = 'array[NxNxNxN](float64)')
-  def get_ao_2e_repulsion(self, spinor = False):
+  @contract(spinor = 'bool', antisymmetrize = 'bool',
+            returns = 'array[NxNxNxN](float64)')
+  def get_ao_2e_repulsion(self, spinor = False, antisymmetrize = False):
     """Compute electron-repulsion operator in the atomic orbital basis.
 
     Args:
       spinor (bool): Convert to atomic spin-orbital basis?
+      antisymmetrize (bool): Antisymmetrize the repulsion integrals?
 
     Returns:
       A nbf x nbf x nbf x nbf array of electron
@@ -102,15 +104,14 @@ class IntegralsInterface(with_metaclass(AttributeContractMeta, object)):
     return spla.block_diag(ao_1e_operator, ao_1e_operator)
 
   @staticmethod
-  def convert_2e_ao_to_aso(ao_2e_operator):
+  def convert_2e_ao_to_aso(ao_2e_chem_operator):
     """Convert AO basis two-electron operator to the atomic spin-orbital basis.
 
     Returns:
       An np.ndarray with shape (2*nbf, 2*nbf, 2*nbf, 2*nbf) where nbf is
       `self.nbf`.
     """
-    ao_2e_chem_operator = ao_2e_operator.transpose((0, 2, 1, 3))
     aso_2e_chem_operator = np.kron(np.identity(2),
                                    np.kron(np.identity(2),
                                            ao_2e_chem_operator).T)
-    return aso_2e_chem_operator.transpose((0, 2, 1, 3))
+    return aso_2e_chem_operator

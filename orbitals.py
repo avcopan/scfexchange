@@ -96,7 +96,7 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
     nbocc = int(self.integrals.molecule.nbeta  - nfrz)
     return nfrz, norb, (naocc, nbocc)
 
-  def _get_ao_1e_density_matrix(self, mo_type = 'spinor', mo_block = 'ov',
+  def _get_ao_1e_density_matrix(self, mo_type = 'alpha', mo_block = 'ov',
                                 r_matrix = None):
     """Return the one-particle density matrix *in the AO basis*.
 
@@ -139,7 +139,7 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
     core_energy = np.sum((h + va/2) * da + (h + vb/2) * db)
     return core_energy + self.integrals.molecule.nuclear_repulsion_energy
 
-  def get_mo_slice(self, mo_type = 'spinor', mo_block = 'ov'):
+  def get_mo_slice(self, mo_type = 'alpha', mo_block = 'ov'):
     """Return the slice for a specific block of molecular orbitals.
 
     Args:
@@ -180,7 +180,7 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
 
     return slice(start, end)
 
-  def get_mo_energies(self, mo_type = 'spinor', mo_block = 'ov'):
+  def get_mo_energies(self, mo_type = 'alpha', mo_block = 'ov'):
     """Return the molecular orbital energies.
 
     Args:
@@ -200,7 +200,7 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
     elif mo_type is 'spinor':
       return self.mso_energies[slc]
 
-  def get_mo_coefficients(self, mo_type = 'spinor', mo_block = 'ov',
+  def get_mo_coefficients(self, mo_type = 'alpha', mo_block = 'ov',
                           r_matrix = None):
     """Return the molecular orbital coefficients.
 
@@ -240,7 +240,7 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
       raise ValueError("'r_matrix' must either be numpy array or a pair of "
                        "numpy arrays for each spin.")
 
-  def get_mo_1e_core_field(self, mo_type = 'spinor', mo_block = 'ov,ov',
+  def get_mo_1e_core_field(self, mo_type = 'alpha', mo_block = 'ov,ov',
                            r_matrix = None):
     """Compute mean-field of the core electrons in the molecular orbital basis.
 
@@ -258,7 +258,7 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
 
     Returns:
       A nbf x nbf array of kinetic energy operator integrals,
-      < mu(1) | j_a + j_b + k_a | nu(1) >.
+      < p(1) | j_a + j_b + k_a | q(1) >.
     """
     mo_spaces = mo_block.split(',')
     c1 = self.get_mo_coefficients(mo_type = mo_type, mo_block = mo_spaces[0],
@@ -273,7 +273,7 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
       v = spla.block_diag(*self.ao_core_field)
     return c1.T.dot(v.dot(c2))
 
-  def get_mo_1e_kinetic(self, mo_type = 'spinor', mo_block = 'ov,ov',
+  def get_mo_1e_kinetic(self, mo_type = 'alpha', mo_block = 'ov,ov',
                         r_matrix = None):
     """Compute kinetic energy operator in the molecular orbital basis.
 
@@ -291,7 +291,7 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
 
     Returns:
       A nbf x nbf array of kinetic energy operator integrals,
-      < mu(1) | - 1 / 2 * nabla_1^2 | nu(1) >.
+      < p(1) | - 1 / 2 * nabla_1^2 | q(1) >.
     """
     mo_spaces = mo_block.split(',')
     c1 = self.get_mo_coefficients(mo_type = mo_type, mo_block = mo_spaces[0],
@@ -301,7 +301,7 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
     t = self.integrals.get_ao_1e_kinetic(spinor = (mo_type is 'spinor'))
     return c1.T.dot(t.dot(c2))
 
-  def get_mo_1e_potential(self, mo_type = 'spinor', mo_block = 'ov,ov',
+  def get_mo_1e_potential(self, mo_type = 'alpha', mo_block = 'ov,ov',
                           r_matrix = None):
     """Compute nuclear potential operator in the molecular orbital basis.
 
@@ -319,7 +319,7 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
 
     Returns:
       A nbf x nbf array of nuclear potential operator integrals,
-      < mu(1) | sum_A Z_A / r_1A | nu(1) >.
+      < p(1) | sum_A Z_A / r_1A | q(1) >.
     """
     mo_spaces = mo_block.split(',')
     c1 = self.get_mo_coefficients(mo_type = mo_type, mo_block = mo_spaces[0],
@@ -329,8 +329,8 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
     v = self.integrals.get_ao_1e_potential(spinor = (mo_type is 'spinor'))
     return c1.T.dot(v.dot(c2))
 
-  def get_mo_2e_repulsion(self, mo_type = 'spinor', mo_block = 'ov,ov,ov,ov',
-                          r_matrix = None):
+  def get_mo_2e_repulsion(self, mo_type = 'alpha', mo_block = 'ov,ov,ov,ov',
+                          r_matrix = None, antisymmetrize = False):
     """Compute electron-repulsion operator in the molecular orbital basis.
 
     Args:
@@ -346,14 +346,17 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
         dimension of the spatial or spin-orbital basis, including frozen
         orbitals.  For spatial orbitals, this can be a pair of arrays, one for
         each spin.
+      antisymmetrize (bool): Whether or not to symmetrize the repulsion
+        integrals as < p q || r s > = < p q | r s > - < p q | s r >.
 
     Returns:
       A nbf x nbf x nbf x nbf array of electron
       repulsion operator integrals,
-      < mu(1) nu(2) | 1 / r_12 | rh(1) si(2) >.
+      < p(1) q(2) | 1 / r_12 | r(1) s(2) >.
     """
     mo_spaces = mo_block.split(',')
-    g = self.integrals.get_ao_2e_repulsion(spinor = (mo_type is 'spinor'))
+    g = self.integrals.get_ao_2e_repulsion(spinor = (mo_type is 'spinor'),
+                                           antisymmetrize = antisymmetrize)
     if mo_type is 'mixed':
       c1 = self.get_mo_coefficients(mo_type = 'alpha', mo_block = mo_spaces[0],
                                     r_matrix = r_matrix)
@@ -373,5 +376,5 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
       c4 = self.get_mo_coefficients(mo_type = mo_type, mo_block = mo_spaces[3],
                                     r_matrix = r_matrix)
     ctr = lambda a, b: np.tensordot(a, b, axes = (0, 0))
-    return ctr(ctr(ctr(ctr(g, c1), c2), c1), c2)
+    return ctr(ctr(ctr(ctr(g, c1), c2), c3), c4)
 

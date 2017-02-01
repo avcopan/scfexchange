@@ -86,8 +86,8 @@ def test__frozen_core():
   h = orbitals.get_mo_1e_kinetic(mo_type = 'spinor', mo_block = 'o,o') + \
       orbitals.get_mo_1e_potential(mo_type = 'spinor', mo_block = 'o,o')
   v = orbitals.get_mo_1e_core_field(mo_type = 'spinor', mo_block = 'o,o')
-  g = orbitals.get_mo_2e_repulsion(mo_type = 'spinor', mo_block = 'o,o,o,o')
-  g = g - g.transpose((0, 2, 1, 3))
+  g = orbitals.get_mo_2e_repulsion(mo_type = 'spinor', mo_block = 'o,o,o,o',
+                                   antisymmetrize = True)
   core_energy = orbitals.core_energy
   valence_energy = np.trace(h) + 1./2 * np.einsum("ijij", g)
   core_valence_energy = np.trace(v)
@@ -99,3 +99,29 @@ def test__frozen_core():
   assert(np.allclose(core_valence_energy,  14.334755387019705, rtol=1e-09, atol=1e-10))
   assert(np.allclose(total_energy,        -75.632125672197162, rtol=1e-09, atol=1e-10))
 
+def test__mp2():
+  e = orbitals.get_mo_energies(mo_type = 'spinor', mo_block = 'cov')
+  g = orbitals.get_mo_2e_repulsion(mo_type = 'spinor', mo_block = 'co,co,v,v',
+                                   antisymmetrize = True)
+  nspocc = 2 * orbitals.nfrz + orbitals.naocc + orbitals.nbocc
+  o = slice(None, nspocc)
+  v = slice(nspocc, None)
+  x = np.newaxis
+  correlation_energy = (
+    1./4 * np.sum(g * g / (e[o,x,x,x] + e[x,o,x,x] - e[x,x,v,x] - e[x,x,x,v]))
+  )
+  assert(np.allclose(correlation_energy, -0.153359695124679, rtol=1e-09, atol=1e-10))
+
+
+def test__mp2_frozen_core():
+  e = orbitals.get_mo_energies(mo_type = 'spinor', mo_block = 'ov')
+  g = orbitals.get_mo_2e_repulsion(mo_type = 'spinor', mo_block = 'o,o,v,v',
+                                   antisymmetrize = True)
+  nspocc = orbitals.naocc + orbitals.nbocc
+  o = slice(None, nspocc)
+  v = slice(nspocc, None)
+  x = np.newaxis
+  correlation_energy = (
+    1./4 * np.sum(g * g / (e[o,x,x,x] + e[x,o,x,x] - e[x,x,v,x] - e[x,x,x,v]))
+  )
+  assert(np.allclose(correlation_energy, -0.151178068662117, rtol=1e-09, atol=1e-10))

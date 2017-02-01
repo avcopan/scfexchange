@@ -59,13 +59,17 @@ Interface to Psi4 integrals.
             else IntegralsInterface.convert_1e_ao_to_aso(ao_1e_kinetic))
 
   @with_doc(IntegralsInterface.get_ao_2e_repulsion.__doc__)
-  def get_ao_2e_repulsion(self, spinor = False):
+  def get_ao_2e_repulsion(self, spinor = False, antisymmetrize = False):
     # Psi4 returns these in chemist's notation, (mu rh | nu si), so transpose to
     # physicist's notation, <mu nu | rh si>.
     ao_2e_chem_repulsion = np.array(self._mints_helper.ao_eri())
+    if spinor:
+      ao_2e_chem_repulsion = (
+        IntegralsInterface.convert_2e_ao_to_aso(ao_2e_chem_repulsion))
     ao_2e_repulsion = ao_2e_chem_repulsion.transpose((0, 2, 1, 3))
-    return (ao_2e_repulsion if not spinor
-            else IntegralsInterface.convert_2e_ao_to_aso(ao_2e_repulsion))
+    if antisymmetrize:
+      ao_2e_repulsion = ao_2e_repulsion - ao_2e_repulsion.transpose((0, 1, 3, 2))
+    return ao_2e_repulsion
 
 
 class Orbitals(OrbitalsInterface): 
@@ -179,3 +183,14 @@ if __name__ == "__main__":
   print("Total energy:           {:20.15f}".format(total_energy))
   print("Total energy:           {:20.15f}".format(orbitals.hf_energy))
   print(np.allclose(total_energy, orbitals.hf_energy, rtol=1e-09, atol=1e-10))
+  e = orbitals.get_mo_energies(mo_type = 'spinor', mo_block = 'ov')
+  g = orbitals.get_mo_2e_repulsion(mo_type = 'spinor', mo_block = 'o,o,v,v',
+                                   antisymmetrize = True)
+  nspocc = orbitals.naocc + orbitals.nbocc
+  o = slice(None, nspocc)
+  v = slice(nspocc, None)
+  x = np.newaxis
+  correlation_energy = (
+    1./4 * np.sum(g * g / (e[o,x,x,x] + e[x,o,x,x] - e[x,x,v,x] - e[x,x,x,v]))
+  )
+  print("Correlation energy:     {:20.15f}".format(correlation_energy))
