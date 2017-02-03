@@ -38,36 +38,30 @@ Interface to PySCF integrals.
     self.nbf = int(self._pyscf_molecule.nao_nr())
 
   @with_doc(IntegralsInterface.get_ao_1e_overlap.__doc__)
-  def get_ao_1e_overlap(self, spinor = False):
-    ao_1e_overlap = self._pyscf_molecule.intor('cint1e_ovlp_sph')
-    return (ao_1e_overlap if not spinor
-            else IntegralsInterface.convert_1e_ao_to_aso(ao_1e_overlap))
+  def get_ao_1e_overlap(self, integrate_spin = True, save = False):
+    def compute_ints():
+      return self._pyscf_molecule.intor('cint1e_ovlp_sph')
+    return self._compute_ao_1e('overlap', compute_ints, integrate_spin, save)
 
   @with_doc(IntegralsInterface.get_ao_1e_potential.__doc__)
-  def get_ao_1e_potential(self, spinor = False):
-    ao_1e_potential = self._pyscf_molecule.intor('cint1e_nuc_sph')
-    return (ao_1e_potential if not spinor
-            else IntegralsInterface.convert_1e_ao_to_aso(ao_1e_potential))
+  def get_ao_1e_potential(self, integrate_spin = True, save = False):
+    def compute_ints():
+      return self._pyscf_molecule.intor('cint1e_nuc_sph')
+    return self._compute_ao_1e('potential', compute_ints, integrate_spin, save)
 
   @with_doc(IntegralsInterface.get_ao_1e_kinetic.__doc__)
-  def get_ao_1e_kinetic(self, spinor = False):
-    ao_1e_kinetic = self._pyscf_molecule.intor('cint1e_kin_sph')
-    return (ao_1e_kinetic if not spinor
-            else IntegralsInterface.convert_1e_ao_to_aso(ao_1e_kinetic))
+  def get_ao_1e_kinetic(self, integrate_spin = True, save = False):
+    def compute_ints():
+      return self._pyscf_molecule.intor('cint1e_kin_sph')
+    return self._compute_ao_1e('kinetic', compute_ints, integrate_spin, save)
 
   @with_doc(IntegralsInterface.get_ao_2e_repulsion.__doc__)
-  def get_ao_2e_repulsion(self, spinor = False, antisymmetrize = False):
-    # PySCF returns these as a nbf*nbf x nbf*nbf matrix, so reshape and
-    # transpose from chemist's to physicist's notation.
-    ao_2e_chem_repulsion = (self._pyscf_molecule.intor('cint2e_sph')
-                            .reshape((self.nbf, self.nbf, self.nbf, self.nbf)))
-    if spinor:
-      ao_2e_chem_repulsion = (
-        IntegralsInterface.convert_2e_ao_to_aso(ao_2e_chem_repulsion))
-    ao_2e_repulsion = ao_2e_chem_repulsion.transpose((0, 2, 1, 3))
-    if antisymmetrize:
-      ao_2e_repulsion = ao_2e_repulsion - ao_2e_repulsion.transpose((0, 1, 3, 2))
-    return ao_2e_repulsion
+  def get_ao_2e_repulsion(self, integrate_spin = True, save = False,
+                          antisymmetrize = False):
+    def compute_ints():
+      return self._pyscf_molecule.intor('cint2e_sph').reshape((self.nbf,) * 4)
+    return self._compute_ao_2e('repulsion', compute_ints, integrate_spin, save,
+                               antisymmetrize)
 
 
 class Orbitals(OrbitalsInterface): 
@@ -147,6 +141,7 @@ if __name__ == "__main__":
   mol = Molecule(labels, coordinates, units = units, charge = charge,
                  multiplicity = multiplicity)
   integrals = Integrals(mol, "cc-pvdz")
+
   orbital_options = {
     'freeze_core': False,
     'n_frozen_orbitals': 1,
@@ -181,3 +176,7 @@ if __name__ == "__main__":
     1./4 * np.sum(g * g / (e[o,x,x,x] + e[x,o,x,x] - e[x,x,v,x] - e[x,x,x,v]))
   )
   print("Correlation energy:     {:20.15f}".format(correlation_energy))
+
+
+
+

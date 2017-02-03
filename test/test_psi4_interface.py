@@ -125,3 +125,23 @@ def test__mp2_frozen_core():
     1./4 * np.sum(g * g / (e[o,x,x,x] + e[x,o,x,x] - e[x,x,v,x] - e[x,x,x,v]))
   )
   assert(np.allclose(correlation_energy, -0.151178068916734, rtol=1e-09, atol=1e-10))
+
+
+def test__save_option():
+  s = integrals.get_ao_1e_overlap(save = True)
+  v = integrals.get_ao_1e_potential(save = True)
+  t = integrals.get_ao_1e_kinetic(save = True)
+  g = integrals.get_ao_2e_repulsion(save = True)
+  assert(np.allclose(np.linalg.norm(s),  6.370991236))
+  assert(np.allclose(np.linalg.norm(v), 88.155709772))
+  assert(np.allclose(np.linalg.norm(t), 40.600216068))
+  assert(np.allclose(np.linalg.norm(g), 26.357121469))
+  s[:,:] = np.zeros(s.shape)
+  v[:,:] = np.zeros(v.shape)
+  t[:,:] = np.zeros(t.shape)
+  g[:,:,:,:] = np.zeros(g.shape)
+  assert(np.linalg.norm(integrals.get_ao_1e_overlap())   == 0.0)
+  assert(np.linalg.norm(integrals.get_ao_1e_potential()) == 0.0)
+  assert(np.linalg.norm(integrals.get_ao_1e_kinetic())   == 0.0)
+  assert(np.linalg.norm(integrals.get_ao_2e_repulsion()) == 0.0)
+

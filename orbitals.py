@@ -122,9 +122,9 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
   def _compute_ao_1e_core_field(self):
     da = self._get_ao_1e_density_matrix('alpha', mo_block = 'c')
     db = self._get_ao_1e_density_matrix('beta',  mo_block = 'c')
-    h = (  self.integrals.get_ao_1e_kinetic(spinor = False)
-         + self.integrals.get_ao_1e_potential(spinor = False))
-    g = self.integrals.get_ao_2e_repulsion(spinor = False)
+    h = (  self.integrals.get_ao_1e_kinetic(integrate_spin = True)
+         + self.integrals.get_ao_1e_potential(integrate_spin = True))
+    g = self.integrals.get_ao_2e_repulsion(integrate_spin = True)
     j  = np.tensordot(g, da + db, axes = [(1, 3), (1, 0)])
     va = j - np.tensordot(g, da, axes = [(1, 2), (1, 0)])
     vb = j - np.tensordot(g, db, axes = [(1, 2), (1, 0)])
@@ -134,8 +134,8 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
     da = self._get_ao_1e_density_matrix('alpha', mo_block = 'c')
     db = self._get_ao_1e_density_matrix('beta',  mo_block = 'c')
     va, vb = self.ao_core_field
-    h = (  self.integrals.get_ao_1e_kinetic(spinor = False)
-         + self.integrals.get_ao_1e_potential(spinor = False))
+    h = (  self.integrals.get_ao_1e_kinetic(integrate_spin = True)
+         + self.integrals.get_ao_1e_potential(integrate_spin = True))
     core_energy = np.sum((h + va/2) * da + (h + vb/2) * db)
     return core_energy + self.integrals.molecule.nuclear_repulsion_energy
 
@@ -274,7 +274,7 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
     return c1.T.dot(v.dot(c2))
 
   def get_mo_1e_kinetic(self, mo_type = 'alpha', mo_block = 'ov,ov',
-                        r_matrix = None):
+                        r_matrix = None, save = False):
     """Compute kinetic energy operator in the molecular orbital basis.
 
     Args:
@@ -288,6 +288,7 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
         dimension of the spatial or spin-orbital basis, including frozen
         orbitals.  For spatial orbitals, this can be a pair of arrays, one for
         each spin.
+      save (bool): Save the computed array for later use?
 
     Returns:
       A nbf x nbf array of kinetic energy operator integrals,
@@ -298,11 +299,12 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
                                   r_matrix = r_matrix)
     c2 = self.get_mo_coefficients(mo_type = mo_type, mo_block = mo_spaces[1],
                                   r_matrix = r_matrix)
-    t = self.integrals.get_ao_1e_kinetic(spinor = (mo_type is 'spinor'))
+    kwargs = {'integrate_spin': (mo_type is not 'spinor'), 'save': save}
+    t = self.integrals.get_ao_1e_kinetic(**kwargs)
     return c1.T.dot(t.dot(c2))
 
   def get_mo_1e_potential(self, mo_type = 'alpha', mo_block = 'ov,ov',
-                          r_matrix = None):
+                          r_matrix = None, save = False):
     """Compute nuclear potential operator in the molecular orbital basis.
 
     Args:
@@ -316,6 +318,7 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
         dimension of the spatial or spin-orbital basis, including frozen
         orbitals.  For spatial orbitals, this can be a pair of arrays, one for
         each spin.
+      save (bool): Save the computed array for later use?
 
     Returns:
       A nbf x nbf array of nuclear potential operator integrals,
@@ -326,11 +329,12 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
                                   r_matrix = r_matrix)
     c2 = self.get_mo_coefficients(mo_type = mo_type, mo_block = mo_spaces[1],
                                   r_matrix = r_matrix)
-    v = self.integrals.get_ao_1e_potential(spinor = (mo_type is 'spinor'))
+    kwargs = {'integrate_spin': (mo_type is not 'spinor'), 'save': save}
+    v = self.integrals.get_ao_1e_potential(**kwargs)
     return c1.T.dot(v.dot(c2))
 
   def get_mo_2e_repulsion(self, mo_type = 'alpha', mo_block = 'ov,ov,ov,ov',
-                          r_matrix = None, antisymmetrize = False):
+                          r_matrix = None, antisymmetrize = False, save = False):
     """Compute electron-repulsion operator in the molecular orbital basis.
 
     Args:
@@ -355,8 +359,12 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
       < p(1) q(2) | 1 / r_12 | r(1) s(2) >.
     """
     mo_spaces = mo_block.split(',')
-    g = self.integrals.get_ao_2e_repulsion(spinor = (mo_type is 'spinor'),
-                                           antisymmetrize = antisymmetrize)
+    kwargs = {
+      'integrate_spin': (mo_type is not 'spinor'),
+      'antisymmetrize': antisymmetrize,
+      'save': save
+    }
+    g = self.integrals.get_ao_2e_repulsion(**kwargs)
     if mo_type is 'mixed':
       c1 = self.get_mo_coefficients(mo_type = 'alpha', mo_block = mo_spaces[0],
                                     r_matrix = r_matrix)
