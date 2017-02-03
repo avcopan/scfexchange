@@ -2,7 +2,7 @@ import numpy as np
 import scipy.linalg as spla
 from .molecule import Molecule
 from .util import (abstractmethod, contract, with_metaclass, check_attributes,
-                   AttributeContractMeta)
+                   AttributeContractMeta, compute_if_unknown)
 
 
 class IntegralsInterface(with_metaclass(AttributeContractMeta, object)):
@@ -35,35 +35,26 @@ class IntegralsInterface(with_metaclass(AttributeContractMeta, object)):
     """Make sure common attributes are correctly initialized."""
     check_attributes(self, IntegralsInterface._attribute_types)
 
-  def _compute_if_necessary(self, attr_name, compute_attr, set_attr = False):
-    if hasattr(self, attr_name):
-      return getattr(self, attr_name)
-    else:
-      attr = compute_attr()
-      if set_attr:
-        setattr(self, attr_name, attr)
-      return attr
-
   def _compute_ao_1e(self, name, compute_ints, integrate_spin = True,
                      save = False):
     ao_name  = "ao_1e_{:s}".format(name)
     aso_name = "aso_1e_{:s}".format(name)
-    ints = self._compute_if_necessary(ao_name, compute_ints, save)
+    ints = compute_if_unknown(self, ao_name, compute_ints, save)
     def convert_to_aso():
       return IntegralsInterface.convert_1e_ao_to_aso(ints)
     if not integrate_spin:
-      ints = self._compute_if_necessary(aso_name, convert_to_aso, save)
+      ints = compute_if_unknown(self, aso_name, convert_to_aso, save)
     return ints
 
   def _compute_ao_2e(self, name, compute_ints, integrate_spin = True,
                      save = False, antisymmetrize = False):
     ao_name  = "ao_2e_chem_{:s}".format(name)
     aso_name = "aso_2e_chem_{:s}".format(name)
-    chem_ints = self._compute_if_necessary(ao_name, compute_ints, save)
+    chem_ints = compute_if_unknown(self, ao_name, compute_ints, save)
     def convert_to_aso():
       return IntegralsInterface.convert_2e_ao_to_aso(chem_ints)
     if not integrate_spin:
-      chem_ints = self._compute_if_necessary(aso_name, convert_to_aso, save)
+      chem_ints = compute_if_unknown(self, aso_name, convert_to_aso, save)
     ints = chem_ints.transpose((0, 2, 1, 3))
     if antisymmetrize:
       ints = ints - ints.transpose((0, 1, 3, 2))

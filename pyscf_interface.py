@@ -123,7 +123,6 @@ Interface for accessing PySCF molecular orbitals.
     self.mso_energies = mso_energies[sorting_indices]
     self.mso_coefficients = mso_coefficients[:, sorting_indices]
     # Get the core field and energy
-    self.ao_core_field = self._compute_ao_1e_core_field()
     self.core_energy = self._compute_core_energy()
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@ import numpy as np
 import scipy.linalg as spla
 from .integrals import IntegralsInterface
 from .util import (abstractmethod, contract, with_metaclass, check_attributes,
-                   process_options, AttributeContractMeta)
+                   process_options, AttributeContractMeta, compute_if_unknown)
 
 class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
   """Abstract base class defining a consistent interface for molecular orbitals.
@@ -54,7 +54,6 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
     'mo_coefficients': np.ndarray,
     'mso_energies': np.ndarray,
     'mso_coefficients': np.ndarray,
-    'ao_core_field': np.ndarray,
     'core_energy': float,
     'hf_energy': float
   }
@@ -133,7 +132,8 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
   def _compute_core_energy(self):
     da = self._get_ao_1e_density_matrix('alpha', mo_block = 'c')
     db = self._get_ao_1e_density_matrix('beta',  mo_block = 'c')
-    va, vb = self.ao_core_field
+    va, vb = compute_if_unknown(self, 'ao_core_field',
+                                self._compute_ao_1e_core_field)
     h = (  self.integrals.get_ao_1e_kinetic(integrate_spin = True)
          + self.integrals.get_ao_1e_potential(integrate_spin = True))
     core_energy = np.sum((h + va/2) * da + (h + vb/2) * db)
@@ -241,7 +241,7 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
                        "numpy arrays for each spin.")
 
   def get_mo_1e_core_field(self, mo_type = 'alpha', mo_block = 'ov,ov',
-                           r_matrix = None):
+                           r_matrix = None, save = True):
     """Compute mean-field of the core electrons in the molecular orbital basis.
 
     Args:
@@ -265,12 +265,14 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
                                   r_matrix = r_matrix)
     c2 = self.get_mo_coefficients(mo_type = mo_type, mo_block = mo_spaces[1],
                                   r_matrix = r_matrix)
+    va, vb = compute_if_unknown(self, 'ao_core_field',
+                                self._compute_ao_1e_core_field, save)
     if mo_type is 'alpha':
-      v = self.ao_core_field[0]
+      v = va
     elif mo_type is 'beta':
-      v = self.ao_core_field[1]
+      v = vb
     elif mo_type is 'spinor':
-      v = spla.block_diag(*self.ao_core_field)
+      v = spla.block_diag(va, vb)
     return c1.T.dot(v.dot(c2))
 
   def get_mo_1e_kinetic(self, mo_type = 'alpha', mo_block = 'ov,ov',
