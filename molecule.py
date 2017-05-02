@@ -69,7 +69,7 @@ class Molecule(object):
       float: The nuclear repulsion energy.
     """
     z = list(atomdata.get_charge(label) for label in self.labels)
-    r = (self.coordinates if self.units is 'bohr'
+    r = (self.coordinates if self.units == 'bohr'
          else self.coordinates / bohr2angstrom)
     nuclear_repulsion_energy = 0
     for a in range(self.natoms):
@@ -89,9 +89,9 @@ class Molecule(object):
     elif units == "bohr" and self.units == "angstrom":
       self.units  = "bohr"
       self.coordinates  /= bohr2angstrom
-    else:
-      raise Exception("{:s} is not a valid entry for self.units.  "
-                      "Try 'bohr' or 'angstrom'.".format(self.units))
+    elif self.units not in ("angstrom", "bohr"):
+      raise ValueError("{:s} is not a valid entry for coordinate units.  "
+                       "Try 'bohr' or 'angstrom'.".format(self.units))
 
   def __iter__(self):
     """Iterate over atomic labels and coordinates."""
@@ -118,16 +118,15 @@ class Molecule(object):
     pass
 
 if __name__ == "__main__":
-  units = "angstrom"
+  units = "bohr"
   charge = +1
   multiplicity = 2
   labels = ("O", "H", "H")
-  coordinates = np.array([[0.000,  0.000, -0.066],
-                          [0.000, -0.759,  0.522],
-                          [0.000,  0.759,  0.522]])
+  coordinates = np.array([[ 0.000000000000, -0.143225816552,  0.000000000000],
+                          [ 1.638036840407,  1.136548822547, -0.000000000000],
+                          [-1.638036840407,  1.136548822547, -0.000000000000]])
 
   mol = Molecule(labels, coordinates, units = units, charge = charge,
                  multiplicity = multiplicity)
-  mol.set_units("bohr")
   print(list(iter(mol)))
   print(mol.nuclear_repulsion_energy)

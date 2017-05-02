@@ -137,6 +137,7 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
     h = (  self.integrals.get_ao_1e_kinetic(integrate_spin = True)
          + self.integrals.get_ao_1e_potential(integrate_spin = True))
     core_energy = np.sum((h + va/2) * da + (h + vb/2) * db)
+    print(self.integrals.molecule.nuclear_repulsion_energy)
     return core_energy + self.integrals.molecule.nuclear_repulsion_energy
 
   def get_mo_slice(self, mo_type = 'alpha', mo_block = 'ov'):

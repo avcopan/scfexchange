@@ -114,8 +114,8 @@ Interface for accessing PySCF molecular orbitals.
     self.mo_energies = self._pyscf_hf.mo_energy
     self.mo_coefficients = self._pyscf_hf.mo_coeff
     if self.options['restrict_spin']:
-      self.mo_energies = np.array([mo_energies] * 2)
-      self.mo_coefficients = np.array([mo_coefficients] * 2)
+      self.mo_energies = np.array([self.mo_energies] * 2)
+      self.mo_coefficients = np.array([self.mo_coefficients] * 2)
     # Build spin-orbital energy and coefficient arrays, sorted by orbital energy
     mso_energies = np.concatenate(self.mo_energies)
     mso_coefficients = spla.block_diag(*self.mo_coefficients)
