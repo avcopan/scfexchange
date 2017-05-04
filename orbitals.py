@@ -385,12 +385,14 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
             c1 = self.get_mo_coefficients(mo_type='alpha',
                                           mo_block=mo_spaces[0],
                                           r_matrix=r_matrix)
-            c2 = self.get_mo_coefficients(mo_type='beta', mo_block=mo_spaces[1],
+            c2 = self.get_mo_coefficients(mo_type='beta',
+                                          mo_block=mo_spaces[1],
                                           r_matrix=r_matrix)
             c3 = self.get_mo_coefficients(mo_type='alpha',
                                           mo_block=mo_spaces[2],
                                           r_matrix=r_matrix)
-            c4 = self.get_mo_coefficients(mo_type='beta', mo_block=mo_spaces[3],
+            c4 = self.get_mo_coefficients(mo_type='beta',
+                                          mo_block=mo_spaces[3],
                                           r_matrix=r_matrix)
         else:
             c1 = self.get_mo_coefficients(mo_type=mo_type,
