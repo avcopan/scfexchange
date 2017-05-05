@@ -1,4 +1,5 @@
 import numpy as np
+import tensorutils as tu
 import scipy.linalg as spla
 
 from .integrals import IntegralsInterface
@@ -407,5 +408,4 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
             c4 = self.get_mo_coefficients(mo_type=mo_type,
                                           mo_block=mo_spaces[3],
                                           r_matrix=r_matrix)
-        ctr = lambda a, b: np.tensordot(a, b, axes=(0, 0))
-        return ctr(ctr(ctr(ctr(g, c1), c2), c3), c4)
+        return tu.einsum("mntu,mp,nq,tr,us->pqrs", g, c1, c2, c3, c4)
