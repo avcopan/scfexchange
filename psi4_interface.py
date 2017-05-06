@@ -204,3 +204,5 @@ if __name__ == "__main__":
         e[o, x, x, x] + e[x, o, x, x] - e[x, x, v, x] - e[x, x, x, v]))
     )
     print("Correlation energy:     {:20.15f}".format(correlation_energy))
+    import inspect
+    print(repr(inspect.signature(integrals.get_ao_1e_kinetic)))

@@ -7,18 +7,8 @@ from .util import (abstractmethod, contract, with_metaclass, check_attributes,
 
 
 class IntegralsInterface(with_metaclass(AttributeContractMeta, object)):
-    """Abstract base class defining a consistent interface for integrals.
-  
-    Due to limitations of the ABC/PyContracts libraries, initialization is not
-    subject to contract.  Here's the desired signature:
-  
-    >>> class Integrals(IntegralsInterface): 
-    >>> 
-    >>>   def __init__(self, molecule, basis_label):
-    >>>     self.molecule = molecule
-    >>>     self.basis_label = basis_label
-    >>>     ...
-  
+    """Molecular integrals.
+    
     Attributes:
       basis_label (str): The basis set label (e.g. 'sto-3g').
       molecule: Together with `self.basis_label`, this specifies the atomic
@@ -66,8 +56,6 @@ class IntegralsInterface(with_metaclass(AttributeContractMeta, object)):
         return ints
 
     @abstractmethod
-    @contract(integrate_spin='bool', save='bool',
-              returns='array[NxN](float64)')
     def get_ao_1e_overlap(self, integrate_spin=True, save=False):
         """Compute overlap integrals for the atomic orbital basis.
     
@@ -82,8 +70,6 @@ class IntegralsInterface(with_metaclass(AttributeContractMeta, object)):
         return
 
     @abstractmethod
-    @contract(integrate_spin='bool', save='bool',
-              returns='array[NxN](float64)')
     def get_ao_1e_potential(self, integrate_spin=True, save=False):
         """Compute nuclear potential operator in the atomic orbital basis.
     
@@ -98,8 +84,6 @@ class IntegralsInterface(with_metaclass(AttributeContractMeta, object)):
         return
 
     @abstractmethod
-    @contract(integrate_spin='bool', save='bool',
-              returns='array[NxN](float64)')
     def get_ao_1e_kinetic(self, integrate_spin=True, save=False):
         """Compute kinetic energy operator in the atomic orbital basis.
     
@@ -114,9 +98,7 @@ class IntegralsInterface(with_metaclass(AttributeContractMeta, object)):
         return
 
     @abstractmethod
-    @contract(integrate_spin='bool', save='bool', antisymmetrize='bool',
-              returns='array[NxNxNxN](float64)')
-    def get_ao_2e_repulsion(self, integrate_spin=False, save=False,
+    def get_ao_2e_repulsion(self, integrate_spin=True, save=False,
                             antisymmetrize=False):
         """Compute electron-repulsion operator in the atomic orbital basis.
     

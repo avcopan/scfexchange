@@ -8,18 +8,14 @@ from .util import with_doc
 
 
 class Integrals(IntegralsInterface):
-    __doc__ = """**IntegralsInterface.__doc__**
-
-{:s}
-
-**Integrals.__doc__**
-
-Interface to PySCF integrals.
-
-  Attributes:
-    _pyscf_molecule (:obj:`pyscf.gto.Mole`): Used to access PySCF integrals.
-
-  """.format(IntegralsInterface.__doc__)
+    """Molecular integrals.
+    
+    Attributes:
+      basis_label (str): The basis set label (e.g. 'sto-3g').
+      molecule: Together with `self.basis_label`, this specifies the atomic
+        orbitals entereing the integral computation.
+      nbf (int): The number of basis functions.
+    """
 
     def __init__(self, molecule, basis_label):
         """Initialize Integrals object (PySCF interface).
@@ -39,33 +35,71 @@ Interface to PySCF integrals.
         self.basis_label = basis_label
         self.nbf = int(self._pyscf_molecule.nao_nr())
 
-    @with_doc(IntegralsInterface.get_ao_1e_overlap.__doc__)
     def get_ao_1e_overlap(self, integrate_spin=True, save=False):
+        """Compute overlap integrals for the atomic orbital basis.
+    
+        Args:
+          integrate_spin (bool): Use spatial orbitals instead of spin-orbitals?
+          save (bool): Save the computed array for later use?
+    
+        Returns:
+          A nbf x nbf array of overlap integrals,
+          < mu(1) | nu(1) >.
+        """
         def compute_ints():
             return self._pyscf_molecule.intor('cint1e_ovlp_sph')
 
         return self._compute_ao_1e('overlap', compute_ints, integrate_spin,
                                    save)
 
-    @with_doc(IntegralsInterface.get_ao_1e_potential.__doc__)
     def get_ao_1e_potential(self, integrate_spin=True, save=False):
+        """Compute nuclear potential operator in the atomic orbital basis.
+    
+        Args:
+          integrate_spin (bool): Use spatial orbitals instead of spin-orbitals?
+          save (bool): Save the computed array for later use?
+    
+        Returns:
+          A nbf x nbf array of nuclear potential operator integrals,
+          < mu(1) | sum_A Z_A / r_1A | nu(1) >.
+        """
         def compute_ints():
             return self._pyscf_molecule.intor('cint1e_nuc_sph')
 
         return self._compute_ao_1e('potential', compute_ints, integrate_spin,
                                    save)
 
-    @with_doc(IntegralsInterface.get_ao_1e_kinetic.__doc__)
     def get_ao_1e_kinetic(self, integrate_spin=True, save=False):
+        """Compute kinetic energy operator in the atomic orbital basis.
+    
+        Args:
+          integrate_spin (bool): Use spatial orbitals instead of spin-orbitals?
+          save (bool): Save the computed array for later use?
+    
+        Returns:
+          A nbf x nbf array of kinetic energy operator integrals,
+          < mu(1) | - 1 / 2 * nabla_1^2 | nu(1) >.
+        """
         def compute_ints():
             return self._pyscf_molecule.intor('cint1e_kin_sph')
 
         return self._compute_ao_1e('kinetic', compute_ints, integrate_spin,
                                    save)
 
-    @with_doc(IntegralsInterface.get_ao_2e_repulsion.__doc__)
     def get_ao_2e_repulsion(self, integrate_spin=True, save=False,
                             antisymmetrize=False):
+        """Compute electron-repulsion operator in the atomic orbital basis.
+    
+        Args:
+          integrate_spin (bool): Use spatial orbitals instead of spin-orbitals?
+          save (bool): Save the computed array for later use?
+          antisymmetrize (bool): Antisymmetrize the repulsion integrals?
+    
+        Returns:
+          A nbf x nbf x nbf x nbf array of electron
+          repulsion operator integrals,
+          < mu(1) nu(2) | 1 / r_12 | rh(1) si(2) >.
+        """
         def compute_ints():
             return self._pyscf_molecule.intor('cint2e_sph').reshape(
                 (self.nbf,) * 4)
