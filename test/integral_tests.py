@@ -1,4 +1,5 @@
 import inspect
+import numpy as np
 from scfexchange.integrals import IntegralsInterface
 from scfexchange.molecule import Molecule
 
@@ -68,6 +69,59 @@ def check_interface(integrals_instance):
            == (integrals_instance.nbf,) * 2)
     assert(integrals_instance.get_ao_2e_repulsion().shape
            == (integrals_instance.nbf,) * 4)
+
+
+def check_save_option(integrals_instance):
+    s = integrals_instance.get_ao_1e_overlap(save=True)
+    v = integrals_instance.get_ao_1e_potential(save=True)
+    t = integrals_instance.get_ao_1e_kinetic(save=True)
+    g = integrals_instance.get_ao_2e_repulsion(save=True)
+    assert(np.linalg.norm(s) != 0.0)
+    assert(np.linalg.norm(v) != 0.0)
+    assert(np.linalg.norm(t) != 0.0)
+    assert(np.linalg.norm(g) != 0.0)
+    s[:, :] = np.zeros(s.shape)
+    v[:, :] = np.zeros(v.shape)
+    t[:, :] = np.zeros(t.shape)
+    g[:, :, :, :] = np.zeros(g.shape)
+    assert(np.linalg.norm(integrals_instance.get_ao_1e_overlap()) == 0.0)
+    assert(np.linalg.norm(integrals_instance.get_ao_1e_potential()) == 0.0)
+    assert(np.linalg.norm(integrals_instance.get_ao_1e_kinetic()) == 0.0)
+    assert(np.linalg.norm(integrals_instance.get_ao_2e_repulsion()) == 0.0)
+
+
+def run_interface_check(integrals_class):
+    import numpy as np
+    from scfexchange import Molecule
+    labels = ("O", "H", "H")
+    coordinates = np.array([[0.000, 0.000, -0.066],
+                            [0.000, -0.759, 0.522],
+                            [0.000, 0.759, 0.522]])
+    mol1 = Molecule(labels, coordinates, charge=0, multiplicity=1)
+    mol2 = Molecule(labels, coordinates, charge=1, multiplicity=2)
+    # Build integrals
+    ints1 = integrals_class(mol1, "cc-pvdz")
+    ints2 = integrals_class(mol2, "cc-pvdz")
+    # Test the integrals interface
+    check_interface(ints1)
+    check_interface(ints2)
+
+
+def run_save_option_check(integrals_class):
+    import numpy as np
+    from scfexchange import Molecule
+    labels = ("O", "H", "H")
+    coordinates = np.array([[0.000, 0.000, -0.066],
+                            [0.000, -0.759, 0.522],
+                            [0.000, 0.759, 0.522]])
+    mol1 = Molecule(labels, coordinates, charge=0, multiplicity=1)
+    mol2 = Molecule(labels, coordinates, charge=1, multiplicity=2)
+    # Build integrals
+    ints1 = integrals_class(mol1, "cc-pvdz")
+    ints2 = integrals_class(mol2, "cc-pvdz")
+    # Test the save option
+    check_save_option(ints1)
+    check_save_option(ints2)
 
 
 if __name__ == "__main__":
