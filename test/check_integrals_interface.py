@@ -16,11 +16,23 @@ def check_interface(integrals_instance):
     assert(isinstance(getattr(integrals_instance, 'molecule'), Molecule))
     assert(isinstance(getattr(integrals_instance, 'nbf'), int))
     # Check methods
+    assert(hasattr(integrals_instance, '__init__'))
     assert(hasattr(integrals_instance, 'get_ao_1e_overlap'))
     assert(hasattr(integrals_instance, 'get_ao_1e_potential'))
     assert(hasattr(integrals_instance, 'get_ao_1e_kinetic'))
     assert(hasattr(integrals_instance, 'get_ao_2e_repulsion'))
     # Check method signature
+    assert(inspect.signature(integrals_class.__init__) ==
+           inspect.Signature(
+                parameters=[
+                    inspect.Parameter('self',
+                                      inspect.Parameter.POSITIONAL_OR_KEYWORD),
+                    inspect.Parameter('molecule',
+                                      inspect.Parameter.POSITIONAL_OR_KEYWORD),
+                    inspect.Parameter('basis_label',
+                                      inspect.Parameter.POSITIONAL_OR_KEYWORD)
+                ]
+           ))
     assert(inspect.signature(integrals_class.get_ao_1e_overlap) ==
            inspect.signature(IntegralsInterface.get_ao_1e_overlap))
     assert(inspect.signature(integrals_class.get_ao_1e_kinetic) ==
