@@ -101,41 +101,64 @@ class Integrals(IntegralsInterface):
 
 
 class Orbitals(OrbitalsInterface):
-    __doc__ = """**OrbitalsInterface.__doc__**
-
-{:s}
-
-**Orbitals.__doc__**
-
-Interface for accessing PySCF molecular orbitals.
-
-  Attributes:
-    _pyscf_hf (:obj:`pyscf.scf.SCF`): Used to access PySCF orbitals.
-
-  """.format(OrbitalsInterface.__doc__)
-
-    def __init__(self, integrals, **options):
-        """Initialize Orbitals object (PySCF interface).
+    """Molecular orbitals.
     
-        Args:
-          integrals (:obj:`scfexchange.pyscf_interface.Integrals`): AO integrals.
-          restrict_spin (:obj:`bool`, optional): Use spin-restricted orbitals?
-          n_iterations (:obj:`int`, optional): Maximum number of iterations allowed
-            before considering the orbitals unconverged.
-          e_threshold (:obj:`float`, optional): Energy convergence threshold.
-          d_threshold (:obj:`float`, optional): Density convergence threshold, based
-            on the norm of the orbital gradient.
-          freeze_core (:obj:`bool`, optional): Whether or not to cut core orbitals
-            out of the MO coefficients.
-          n_frozen_orbitals (:obj:`int`, optional): How many core orbitals to cut
-            out from the MO coefficients.
-        """
+    Attributes:
+        integrals (:obj:`scfexchange.integrals.Integrals`): Contributions to the
+            Hamiltonian operator, in the molecular orbital basis.
+        options (dict): A dictionary of options, by keyword argument.
+        nfrz (int): The number of frozen (spatial) orbitals.  This can be set
+            with the option 'n_frozen_orbitals'.  Alternatively, if
+            'freeze_core' is True and the number of frozen orbitals is not set,
+            this defaults to the number of core orbitals, as determined by the
+            molecule object.
+        norb (int): The total number of non-frozen (spatial) orbitals.  That is,
+            the number of basis functions minus the number of frozen orbitals.
+        naocc (int): The number of occupied non-frozen alpha orbitals.
+        nbocc (int): The number of occupied non-frozen beta orbitals.
+        core_energy (float): Hartree-Fock energy of the frozen core, including
+            nuclear repulsion energy.
+        hf_energy (float): The total Hartree-Fock energy.
+        mo_energies (np.ndarray): Molecular orbital energies, given as a 2 x nbf
+            array.
+        mo_coefficients (np.ndarray): Molecular orbital coefficients, given as a
+            2 x nbf x nbf array of alpha and beta spatial MOs.
+        mso_energies (np.ndarray): Molecular spin-orbital energies, given as an
+            array of length 2*nbf which is sorted in increasing order.
+        mso_coeffieicnts (np.ndarray): Molecular spin-orbital coefficients,
+            given as a (2*nbf) x (2*nbf) array of spinor coefficients, in which
+            the columns are sorted by orbital energy.
+    """
 
+    def __init__(self, integrals, restrict_spin=True, n_iterations=40,
+                 e_threshold=1e-12, d_threshold=1e-6, freeze_core=False,
+                 n_frozen_orbitals=0):
+        """Initialize Orbitals object.
+        
+        Args:
+            integrals (:obj:`scfexchange.integrals.IntegralsInterface`): The
+                atomic-orbital integrals object.
+            restrict_spin: Spin-restrict the orbitals?
+            n_iterations: Maximum number of Hartree-Fock iterations allowed
+                before the orbitals are considered unconverged.
+            e_threshold: Energy convergence threshold.
+            d_threshold: Density convergence threshold, based on the norm of the
+                orbital gradient
+            freeze_core: Freeze the core orbitals?
+            n_frozen_orbitals: How many core orbitals should be set to `frozen`.
+        """
         if not isinstance(integrals, Integrals):
             raise ValueError(
                 "Please use an integrals object from this interface.")
         self.integrals = integrals
-        self.options = self._process_options(options)
+        self.options = {
+            'restrict_spin': restrict_spin,
+            'n_iterations': n_iterations,
+            'e_threshold': e_threshold,
+            'd_threshold': d_threshold,
+            'freeze_core': freeze_core,
+            'n_frozen_orbitals': n_frozen_orbitals
+        }
         # Determine the orbital counts (total, frozen, and occupied)
         self.nfrz, self.norb, (self.naocc, self.nbocc) = self._count_orbitals()
         # Build PySCF HF object and compute the energy.

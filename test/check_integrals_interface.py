@@ -38,15 +38,13 @@ def check_interface(integrals_instance):
     assert(integrals_instance.get_ao_2e_repulsion.__doc__
            == IntegralsInterface.get_ao_2e_repulsion.__doc__)
     # Check method signature
+    kind = inspect.Parameter.POSITIONAL_OR_KEYWORD
     assert(inspect.signature(integrals_class.__init__) ==
            inspect.Signature(
                 parameters=[
-                    inspect.Parameter('self',
-                                      inspect.Parameter.POSITIONAL_OR_KEYWORD),
-                    inspect.Parameter('molecule',
-                                      inspect.Parameter.POSITIONAL_OR_KEYWORD),
-                    inspect.Parameter('basis_label',
-                                      inspect.Parameter.POSITIONAL_OR_KEYWORD)
+                    inspect.Parameter('self', kind),
+                    inspect.Parameter('molecule', kind),
+                    inspect.Parameter('basis_label', kind)
                 ]
            ))
     assert(inspect.signature(integrals_class.get_ao_1e_overlap) ==
