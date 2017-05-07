@@ -18,7 +18,7 @@ class Integrals(IntegralsInterface):
     """
 
     def __init__(self, molecule, basis_label):
-        """Initialize Integrals object (PySCF interface).
+        """Initialize Integrals object.
     
         Args:
           molecule (:obj:`scfexchange.molecule.Molecule`): The molecule.
@@ -48,7 +48,6 @@ class Integrals(IntegralsInterface):
         """
         def compute_ints():
             return self._pyscf_molecule.intor('cint1e_ovlp_sph')
-
         return self._compute_ao_1e('overlap', compute_ints, integrate_spin,
                                    save)
 
@@ -63,11 +62,8 @@ class Integrals(IntegralsInterface):
           A nbf x nbf array of nuclear potential operator integrals,
           < mu(1) | sum_A Z_A / r_1A | nu(1) >.
         """
-        def compute_ints():
-            return self._pyscf_molecule.intor('cint1e_nuc_sph')
-
-        return self._compute_ao_1e('potential', compute_ints, integrate_spin,
-                                   save)
+        def compute(): return self._pyscf_molecule.intor('cint1e_nuc_sph')
+        return self._compute_ao_1e('potential', compute, integrate_spin, save)
 
     def get_ao_1e_kinetic(self, integrate_spin=True, save=False):
         """Compute kinetic energy operator in the atomic orbital basis.
@@ -80,11 +76,8 @@ class Integrals(IntegralsInterface):
           A nbf x nbf array of kinetic energy operator integrals,
           < mu(1) | - 1 / 2 * nabla_1^2 | nu(1) >.
         """
-        def compute_ints():
-            return self._pyscf_molecule.intor('cint1e_kin_sph')
-
-        return self._compute_ao_1e('kinetic', compute_ints, integrate_spin,
-                                   save)
+        def compute(): return self._pyscf_molecule.intor('cint1e_kin_sph')
+        return self._compute_ao_1e('kinetic', compute, integrate_spin, save)
 
     def get_ao_2e_repulsion(self, integrate_spin=True, save=False,
                             antisymmetrize=False):
@@ -100,12 +93,10 @@ class Integrals(IntegralsInterface):
           repulsion operator integrals,
           < mu(1) nu(2) | 1 / r_12 | rh(1) si(2) >.
         """
-        def compute_ints():
-            return self._pyscf_molecule.intor('cint2e_sph').reshape(
-                (self.nbf,) * 4)
-
-        return self._compute_ao_2e('repulsion', compute_ints, integrate_spin,
-                                   save,
+        def compute():
+            shape = (self.nbf, self.nbf, self.nbf, self.nbf)
+            return self._pyscf_molecule.intor('cint2e_sph').reshape(shape)
+        return self._compute_ao_2e('repulsion', compute, integrate_spin, save,
                                    antisymmetrize)
 
 

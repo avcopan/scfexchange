@@ -13,14 +13,12 @@ coordinates = np.array([[0.000, 0.000, -0.066],
 mol = Molecule(labels, coordinates, units=units, charge=charge,
                multiplicity=multiplicity)
 integrals = Integrals(mol, "cc-pvdz")
-orbital_options = {
-    'freeze_core': False,
-    'n_frozen_orbitals': 1,
-    'e_threshold': 1e-14,
-    'n_iterations': 50,
-    'restrict_spin': False
-}
-orbitals = Orbitals(integrals, **orbital_options)
+orbitals = Orbitals(integrals,
+                    freeze_core=False,
+                    n_frozen_orbitals=1,
+                    e_threshold=1e-14,
+                    n_iterations=50,
+                    restrict_spin=False)
 
 
 def test__get_mo_slice():

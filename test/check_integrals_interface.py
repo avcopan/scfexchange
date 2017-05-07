@@ -21,6 +21,22 @@ def check_interface(integrals_instance):
     assert(hasattr(integrals_instance, 'get_ao_1e_potential'))
     assert(hasattr(integrals_instance, 'get_ao_1e_kinetic'))
     assert(hasattr(integrals_instance, 'get_ao_2e_repulsion'))
+    # Check method documentation
+    assert(integrals_class.__init__.__doc__
+           == """Initialize Integrals object.
+    
+        Args:
+          molecule (:obj:`scfexchange.molecule.Molecule`): The molecule.
+          basis_label (str): What basis set to use.
+        """)
+    assert(integrals_instance.get_ao_1e_overlap.__doc__
+           == IntegralsInterface.get_ao_1e_overlap.__doc__)
+    assert(integrals_instance.get_ao_1e_kinetic.__doc__
+           == IntegralsInterface.get_ao_1e_kinetic.__doc__)
+    assert(integrals_instance.get_ao_1e_potential.__doc__
+           == IntegralsInterface.get_ao_1e_potential.__doc__)
+    assert(integrals_instance.get_ao_2e_repulsion.__doc__
+           == IntegralsInterface.get_ao_2e_repulsion.__doc__)
     # Check method signature
     assert(inspect.signature(integrals_class.__init__) ==
            inspect.Signature(
@@ -54,20 +70,11 @@ def check_interface(integrals_instance):
            == (integrals_instance.nbf,) * 2)
     assert(integrals_instance.get_ao_2e_repulsion().shape
            == (integrals_instance.nbf,) * 4)
-    # Check method documentation
-    assert(integrals_instance.get_ao_1e_overlap.__doc__
-           == IntegralsInterface.get_ao_1e_overlap.__doc__)
-    assert(integrals_instance.get_ao_1e_kinetic.__doc__
-           == IntegralsInterface.get_ao_1e_kinetic.__doc__)
-    assert(integrals_instance.get_ao_1e_potential.__doc__
-           == IntegralsInterface.get_ao_1e_potential.__doc__)
-    assert(integrals_instance.get_ao_2e_repulsion.__doc__
-           == IntegralsInterface.get_ao_2e_repulsion.__doc__)
 
 
 if __name__ == "__main__":
     import numpy as np
-    from scfexchange.pyscf_interface import Integrals
+    from scfexchange.psi4_interface import Integrals
 
     units = "angstrom"
     charge = 1
