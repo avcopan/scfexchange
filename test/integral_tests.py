@@ -123,20 +123,3 @@ def run_save_option_check(integrals_class):
     check_save_option(ints1)
     check_save_option(ints2)
 
-
-if __name__ == "__main__":
-    import numpy as np
-    from scfexchange.psi4_interface import Integrals
-
-    units = "angstrom"
-    charge = 1
-    multiplicity = 2
-    labels = ("O", "H", "H")
-    coordinates = np.array([[0.000, 0.000, -0.066],
-                            [0.000, -0.759, 0.522],
-                            [0.000, 0.759, 0.522]])
-
-    mol = Molecule(labels, coordinates, units=units, charge=charge,
-                   multiplicity=multiplicity)
-    integrals = Integrals(mol, "cc-pvdz")
-    check_interface(integrals)

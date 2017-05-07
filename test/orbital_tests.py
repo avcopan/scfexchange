@@ -262,29 +262,3 @@ def run_mp2_energy_check(integrals_class, orbitals_class):
     check_mp2_energy(orbs3, -0.201833176653)
     check_mp2_energy(orbs4, -0.151178068917)
 
-
-if __name__ == "__main__":
-    import numpy as np
-    from scfexchange.molecule import Molecule
-    from scfexchange.psi4_interface import Integrals, Orbitals
-
-    units = "angstrom"
-    charge = 1
-    multiplicity = 2
-    labels = ("O", "H", "H")
-    coordinates = np.array([[0.000, 0.000, -0.066],
-                            [0.000, -0.759, 0.522],
-                            [0.000, 0.759, 0.522]])
-
-    mol = Molecule(labels, coordinates, units=units, charge=charge,
-                   multiplicity=multiplicity)
-    integrals = Integrals(mol, "cc-pvdz")
-    orbitals = Orbitals(integrals,
-                        n_frozen_orbitals=1,
-                        e_threshold=1e-14,
-                        n_iterations=50,
-                        restrict_spin=False)
-    check_interface(orbitals)
-    #check_core_energy(orbitals, -52.142619206770597, -37.824261813733628,
-    #                   14.334755387019705)
-    check_mp2_energy(orbitals, -0.151178068916734)

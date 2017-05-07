@@ -126,3 +126,4 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
                                        np.kron(np.identity(2),
                                                ao_2e_chem_operator).T)
         return aso_2e_chem_operator
+

@@ -370,3 +370,4 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
                                           mo_block=mo_spaces[3],
                                           r_matrix=r_matrix)
         return tu.einsum("mntu,mp,nq,tr,us->pqrs", g, c1, c2, c3, c4)
+
