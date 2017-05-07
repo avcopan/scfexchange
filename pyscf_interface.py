@@ -4,7 +4,6 @@ import numpy as np
 
 from .integrals import IntegralsInterface
 from .orbitals import OrbitalsInterface
-from .util import with_doc
 
 
 class Integrals(IntegralsInterface):

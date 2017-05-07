@@ -1,13 +1,14 @@
+import abc
 import numpy as np
 import tensorutils as tu
 import scipy.linalg as spla
 
+from six import with_metaclass
 from .integrals import IntegralsInterface
-from .util import (with_metaclass, check_attributes,
-                   process_options, AttributeContractMeta, compute_if_unknown)
+from .util import compute_if_unknown
 
 
-class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
+class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
     """Molecular orbitals.
     
     Attributes:
@@ -36,37 +37,6 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
             given as a (2*nbf) x (2*nbf) array of spinor coefficients, in which
             the columns are sorted by orbital energy.
     """
-
-    _attribute_types = {
-        'integrals': IntegralsInterface,
-        'options': dict,
-        'nfrz': int,
-        'norb': int,
-        'naocc': int,
-        'nbocc': int,
-        'mo_energies': np.ndarray,
-        'mo_coefficients': np.ndarray,
-        'mso_energies': np.ndarray,
-        'mso_coefficients': np.ndarray,
-        'core_energy': float,
-        'hf_energy': float
-    }
-
-    _option_defaults = {
-        'restrict_spin': True,
-        'n_iterations': 40,
-        'e_threshold': 1e-12,
-        'd_threshold': 1e-6,
-        'freeze_core': False,
-        'n_frozen_orbitals': 0
-    }
-
-    def _check_attribute_contract(self):
-        """Make sure common attributes are correctly initialized."""
-        check_attributes(self, OrbitalsInterface._attribute_types)
-
-    def _process_options(self, options):
-        return process_options(options, OrbitalsInterface._option_defaults)
 
     def _count_orbitals(self):
         """Count the number of frozen, unfrozen, and occupied orbitals.
