@@ -1,40 +1,21 @@
+import abc
 import numpy as np
 import scipy.linalg as spla
 
+from six import with_metaclass
 from .molecule import Molecule
-from .util import (abstractmethod, contract, with_metaclass, check_attributes,
-                   AttributeContractMeta, compute_if_unknown)
+from .util import compute_if_unknown
 
 
-class IntegralsInterface(with_metaclass(AttributeContractMeta, object)):
-    """Abstract base class defining a consistent interface for integrals.
-  
-    Due to limitations of the ABC/PyContracts libraries, initialization is not
-    subject to contract.  Here's the desired signature:
-  
-    >>> class Integrals(IntegralsInterface): 
-    >>> 
-    >>>   def __init__(self, molecule, basis_label):
-    >>>     self.molecule = molecule
-    >>>     self.basis_label = basis_label
-    >>>     ...
-  
+class IntegralsInterface(with_metaclass(abc.ABCMeta)):
+    """Molecular integrals.
+    
     Attributes:
       basis_label (str): The basis set label (e.g. 'sto-3g').
       molecule: Together with `self.basis_label`, this specifies the atomic
         orbitals entereing the integral computation.
       nbf (int): The number of basis functions.
     """
-
-    _attribute_types = {
-        'basis_label': str,
-        'molecule': Molecule,
-        'nbf': int
-    }
-
-    def _check_attribute_contract(self):
-        """Make sure common attributes are correctly initialized."""
-        check_attributes(self, IntegralsInterface._attribute_types)
 
     def _compute_ao_1e(self, name, compute_ints, integrate_spin=True,
                        save=False):
@@ -65,9 +46,7 @@ class IntegralsInterface(with_metaclass(AttributeContractMeta, object)):
             ints = ints - ints.transpose((0, 1, 3, 2))
         return ints
 
-    @abstractmethod
-    @contract(integrate_spin='bool', save='bool',
-              returns='array[NxN](float64)')
+    @abc.abstractmethod
     def get_ao_1e_overlap(self, integrate_spin=True, save=False):
         """Compute overlap integrals for the atomic orbital basis.
     
@@ -81,9 +60,7 @@ class IntegralsInterface(with_metaclass(AttributeContractMeta, object)):
         """
         return
 
-    @abstractmethod
-    @contract(integrate_spin='bool', save='bool',
-              returns='array[NxN](float64)')
+    @abc.abstractmethod
     def get_ao_1e_potential(self, integrate_spin=True, save=False):
         """Compute nuclear potential operator in the atomic orbital basis.
     
@@ -97,9 +74,7 @@ class IntegralsInterface(with_metaclass(AttributeContractMeta, object)):
         """
         return
 
-    @abstractmethod
-    @contract(integrate_spin='bool', save='bool',
-              returns='array[NxN](float64)')
+    @abc.abstractmethod
     def get_ao_1e_kinetic(self, integrate_spin=True, save=False):
         """Compute kinetic energy operator in the atomic orbital basis.
     
@@ -113,10 +88,8 @@ class IntegralsInterface(with_metaclass(AttributeContractMeta, object)):
         """
         return
 
-    @abstractmethod
-    @contract(integrate_spin='bool', save='bool', antisymmetrize='bool',
-              returns='array[NxNxNxN](float64)')
-    def get_ao_2e_repulsion(self, integrate_spin=False, save=False,
+    @abc.abstractmethod
+    def get_ao_2e_repulsion(self, integrate_spin=True, save=False,
                             antisymmetrize=False):
         """Compute electron-repulsion operator in the atomic orbital basis.
     
@@ -153,3 +126,4 @@ class IntegralsInterface(with_metaclass(AttributeContractMeta, object)):
                                        np.kron(np.identity(2),
                                                ao_2e_chem_operator).T)
         return aso_2e_chem_operator
+

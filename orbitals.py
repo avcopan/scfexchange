@@ -1,81 +1,42 @@
+import abc
 import numpy as np
 import tensorutils as tu
 import scipy.linalg as spla
 
+from six import with_metaclass
 from .integrals import IntegralsInterface
-from .util import (with_metaclass, check_attributes,
-                   process_options, AttributeContractMeta, compute_if_unknown)
+from .util import compute_if_unknown
 
 
-class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
-    """Abstract base class defining a consistent interface for molecular orbitals.
-  
-    Due to limitations of the ABC/PyContracts libraries, initialization is not
-    subject to contract.  Here's the desired signature:
-  
-    >>>  class Orbitals(OrbitalsInterface): 
-    >>>    def __init__(self, integrals, **options)
-    >>>      self.integrals = integrals
-    >>>      self.options = options
-    >>>      ...
-  
+class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
+    """Molecular orbitals.
+    
     Attributes:
-      integrals (:obj:`scfexchange.integrals.Integrals`): Contributions to the
-        Hamiltonian operator, in the molecular orbital basis.
-      options (dict): A dictionary of options, by keyword argument.
-      nfrz (int): The number of frozen (spatial) orbitals.  This can be set with
-        the option 'n_frozen_orbitals'.  Alternatively, if 'freeze_core' is True
-        and the number of frozen orbitals is not set, this defaults to the number
-        of core orbitals, as determined by the molecule object.
-      norb (int): The total number of non-frozen (spatial) orbitals.  That is, the
-        number of basis functions minus the number of frozen orbitals.
-      naocc (int): The number of occupied non-frozen alpha orbitals.
-      nbocc (int): The number of occupied non-frozen beta orbitals.
-      mo_coefficients (np.ndarray): Molecular orbital coefficients, given as a
-        2 x nbf x nbf array of alpha and beta spatial MOs.
-      mso_coeffieicnts (np.ndarray): Molecular spin-orbital coefficients, given as
-        a (2*nbf) x (2*nbf) array of spinor coefficients, in which the columns are
-        sorted by orbital energy.
-      mo_energies (np.ndarray): Molecular orbital energies, given as a 2 x nbf
-        array.
-      mso_energies (np.ndarray): Molecular spin-orbital energies, given as an
-        array of length 2*nbf which is sorted in increasing order.
-      core_mo_energies (np.ndarray): Energies of the frozen core orbitals.
-      core_mo_coefficients (np.ndarray): Coefficients of the frozen core orbitals.
-      core_energy (float): Hartree-Fock energy of the frozen core, including
-        nuclear repulsion energy.
+        integrals (:obj:`scfexchange.integrals.Integrals`): Contributions to the
+            Hamiltonian operator, in the molecular orbital basis.
+        options (dict): A dictionary of options, by keyword argument.
+        nfrz (int): The number of frozen (spatial) orbitals.  This can be set
+            with the option 'n_frozen_orbitals'.  Alternatively, if
+            'freeze_core' is True and the number of frozen orbitals is not set,
+            this defaults to the number of core orbitals, as determined by the
+            molecule object.
+        norb (int): The total number of non-frozen (spatial) orbitals.  That is,
+            the number of basis functions minus the number of frozen orbitals.
+        naocc (int): The number of occupied non-frozen alpha orbitals.
+        nbocc (int): The number of occupied non-frozen beta orbitals.
+        core_energy (float): Hartree-Fock energy of the frozen core, including
+            nuclear repulsion energy.
+        hf_energy (float): The total Hartree-Fock energy.
+        mo_energies (np.ndarray): Molecular orbital energies, given as a 2 x nbf
+            array.
+        mo_coefficients (np.ndarray): Molecular orbital coefficients, given as a
+            2 x nbf x nbf array of alpha and beta spatial MOs.
+        mso_energies (np.ndarray): Molecular spin-orbital energies, given as an
+            array of length 2*nbf which is sorted in increasing order.
+        mso_coeffieicnts (np.ndarray): Molecular spin-orbital coefficients,
+            given as a (2*nbf) x (2*nbf) array of spinor coefficients, in which
+            the columns are sorted by orbital energy.
     """
-
-    _attribute_types = {
-        'integrals': IntegralsInterface,
-        'options': dict,
-        'nfrz': int,
-        'norb': int,
-        'naocc': int,
-        'nbocc': int,
-        'mo_energies': np.ndarray,
-        'mo_coefficients': np.ndarray,
-        'mso_energies': np.ndarray,
-        'mso_coefficients': np.ndarray,
-        'core_energy': float,
-        'hf_energy': float
-    }
-
-    _option_defaults = {
-        'restrict_spin': True,
-        'n_iterations': 40,
-        'e_threshold': 1e-12,
-        'd_threshold': 1e-6,
-        'freeze_core': False,
-        'n_frozen_orbitals': 0
-    }
-
-    def _check_attribute_contract(self):
-        """Make sure common attributes are correctly initialized."""
-        check_attributes(self, OrbitalsInterface._attribute_types)
-
-    def _process_options(self, options):
-        return process_options(options, OrbitalsInterface._option_defaults)
 
     def _count_orbitals(self):
         """Count the number of frozen, unfrozen, and occupied orbitals.
@@ -409,3 +370,4 @@ class OrbitalsInterface(with_metaclass(AttributeContractMeta, object)):
                                           mo_block=mo_spaces[3],
                                           r_matrix=r_matrix)
         return tu.einsum("mntu,mp,nq,tr,us->pqrs", g, c1, c2, c3, c4)
+
