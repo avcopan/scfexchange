@@ -118,15 +118,6 @@ class Orbitals(OrbitalsInterface):
         core_energy (float): Hartree-Fock energy of the frozen core, including
             nuclear repulsion energy.
         hf_energy (float): The total Hartree-Fock energy.
-        mo_energies (np.ndarray): Molecular orbital energies, given as a 2 x nbf
-            array.
-        mo_coefficients (np.ndarray): Molecular orbital coefficients, given as a
-            2 x nbf x nbf array of alpha and beta spatial MOs.
-        mso_energies (np.ndarray): Molecular spin-orbital energies, given as an
-            array of length 2*nbf which is sorted in increasing order.
-        mso_coeffieicnts (np.ndarray): Molecular spin-orbital coefficients,
-            given as a (2*nbf) x (2*nbf) array of spinor coefficients, in which
-            the columns are sorted by orbital energy.
     """
 
     def __init__(self, integrals, restrict_spin=True, n_iterations=40,
@@ -169,17 +160,17 @@ class Orbitals(OrbitalsInterface):
         self._pyscf_hf.max_cycle = self.options['n_iterations']
         self._pyscf_hf.kernel()
         self.hf_energy = self._pyscf_hf.e_tot
-        self.mo_energies = self._pyscf_hf.mo_energy
-        self.mo_coefficients = self._pyscf_hf.mo_coeff
+        self._mo_energies = self._pyscf_hf.mo_energy
+        self._mo_coefficients = self._pyscf_hf.mo_coeff
         if self.options['restrict_spin']:
-            self.mo_energies = np.array([self.mo_energies] * 2)
-            self.mo_coefficients = np.array([self.mo_coefficients] * 2)
+            self._mo_energies = np.array([self._mo_energies] * 2)
+            self._mo_coefficients = np.array([self._mo_coefficients] * 2)
         # Build spin-orbital energy and coefficient arrays
-        mso_energies = np.concatenate(self.mo_energies)
-        mso_coefficients = spla.block_diag(*self.mo_coefficients)
+        mso_energies = np.concatenate(self._mo_energies)
+        mso_coefficients = spla.block_diag(*self._mo_coefficients)
         sorting_indices = mso_energies.argsort()
-        self.mso_energies = mso_energies[sorting_indices]
-        self.mso_coefficients = mso_coefficients[:, sorting_indices]
+        self._mso_energies = mso_energies[sorting_indices]
+        self._mso_coefficients = mso_coefficients[:, sorting_indices]
         # Get the core field and energy
         self.core_energy = self._compute_core_energy()
 

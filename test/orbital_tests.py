@@ -15,10 +15,6 @@ def check_interface(orbitals_instance):
     assert(hasattr(orbitals_instance, 'norb'))
     assert(hasattr(orbitals_instance, 'naocc'))
     assert(hasattr(orbitals_instance, 'nbocc'))
-    assert(hasattr(orbitals_instance, 'mo_energies'))
-    assert(hasattr(orbitals_instance, 'mo_coefficients'))
-    assert(hasattr(orbitals_instance, 'mso_energies'))
-    assert(hasattr(orbitals_instance, 'mso_coefficients'))
     assert(hasattr(orbitals_instance, 'core_energy'))
     assert(hasattr(orbitals_instance, 'hf_energy'))
     # Check attribute types
@@ -31,14 +27,6 @@ def check_interface(orbitals_instance):
     assert(isinstance(getattr(orbitals_instance, 'nbocc'), int))
     assert(isinstance(getattr(orbitals_instance, 'core_energy'), float))
     assert(isinstance(getattr(orbitals_instance, 'hf_energy'), float))
-    assert(isinstance(getattr(orbitals_instance, 'mo_energies'),
-                      np.ndarray))
-    assert(isinstance(getattr(orbitals_instance, 'mo_coefficients'),
-                      np.ndarray))
-    assert(isinstance(getattr(orbitals_instance, 'mso_energies'),
-                      np.ndarray))
-    assert(isinstance(getattr(orbitals_instance, 'mso_coefficients'),
-                      np.ndarray))
     # Check 'options' attribute
     assert(set(orbitals_instance.options.keys()) ==
            {'restrict_spin', 'n_iterations', 'e_threshold', 'd_threshold'})
@@ -46,12 +34,6 @@ def check_interface(orbitals_instance):
     assert(isinstance(orbitals_instance.options['n_iterations'], int))
     assert(isinstance(orbitals_instance.options['e_threshold'], float))
     assert(isinstance(orbitals_instance.options['d_threshold'], float))
-    # Check attributes that are arrays
-    norb = orbitals_instance.norb + orbitals_instance.nfrz
-    assert(orbitals_instance.mo_energies.shape == (2, norb))
-    assert(orbitals_instance.mo_coefficients.shape == (2, norb, norb))
-    assert(orbitals_instance.mso_energies.shape == (2 * norb,))
-    assert(orbitals_instance.mso_coefficients.shape == (2 * norb, 2 * norb))
     # Check methods
     assert(hasattr(orbitals_instance, '__init__'))
     # Check method documentation
