@@ -92,7 +92,7 @@ def check_interface(orbitals_instance):
 if __name__ == "__main__":
     import numpy as np
     from scfexchange.molecule import Molecule
-    from scfexchange.pyscf_interface import Integrals, Orbitals
+    from scfexchange.psi4_interface import Integrals, Orbitals
 
     units = "angstrom"
     charge = 0
