@@ -130,8 +130,7 @@ class Orbitals(OrbitalsInterface):
     """
 
     def __init__(self, integrals, restrict_spin=True, n_iterations=40,
-                 e_threshold=1e-12, d_threshold=1e-6, freeze_core=False,
-                 n_frozen_orbitals=0):
+                 e_threshold=1e-12, d_threshold=1e-6, n_frozen_orbitals=0):
         """Initialize Orbitals object.
         
         Args:
@@ -143,7 +142,6 @@ class Orbitals(OrbitalsInterface):
             e_threshold: Energy convergence threshold.
             d_threshold: Density convergence threshold, based on the norm of the
                 orbital gradient
-            freeze_core: Freeze the core orbitals?
             n_frozen_orbitals: How many core orbitals should be set to `frozen`.
         """
         if not isinstance(integrals, Integrals):
@@ -155,11 +153,12 @@ class Orbitals(OrbitalsInterface):
             'n_iterations': n_iterations,
             'e_threshold': e_threshold,
             'd_threshold': d_threshold,
-            'freeze_core': freeze_core,
-            'n_frozen_orbitals': n_frozen_orbitals
         }
         # Determine the orbital counts (total, frozen, and occupied)
-        self.nfrz, self.norb, (self.naocc, self.nbocc) = self._count_orbitals()
+        self.nfrz = n_frozen_orbitals
+        self.naocc = self.integrals.molecule.nalpha - self.nfrz
+        self.nbocc = self.integrals.molecule.nbeta - self.nfrz
+        self.norb = self.integrals.nbf - self.nfrz
         # Build PySCF HF object and compute the energy.
         if self.options['restrict_spin']:
             self._pyscf_hf = pyscf.scf.RHF(integrals._pyscf_molecule)
@@ -200,15 +199,7 @@ if __name__ == "__main__":
     mol = Molecule(labels, coordinates, units=units, charge=charge,
                    multiplicity=multiplicity)
     integrals = Integrals(mol, "cc-pvdz")
-
-    orbital_options = {
-        'freeze_core': False,
-        'n_frozen_orbitals': 1,
-        'e_threshold': 1e-14,
-        'n_iterations': 50,
-        'restrict_spin': False
-    }
-    orbitals = Orbitals(integrals, **orbital_options)
+    orbitals = Orbitals(integrals, restrict_spin=False, n_frozen_orbitals=1)
     core_energy = orbitals.core_energy
     h = orbitals.get_mo_1e_kinetic(mo_type='spinor', mo_block='o,o') + \
         orbitals.get_mo_1e_potential(mo_type='spinor', mo_block='o,o')

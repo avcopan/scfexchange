@@ -41,14 +41,11 @@ def check_interface(orbitals_instance):
                       np.ndarray))
     # Check 'options' attribute
     assert(set(orbitals_instance.options.keys()) ==
-           {'restrict_spin', 'n_iterations', 'e_threshold', 'd_threshold',
-            'freeze_core', 'n_frozen_orbitals'})
+           {'restrict_spin', 'n_iterations', 'e_threshold', 'd_threshold'})
     assert(isinstance(orbitals_instance.options['restrict_spin'], bool))
     assert(isinstance(orbitals_instance.options['n_iterations'], int))
     assert(isinstance(orbitals_instance.options['e_threshold'], float))
     assert(isinstance(orbitals_instance.options['d_threshold'], float))
-    assert(isinstance(orbitals_instance.options['freeze_core'], bool))
-    assert(isinstance(orbitals_instance.options['n_frozen_orbitals'], int))
     # Check attributes that are arrays
     norb = orbitals_instance.norb + orbitals_instance.nfrz
     assert(orbitals_instance.mo_energies.shape == (2, norb))
@@ -70,7 +67,6 @@ def check_interface(orbitals_instance):
             e_threshold: Energy convergence threshold.
             d_threshold: Density convergence threshold, based on the norm of the
                 orbital gradient
-            freeze_core: Freeze the core orbitals?
             n_frozen_orbitals: How many core orbitals should be set to `frozen`.
         """)
     # Check method signature
@@ -84,7 +80,6 @@ def check_interface(orbitals_instance):
                     inspect.Parameter('n_iterations', kind, default=40),
                     inspect.Parameter('e_threshold', kind, default=1e-12),
                     inspect.Parameter('d_threshold', kind, default=1e-6),
-                    inspect.Parameter('freeze_core', kind, default=False),
                     inspect.Parameter('n_frozen_orbitals', kind, default=0)
                 ]
            ))
@@ -156,14 +151,10 @@ def run_interface_check(integrals_class, orbitals_class):
     ints1 = integrals_class(mol1, "cc-pvdz")
     ints2 = integrals_class(mol2, "cc-pvdz")
     # Build orbitals
-    orbs1 = orbitals_class(ints1, restrict_spin=True, freeze_core=False,
-                           n_frozen_orbitals=0)
-    orbs2 = orbitals_class(ints2, restrict_spin=False, freeze_core=False,
-                           n_frozen_orbitals=0)
-    orbs3 = orbitals_class(ints1, restrict_spin=True, freeze_core=True,
-                           n_frozen_orbitals=1)
-    orbs4 = orbitals_class(ints2, restrict_spin=False, freeze_core=True,
-                           n_frozen_orbitals=1)
+    orbs1 = orbitals_class(ints1, restrict_spin=True, n_frozen_orbitals=0)
+    orbs2 = orbitals_class(ints2, restrict_spin=False, n_frozen_orbitals=0)
+    orbs3 = orbitals_class(ints1, restrict_spin=True, n_frozen_orbitals=1)
+    orbs4 = orbitals_class(ints2, restrict_spin=False, n_frozen_orbitals=1)
     # Test the orbitals interface
     check_interface(orbs1)
     check_interface(orbs2)
@@ -184,14 +175,10 @@ def run_mo_slicing_check(integrals_class, orbitals_class):
     ints1 = integrals_class(mol1, "cc-pvdz")
     ints2 = integrals_class(mol2, "cc-pvdz")
     # Build orbitals
-    orbs1 = orbitals_class(ints1, restrict_spin=True, freeze_core=False,
-                           n_frozen_orbitals=0)
-    orbs2 = orbitals_class(ints2, restrict_spin=False, freeze_core=False,
-                           n_frozen_orbitals=0)
-    orbs3 = orbitals_class(ints1, restrict_spin=True, freeze_core=True,
-                           n_frozen_orbitals=1)
-    orbs4 = orbitals_class(ints2, restrict_spin=False, freeze_core=True,
-                           n_frozen_orbitals=1)
+    orbs1 = orbitals_class(ints1, restrict_spin=True, n_frozen_orbitals=0)
+    orbs2 = orbitals_class(ints2, restrict_spin=False, n_frozen_orbitals=0)
+    orbs3 = orbitals_class(ints1, restrict_spin=True, n_frozen_orbitals=1)
+    orbs4 = orbitals_class(ints2, restrict_spin=False, n_frozen_orbitals=1)
     # Test the orbitals interface
     check_mo_slicing(orbs1, 'spinor', 0, 10)
     check_mo_slicing(orbs1, 'alpha', 0, 5)
@@ -220,14 +207,10 @@ def run_core_energy_check(integrals_class, orbitals_class):
     ints1 = integrals_class(mol1, "cc-pvdz")
     ints2 = integrals_class(mol2, "cc-pvdz")
     # Build orbitals
-    orbs1 = orbitals_class(ints1, restrict_spin=True, freeze_core=False,
-                           n_frozen_orbitals=0)
-    orbs2 = orbitals_class(ints2, restrict_spin=False, freeze_core=False,
-                           n_frozen_orbitals=0)
-    orbs3 = orbitals_class(ints1, restrict_spin=True, freeze_core=True,
-                           n_frozen_orbitals=1)
-    orbs4 = orbitals_class(ints2, restrict_spin=False, freeze_core=True,
-                           n_frozen_orbitals=1)
+    orbs1 = orbitals_class(ints1, restrict_spin=True, n_frozen_orbitals=0)
+    orbs2 = orbitals_class(ints2, restrict_spin=False, n_frozen_orbitals=0)
+    orbs3 = orbitals_class(ints1, restrict_spin=True, n_frozen_orbitals=1)
+    orbs4 = orbitals_class(ints2, restrict_spin=False, n_frozen_orbitals=1)
     # Test the orbitals interface
     check_core_energy(orbs1, 9.16714531316, -85.1937928046, 0.0)
     check_core_energy(orbs2, 9.16714531316, -84.7992709454, 0.0)
@@ -248,14 +231,10 @@ def run_mp2_energy_check(integrals_class, orbitals_class):
     ints1 = integrals_class(mol1, "cc-pvdz")
     ints2 = integrals_class(mol2, "cc-pvdz")
     # Build orbitals
-    orbs1 = orbitals_class(ints1, restrict_spin=True, freeze_core=False,
-                           n_frozen_orbitals=0)
-    orbs2 = orbitals_class(ints2, restrict_spin=False, freeze_core=False,
-                           n_frozen_orbitals=0)
-    orbs3 = orbitals_class(ints1, restrict_spin=True, freeze_core=True,
-                           n_frozen_orbitals=1)
-    orbs4 = orbitals_class(ints2, restrict_spin=False, freeze_core=True,
-                           n_frozen_orbitals=1)
+    orbs1 = orbitals_class(ints1, restrict_spin=True, n_frozen_orbitals=0)
+    orbs2 = orbitals_class(ints2, restrict_spin=False, n_frozen_orbitals=0)
+    orbs3 = orbitals_class(ints1, restrict_spin=True, n_frozen_orbitals=1)
+    orbs4 = orbitals_class(ints2, restrict_spin=False, n_frozen_orbitals=1)
     # Test the orbitals interface
     check_mp2_energy(orbs1, -0.204165905785)
     check_mp2_energy(orbs2, -0.15335969536)

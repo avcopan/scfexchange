@@ -9,20 +9,19 @@ class Molecule(object):
     """A class to store information about a chemical system.
   
     Attributes:
-      natoms (int): The number of atoms.
-      labels (`tuple` of `str`s): Atomic symbols.
-      coordinates (`np.ndarray`): An `self.natoms` x 3 array of Cartesian
-        coordinates corresponding to the atoms in `self.labels`.
-      units (str): Either 'angstrom' or 'bohr', indicating the units of
-        `self.coordinates`.
-      charge (int): Total molecular charge.
-      multiplicity (int): `2*S+1` where `S` is the spin-magnitude quantum number.
-      nuclear_repulsion_energy (float): The nuclear repulsion energy.
-      nelec (int): The number of electrons.
-      ncore (int): The number of core electrons.  In the (rare) case that the
-        molecule has been ionized past its valence shell, this is set to None.
-      nalpha (int): The number of alpha-spin electrons.
-      nbeta (int): The number of beta-spin electrons.
+        natoms (int): The number of atoms.
+        labels (`tuple` of `str`s): Atomic symbols.
+        coordinates (`np.ndarray`): An `self.natoms` x 3 array of Cartesian
+            coordinates corresponding to the atoms in `self.labels`.
+        units (str): Either 'angstrom' or 'bohr', indicating the units of
+            `self.coordinates`.
+        charge (int): Total molecular charge.
+        multiplicity (int): `2*S+1` where `S` is the spin-magnitude quantum
+            number.
+        nuclear_repulsion_energy (float): The nuclear repulsion energy.
+        nelec (int): The number of electrons.
+        nalpha (int): The number of alpha-spin electrons.
+        nbeta (int): The number of beta-spin electrons.
     """
 
     def __init__(self, labels, coordinates, units="angstrom", charge=0,
@@ -47,21 +46,15 @@ class Molecule(object):
         # Determine the nuclear repulsion energy.
         self.nuclear_repulsion_energy = self._get_nuclear_repulsion_energy()
 
-        # Determine the number of electrons, based on the number of protons and the
-        # total charge.
+        # Determine the number of electrons, based on the number of protons and
+        # the total charge.
         nprot = sum(atomdata.get_charge(label) for label in self.labels)
         self.nelec = nprot - self.charge
-
-        # Determine the number of core electrons.  If the molecule has been ionized
-        # past its valence shell, leave this undefined.
-        self.ncore = sum(atomdata.get_ncore(label) for label in self.labels)
-        if self.nelec < self.ncore:
-            self.ncore = None
 
         # Assuming a high-spin open-shell electronic state, so that S = M_S,
         # determine the number of alpha and beta electrons.
         nunpaired = self.multiplicity - 1
-        npaired = (self.nelec - nunpaired) / 2
+        npaired = (self.nelec - nunpaired) // 2
         self.nalpha = npaired + nunpaired
         self.nbeta = npaired
 

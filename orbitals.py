@@ -38,28 +38,6 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
             the columns are sorted by orbital energy.
     """
 
-    def _count_orbitals(self):
-        """Count the number of frozen, unfrozen, and occupied orbitals.
-    
-        Returns:
-          int, int, (int, int) corresponding to the number of frozen, unfrozen, and
-            occupied (alpha, beta) orbitals.
-        """
-        # First, determine the number of frozen core orbitals
-        nfrz = (0 if not self.options['freeze_core'] else
-                self.integrals.molecule.ncore)
-        if self.options['n_frozen_orbitals'] != 0:
-            nfrz = self.options['n_frozen_orbitals']
-        if nfrz is None:
-            raise Exception(
-                "Could not determine the number of frozen orbitals.  "
-                "Please set this value using 'n_frozen_orbitals'.")
-        # Now, determine the rest
-        norb = int(self.integrals.nbf - nfrz)
-        naocc = int(self.integrals.molecule.nalpha - nfrz)
-        nbocc = int(self.integrals.molecule.nbeta - nfrz)
-        return nfrz, norb, (naocc, nbocc)
-
     def _get_ao_1e_density_matrix(self, mo_type='alpha', mo_block='ov',
                                   r_matrix=None):
         """Return the one-particle density matrix *in the AO basis*.
