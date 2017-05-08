@@ -190,4 +190,3 @@ if __name__ == "__main__":
     mol = Molecule(labels, coordinates, units=units, charge=charge,
                    multiplicity=multiplicity)
     integrals = Integrals(mol, "cc-pvdz")
-    integrals.get_ao_1e_dipole()
