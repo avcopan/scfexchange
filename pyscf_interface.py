@@ -4,33 +4,33 @@ import numpy as np
 
 from .integrals import IntegralsInterface
 from .orbitals import OrbitalsInterface
+from .molecule import Molecule
 
 
 class Integrals(IntegralsInterface):
     """Molecular integrals.
     
     Attributes:
+        nuclei (:obj:`scfexchange.nuclei.NuclearFramework`): Specifies the
+            positions of the atomic centers.
         basis_label (str): The basis set label (e.g. 'sto-3g').
-        molecule: Together with `self.basis_label`, this specifies the atomic
-            orbitals entereing the integral computation.
         nbf (int): The number of basis functions.
     """
 
-    def __init__(self, molecule, basis_label):
+    def __init__(self, nuclei, basis_label):
         """Initialize Integrals object.
     
         Args:
-            molecule (:obj:`scfexchange.molecule.Molecule`): The molecule.
+            nuclei (:obj:`scfexchange.nuclei.NuclearFramework`): Specifies the
+                positions of the atomic centers.
             basis_label (str): What basis set to use.
         """
-        self._pyscf_molecule = pyscf.gto.Mole(atom=list(iter(molecule)),
-                                              unit=molecule.units,
-                                              basis=basis_label,
-                                              charge=molecule.charge,
-                                              spin=molecule.multiplicity - 1)
+        self._pyscf_molecule = pyscf.gto.Mole(atom=list(iter(nuclei)),
+                                              unit=nuclei.units,
+                                              basis=basis_label)
         self._pyscf_molecule.build()
 
-        self.molecule = molecule
+        self.nuclei = nuclei
         self.basis_label = basis_label
         self.nbf = int(self._pyscf_molecule.nao_nr())
 
@@ -105,12 +105,14 @@ class Orbitals(OrbitalsInterface):
     Attributes:
         integrals (:obj:`scfexchange.integrals.Integrals`): Contributions to the
             Hamiltonian operator, in the molecular orbital basis.
+        molecule (:obj:`scfexchange.nuclei.Molecule`): A Molecule object
+            specifying the molecular charge and multiplicity
         options (dict): A dictionary of options, by keyword argument.
         nfrz (int): The number of frozen (spatial) orbitals.  This can be set
             with the option 'n_frozen_orbitals'.  Alternatively, if
             'freeze_core' is True and the number of frozen orbitals is not set,
             this defaults to the number of core orbitals, as determined by the
-            molecule object.
+            nuclei object.
         norb (int): The total number of non-frozen (spatial) orbitals.  That is,
             the number of basis functions minus the number of frozen orbitals.
         naocc (int): The number of occupied non-frozen alpha orbitals.
@@ -120,24 +122,29 @@ class Orbitals(OrbitalsInterface):
         hf_energy (float): The total Hartree-Fock energy.
     """
 
-    def __init__(self, integrals, restrict_spin=True, n_iterations=40,
-                 e_threshold=1e-12, d_threshold=1e-6, n_frozen_orbitals=0):
+    def __init__(self, integrals, charge=0, multiplicity=1, restrict_spin=True,
+                 n_iterations=40, e_threshold=1e-12, d_threshold=1e-6,
+                 n_frozen_orbitals=0):
         """Initialize Orbitals object.
         
         Args:
             integrals (:obj:`scfexchange.integrals.IntegralsInterface`): The
                 atomic-orbital integrals object.
-            restrict_spin: Spin-restrict the orbitals?
-            n_iterations: Maximum number of Hartree-Fock iterations allowed
-                before the orbitals are considered unconverged.
-            e_threshold: Energy convergence threshold.
-            d_threshold: Density convergence threshold, based on the norm of the
-                orbital gradient
-            n_frozen_orbitals: How many core orbitals should be set to `frozen`.
+            charge (int): Total molecular charge.
+            multiplicity (int): Spin multiplicity.
+            restrict_spin (bool): Spin-restrict the orbitals?
+            n_iterations (int): Maximum number of Hartree-Fock iterations 
+                allowed before the orbitals are considered unconverged.
+            e_threshold (float): Energy convergence threshold.
+            d_threshold (float): Density convergence threshold, based on the 
+                norm of the orbital gradient
+            n_frozen_orbitals (int): How many core orbitals should be set to 
+                `frozen`.
         """
         if not isinstance(integrals, Integrals):
             raise ValueError(
                 "Please use an integrals object from this interface.")
+        integrals._pyscf_molecule.build(charge=charge, spin=multiplicity-1)
         self.integrals = integrals
         self.options = {
             'restrict_spin': restrict_spin,
@@ -145,10 +152,11 @@ class Orbitals(OrbitalsInterface):
             'e_threshold': e_threshold,
             'd_threshold': d_threshold,
         }
+        self.molecule = Molecule(self.integrals.nuclei, charge, multiplicity)
         # Determine the orbital counts (total, frozen, and occupied)
         self.nfrz = n_frozen_orbitals
-        self.naocc = self.integrals.molecule.nalpha - self.nfrz
-        self.nbocc = self.integrals.molecule.nbeta - self.nfrz
+        self.naocc = self.molecule.nalpha - self.nfrz
+        self.nbocc = self.molecule.nbeta - self.nfrz
         self.norb = self.integrals.nbf - self.nfrz
         # Build PySCF HF object and compute the energy.
         if self.options['restrict_spin']:
@@ -177,16 +185,26 @@ class Orbitals(OrbitalsInterface):
 
 if __name__ == "__main__":
     import numpy as np
-    from . import Molecule
+    from .molecule import NuclearFramework
 
-    units = "angstrom"
-    charge = 1
-    multiplicity = 2
     labels = ("O", "H", "H")
     coordinates = np.array([[0.000, 0.000, -0.066],
                             [0.000, -0.759, 0.522],
                             [0.000, 0.759, 0.522]])
 
-    mol = Molecule(labels, coordinates, units=units, charge=charge,
-                   multiplicity=multiplicity)
-    integrals = Integrals(mol, "cc-pvdz")
+    nuclei = NuclearFramework(labels, coordinates, units="angstrom")
+    integrals = Integrals(nuclei, "cc-pvdz")
+    orbitals = Orbitals(integrals, charge=1, multiplicity=2,
+                               restrict_spin=True, n_frozen_orbitals=0)
+    e = orbitals.get_mo_energies(mo_type='spinor', mo_block='ov')
+    g = orbitals.get_mo_2e_repulsion(mo_type='spinor', mo_block='o,o,v,v',
+                                     antisymmetrize=True)
+    nspocc = orbitals.naocc + orbitals.nbocc
+    o = slice(None, nspocc)
+    v = slice(nspocc, None)
+    x = np.newaxis
+    e_corr = (
+        1. / 4 * np.sum(g * g / (
+            e[o, x, x, x] + e[x, o, x, x] - e[x, x, v, x] - e[x, x, x, v]))
+    )
+    print(e_corr)

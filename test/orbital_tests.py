@@ -1,7 +1,9 @@
 import inspect
 import numpy as np
+import itertools as it
 from scfexchange.integrals import IntegralsInterface
 from scfexchange.orbitals import OrbitalsInterface
+from scfexchange.molecule import NuclearFramework, Molecule
 
 
 def check_interface(orbitals_instance):
@@ -10,6 +12,7 @@ def check_interface(orbitals_instance):
     assert(orbitals_class.__doc__ == OrbitalsInterface.__doc__)
     # Check attributes
     assert(hasattr(orbitals_instance, 'integrals'))
+    assert(hasattr(orbitals_instance, 'molecule'))
     assert(hasattr(orbitals_instance, 'options'))
     assert(hasattr(orbitals_instance, 'nfrz'))
     assert(hasattr(orbitals_instance, 'norb'))
@@ -20,6 +23,7 @@ def check_interface(orbitals_instance):
     # Check attribute types
     assert(isinstance(getattr(orbitals_instance, 'integrals'),
                       IntegralsInterface))
+    assert(isinstance(getattr(orbitals_instance, 'molecule'), Molecule))
     assert(isinstance(getattr(orbitals_instance, 'options'), dict))
     assert(isinstance(getattr(orbitals_instance, 'nfrz'), int))
     assert(isinstance(getattr(orbitals_instance, 'norb'), int))
@@ -43,13 +47,16 @@ def check_interface(orbitals_instance):
         Args:
             integrals (:obj:`scfexchange.integrals.IntegralsInterface`): The
                 atomic-orbital integrals object.
-            restrict_spin: Spin-restrict the orbitals?
-            n_iterations: Maximum number of Hartree-Fock iterations allowed
-                before the orbitals are considered unconverged.
-            e_threshold: Energy convergence threshold.
-            d_threshold: Density convergence threshold, based on the norm of the
-                orbital gradient
-            n_frozen_orbitals: How many core orbitals should be set to `frozen`.
+            charge (int): Total molecular charge.
+            multiplicity (int): Spin multiplicity.
+            restrict_spin (bool): Spin-restrict the orbitals?
+            n_iterations (int): Maximum number of Hartree-Fock iterations 
+                allowed before the orbitals are considered unconverged.
+            e_threshold (float): Energy convergence threshold.
+            d_threshold (float): Density convergence threshold, based on the 
+                norm of the orbital gradient
+            n_frozen_orbitals (int): How many core orbitals should be set to 
+                `frozen`.
         """)
     # Check method signature
     kind = inspect.Parameter.POSITIONAL_OR_KEYWORD
@@ -58,6 +65,8 @@ def check_interface(orbitals_instance):
                 parameters=[
                     inspect.Parameter('self', kind),
                     inspect.Parameter('integrals', kind),
+                    inspect.Parameter('charge', kind, default=0),
+                    inspect.Parameter('multiplicity', kind, default=1),
                     inspect.Parameter('restrict_spin', kind, default=True),
                     inspect.Parameter('n_iterations', kind, default=40),
                     inspect.Parameter('e_threshold', kind, default=1e-12),
@@ -121,105 +130,83 @@ def check_mp2_energy(orbitals_instance, correlation_energy):
 
 
 def run_interface_check(integrals_class, orbitals_class):
-    import numpy as np
-    from scfexchange import Molecule
     labels = ("O", "H", "H")
     coordinates = np.array([[0.000, 0.000, -0.066],
                             [0.000, -0.759, 0.522],
                             [0.000, 0.759, 0.522]])
-    mol1 = Molecule(labels, coordinates, charge=0, multiplicity=1)
-    mol2 = Molecule(labels, coordinates, charge=1, multiplicity=2)
+    nuclei = NuclearFramework(labels, coordinates)
     # Build integrals
-    ints1 = integrals_class(mol1, "cc-pvdz")
-    ints2 = integrals_class(mol2, "cc-pvdz")
+    integrals = integrals_class(nuclei, "cc-pvdz")
     # Build orbitals
-    orbs1 = orbitals_class(ints1, restrict_spin=True, n_frozen_orbitals=0)
-    orbs2 = orbitals_class(ints2, restrict_spin=False, n_frozen_orbitals=0)
-    orbs3 = orbitals_class(ints1, restrict_spin=True, n_frozen_orbitals=1)
-    orbs4 = orbitals_class(ints2, restrict_spin=False, n_frozen_orbitals=1)
-    # Test the orbitals interface
-    check_interface(orbs1)
-    check_interface(orbs2)
-    check_interface(orbs3)
-    check_interface(orbs4)
-
-
-def run_mo_slicing_check(integrals_class, orbitals_class):
-    import numpy as np
-    from scfexchange import Molecule
-    labels = ("O", "H", "H")
-    coordinates = np.array([[0.000, 0.000, -0.066],
-                            [0.000, -0.759, 0.522],
-                            [0.000, 0.759, 0.522]])
-    mol1 = Molecule(labels, coordinates, charge=0, multiplicity=1)
-    mol2 = Molecule(labels, coordinates, charge=1, multiplicity=2)
-    # Build integrals
-    ints1 = integrals_class(mol1, "cc-pvdz")
-    ints2 = integrals_class(mol2, "cc-pvdz")
-    # Build orbitals
-    orbs1 = orbitals_class(ints1, restrict_spin=True, n_frozen_orbitals=0)
-    orbs2 = orbitals_class(ints2, restrict_spin=False, n_frozen_orbitals=0)
-    orbs3 = orbitals_class(ints1, restrict_spin=True, n_frozen_orbitals=1)
-    orbs4 = orbitals_class(ints2, restrict_spin=False, n_frozen_orbitals=1)
-    # Test the orbitals interface
-    check_mo_slicing(orbs1, 'spinor', 0, 10)
-    check_mo_slicing(orbs1, 'alpha', 0, 5)
-    check_mo_slicing(orbs1, 'beta', 0, 5)
-    check_mo_slicing(orbs2, 'spinor', 0, 9)
-    check_mo_slicing(orbs2, 'alpha', 0, 5)
-    check_mo_slicing(orbs2, 'beta', 0, 4)
-    check_mo_slicing(orbs3, 'spinor', 2, 10)
-    check_mo_slicing(orbs3, 'alpha', 1, 5)
-    check_mo_slicing(orbs3, 'beta', 1, 5)
-    check_mo_slicing(orbs4, 'spinor', 2, 9)
-    check_mo_slicing(orbs4, 'alpha', 1, 5)
-    check_mo_slicing(orbs4, 'beta', 1, 4)
+    vars = ([(0, 1), (1, 2)], [True, False], [0, 1])
+    for (charge, multp), restr, nfrz in it.product(*vars):
+        orbitals = orbitals_class(integrals, charge, multp,
+                                  restrict_spin=restr, n_frozen_orbitals=nfrz)
+        check_interface(orbitals)
 
 
 def run_core_energy_check(integrals_class, orbitals_class):
-    import numpy as np
-    from scfexchange import Molecule
     labels = ("O", "H", "H")
     coordinates = np.array([[0.000, 0.000, -0.066],
                             [0.000, -0.759, 0.522],
                             [0.000, 0.759, 0.522]])
-    mol1 = Molecule(labels, coordinates, charge=0, multiplicity=1)
-    mol2 = Molecule(labels, coordinates, charge=1, multiplicity=2)
+    nuclei = NuclearFramework(labels, coordinates)
     # Build integrals
-    ints1 = integrals_class(mol1, "cc-pvdz")
-    ints2 = integrals_class(mol2, "cc-pvdz")
+    integrals = integrals_class(nuclei, "cc-pvdz")
     # Build orbitals
-    orbs1 = orbitals_class(ints1, restrict_spin=True, n_frozen_orbitals=0)
-    orbs2 = orbitals_class(ints2, restrict_spin=False, n_frozen_orbitals=0)
-    orbs3 = orbitals_class(ints1, restrict_spin=True, n_frozen_orbitals=1)
-    orbs4 = orbitals_class(ints2, restrict_spin=False, n_frozen_orbitals=1)
-    # Test the orbitals interface
-    check_core_energy(orbs1, 9.16714531316, -85.1937928046, 0.0)
-    check_core_energy(orbs2, 9.16714531316, -84.7992709454, 0.0)
-    check_core_energy(orbs3, -52.1425516992, -39.3520210647, 15.4679252725)
-    check_core_energy(orbs4, -52.1426191971, -37.8242618135, 14.3347553783)
+    orbitals1 = orbitals_class(integrals, charge=0, multiplicity=1,
+                               restrict_spin=False, n_frozen_orbitals=0)
+    orbitals2 = orbitals_class(integrals, charge=0, multiplicity=1,
+                               restrict_spin=False, n_frozen_orbitals=1)
+    orbitals3 = orbitals_class(integrals, charge=0, multiplicity=1,
+                               restrict_spin=True, n_frozen_orbitals=0)
+    orbitals4 = orbitals_class(integrals, charge=0, multiplicity=1,
+                               restrict_spin=True, n_frozen_orbitals=1)
+    orbitals5 = orbitals_class(integrals, charge=1, multiplicity=2,
+                               restrict_spin=False, n_frozen_orbitals=0)
+    orbitals6 = orbitals_class(integrals, charge=1, multiplicity=2,
+                               restrict_spin=False, n_frozen_orbitals=1)
+    orbitals7 = orbitals_class(integrals, charge=1, multiplicity=2,
+                               restrict_spin=True, n_frozen_orbitals=0)
+    orbitals8 = orbitals_class(integrals, charge=1, multiplicity=2,
+                               restrict_spin=True, n_frozen_orbitals=1)
+    # Test the core energy
+    check_core_energy(orbitals1,  9.16714531316, -85.1937928452,           0.0)
+    check_core_energy(orbitals2, -52.1425517089, -39.3520211260, 15.4679253029)
+    check_core_energy(orbitals3,  9.16714531316, -85.1937928452,           0.0)
+    check_core_energy(orbitals4, -52.1425517089, -39.3520211260, 15.4679253029)
+    check_core_energy(orbitals5,  9.16714531316, -84.7992709854,           0.0)
+    check_core_energy(orbitals6, -52.1426192068, -37.8242618465, 14.3347553810)
+    check_core_energy(orbitals7,  9.16714531316, -84.7947487279,           0.0)
+    check_core_energy(orbitals8, -52.1427130957, -37.8177520225, 14.3328617035)
 
 
 def run_mp2_energy_check(integrals_class, orbitals_class):
-    import numpy as np
-    from scfexchange import Molecule
     labels = ("O", "H", "H")
     coordinates = np.array([[0.000, 0.000, -0.066],
                             [0.000, -0.759, 0.522],
                             [0.000, 0.759, 0.522]])
-    mol1 = Molecule(labels, coordinates, charge=0, multiplicity=1)
-    mol2 = Molecule(labels, coordinates, charge=1, multiplicity=2)
+    nuclei = NuclearFramework(labels, coordinates)
     # Build integrals
-    ints1 = integrals_class(mol1, "cc-pvdz")
-    ints2 = integrals_class(mol2, "cc-pvdz")
+    integrals = integrals_class(nuclei, "cc-pvdz")
     # Build orbitals
-    orbs1 = orbitals_class(ints1, restrict_spin=True, n_frozen_orbitals=0)
-    orbs2 = orbitals_class(ints2, restrict_spin=False, n_frozen_orbitals=0)
-    orbs3 = orbitals_class(ints1, restrict_spin=True, n_frozen_orbitals=1)
-    orbs4 = orbitals_class(ints2, restrict_spin=False, n_frozen_orbitals=1)
-    # Test the orbitals interface
-    check_mp2_energy(orbs1, -0.204165905785)
-    check_mp2_energy(orbs2, -0.15335969536)
-    check_mp2_energy(orbs3, -0.201833176653)
-    check_mp2_energy(orbs4, -0.151178068917)
+    orbitals1 = orbitals_class(integrals, charge=0, multiplicity=1,
+                               restrict_spin=False, n_frozen_orbitals=0)
+    orbitals2 = orbitals_class(integrals, charge=0, multiplicity=1,
+                               restrict_spin=False, n_frozen_orbitals=1)
+    orbitals3 = orbitals_class(integrals, charge=0, multiplicity=1,
+                               restrict_spin=True, n_frozen_orbitals=0)
+    orbitals4 = orbitals_class(integrals, charge=0, multiplicity=1,
+                               restrict_spin=True, n_frozen_orbitals=1)
+    orbitals5 = orbitals_class(integrals, charge=1, multiplicity=2,
+                               restrict_spin=False, n_frozen_orbitals=0)
+    orbitals6 = orbitals_class(integrals, charge=1, multiplicity=2,
+                               restrict_spin=False, n_frozen_orbitals=1)
+    # Test the mp2 energy
+    check_mp2_energy(orbitals1, -0.204165905228)
+    check_mp2_energy(orbitals2, -0.201833176089)
+    check_mp2_energy(orbitals3, -0.204165905228)
+    check_mp2_energy(orbitals4, -0.201833176089)
+    check_mp2_energy(orbitals5, -0.153359695366)
+    check_mp2_energy(orbitals6, -0.151178068749)
 

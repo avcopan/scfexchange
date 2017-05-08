@@ -1,7 +1,7 @@
 import inspect
 import numpy as np
 from scfexchange.integrals import IntegralsInterface
-from scfexchange.molecule import Molecule
+from scfexchange.molecule import NuclearFramework
 
 
 def check_interface(integrals_instance):
@@ -9,12 +9,12 @@ def check_interface(integrals_instance):
     integrals_class = type(integrals_instance)
     assert(integrals_class.__doc__ == IntegralsInterface.__doc__)
     # Check attributes
+    assert(hasattr(integrals_instance, 'nuclei'))
     assert(hasattr(integrals_instance, 'basis_label'))
-    assert(hasattr(integrals_instance, 'molecule'))
     assert(hasattr(integrals_instance, 'nbf'))
     # Check attribute types
+    assert(isinstance(getattr(integrals_instance, 'nuclei'), NuclearFramework))
     assert(isinstance(getattr(integrals_instance, 'basis_label'), str))
-    assert(isinstance(getattr(integrals_instance, 'molecule'), Molecule))
     assert(isinstance(getattr(integrals_instance, 'nbf'), int))
     # Check methods
     assert(hasattr(integrals_instance, '__init__'))
@@ -27,7 +27,8 @@ def check_interface(integrals_instance):
            == """Initialize Integrals object.
     
         Args:
-            molecule (:obj:`scfexchange.molecule.Molecule`): The molecule.
+            nuclei (:obj:`scfexchange.nuclei.NuclearFramework`): Specifies the
+                positions of the atomic centers.
             basis_label (str): What basis set to use.
         """)
     assert(integrals_instance.get_ao_1e_overlap.__doc__
@@ -44,7 +45,7 @@ def check_interface(integrals_instance):
            inspect.Signature(
                 parameters=[
                     inspect.Parameter('self', kind),
-                    inspect.Parameter('molecule', kind),
+                    inspect.Parameter('nuclei', kind),
                     inspect.Parameter('basis_label', kind)
                 ]
            ))
@@ -91,35 +92,25 @@ def check_save_option(integrals_instance):
 
 
 def run_interface_check(integrals_class):
-    import numpy as np
-    from scfexchange import Molecule
     labels = ("O", "H", "H")
     coordinates = np.array([[0.000, 0.000, -0.066],
                             [0.000, -0.759, 0.522],
                             [0.000, 0.759, 0.522]])
-    mol1 = Molecule(labels, coordinates, charge=0, multiplicity=1)
-    mol2 = Molecule(labels, coordinates, charge=1, multiplicity=2)
+    nuclei = NuclearFramework(labels, coordinates)
     # Build integrals
-    ints1 = integrals_class(mol1, "cc-pvdz")
-    ints2 = integrals_class(mol2, "cc-pvdz")
+    integrals = integrals_class(nuclei, "cc-pvdz")
     # Test the integrals interface
-    check_interface(ints1)
-    check_interface(ints2)
+    check_interface(integrals)
 
 
 def run_save_option_check(integrals_class):
-    import numpy as np
-    from scfexchange import Molecule
     labels = ("O", "H", "H")
     coordinates = np.array([[0.000, 0.000, -0.066],
                             [0.000, -0.759, 0.522],
                             [0.000, 0.759, 0.522]])
-    mol1 = Molecule(labels, coordinates, charge=0, multiplicity=1)
-    mol2 = Molecule(labels, coordinates, charge=1, multiplicity=2)
+    nuclei = NuclearFramework(labels, coordinates)
     # Build integrals
-    ints1 = integrals_class(mol1, "cc-pvdz")
-    ints2 = integrals_class(mol2, "cc-pvdz")
+    integrals = integrals_class(nuclei, "cc-pvdz")
     # Test the save option
-    check_save_option(ints1)
-    check_save_option(ints2)
+    check_save_option(integrals)
 

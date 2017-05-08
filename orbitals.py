@@ -14,12 +14,14 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
     Attributes:
         integrals (:obj:`scfexchange.integrals.Integrals`): Contributions to the
             Hamiltonian operator, in the molecular orbital basis.
+        molecule (:obj:`scfexchange.nuclei.Molecule`): A Molecule object
+            specifying the molecular charge and multiplicity
         options (dict): A dictionary of options, by keyword argument.
         nfrz (int): The number of frozen (spatial) orbitals.  This can be set
             with the option 'n_frozen_orbitals'.  Alternatively, if
             'freeze_core' is True and the number of frozen orbitals is not set,
             this defaults to the number of core orbitals, as determined by the
-            molecule object.
+            nuclei object.
         norb (int): The total number of non-frozen (spatial) orbitals.  That is,
             the number of basis functions minus the number of frozen orbitals.
         naocc (int): The number of occupied non-frozen alpha orbitals.
@@ -182,7 +184,7 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         h = (self.integrals.get_ao_1e_kinetic(integrate_spin=True)
              + self.integrals.get_ao_1e_potential(integrate_spin=True))
         core_energy = np.sum((h + va / 2) * da + (h + vb / 2) * db)
-        return core_energy + self.integrals.molecule.nuclear_repulsion_energy
+        return core_energy + self.integrals.nuclei.nuclear_repulsion_energy
 
     def get_mo_1e_core_field(self, mo_type='alpha', mo_block='ov,ov',
                              r_matrix=None, save=True):

@@ -5,64 +5,49 @@ from . import atomdata
 bohr2angstrom = 0.52917720859
 
 
-class Molecule(object):
-    """A class to store information about a chemical system.
-  
+class NuclearFramework(object):
+    """A class to store information about the nuclei in a nuclei.
+    
     Attributes:
         natoms (int): The number of atoms.
-        labels (`tuple` of `str`s): Atomic symbols.
+        labels (`tuple`): Atomic symbols.
+        charges (`tuple`): Atomic charges.
+        masses (`tuple`): Atomic masses.
         coordinates (`np.ndarray`): An `self.natoms` x 3 array of Cartesian
             coordinates corresponding to the atoms in `self.labels`.
         units (str): Either 'angstrom' or 'bohr', indicating the units of
             `self.coordinates`.
-        charge (int): Total molecular charge.
-        multiplicity (int): `2*S+1` where `S` is the spin-magnitude quantum
-            number.
         nuclear_repulsion_energy (float): The nuclear repulsion energy.
-        nelec (int): The number of electrons.
-        nalpha (int): The number of alpha-spin electrons.
-        nbeta (int): The number of beta-spin electrons.
     """
 
-    def __init__(self, labels, coordinates, units="angstrom", charge=0,
-                 multiplicity=1):
-        """Initialize this Molecule object.
+    def __init__(self, labels, coordinates, units="angstrom"):
+        """Initialize this NuclearFramework object.
+        
+        Args:
+            labels (`tuple`): Atomic symbols.
+            coordinates (`np.ndarray`): An `self.natoms` x 3 array of Cartesian
+                coordinates corresponding to the atoms in `self.labels`.
+            units (str): Either 'angstrom' or 'bohr', indicating the units of
+                `self.coordinates`.
         """
         self.natoms = len(labels)
         self.labels = tuple(labels)
+        self.charges = tuple(atomdata.get_charge(lbl) for lbl in self.labels)
+        self.masses = tuple(atomdata.get_mass(lbl) for lbl in self.labels)
         self.coordinates = np.array(coordinates)
         self.units = str(units.lower())
-        self.charge = int(charge)
-        self.multiplicity = int(multiplicity)
-
-        if not self.units in ("angstrom", "bohr"):
-            raise ValueError("{:s} is not a valid entry for self.units.  "
-                             "Try 'bohr' or 'angstrom'.".format(self.units))
-        if not self.coordinates.shape == (self.natoms, 3):
-            raise ValueError(
-                "Coordinate array should have shape ({:d}, 3), not {:s}."
-                .format(self.natoms, str(self.coordinates.shape)))
-
         # Determine the nuclear repulsion energy.
         self.nuclear_repulsion_energy = self._get_nuclear_repulsion_energy()
-
-        # Determine the number of electrons, based on the number of protons and
-        # the total charge.
-        nprot = sum(atomdata.get_charge(label) for label in self.labels)
-        self.nelec = nprot - self.charge
-
-        # Assuming a high-spin open-shell electronic state, so that S = M_S,
-        # determine the number of alpha and beta electrons.
-        nunpaired = self.multiplicity - 1
-        npaired = (self.nelec - nunpaired) // 2
-        self.nalpha = npaired + nunpaired
-        self.nbeta = npaired
+        # Make sure units have an allowed value.
+        if self.units not in ("angstrom", "bohr"):
+            raise ValueError("{:s} is not a valid entry for self.units.  "
+                             "Try 'bohr' or 'angstrom'.".format(self.units))
 
     def _get_nuclear_repulsion_energy(self):
         """Calculate the nuclear repulsion energy.
     
         Returns:
-          float: The nuclear repulsion energy.
+            float: The nuclear repulsion energy.
         """
         z = list(atomdata.get_charge(label) for label in self.labels)
         r = (self.coordinates if self.units == 'bohr'
@@ -73,6 +58,26 @@ class Molecule(object):
                 nuclear_repulsion_energy += z[a] * z[b] / np.linalg.norm(
                     r[a] - r[b])
         return nuclear_repulsion_energy
+
+    def get_center_of_mass(self):
+        """Get the nuclear center of mass.
+        
+        Returns:
+            The center of mass in the coordinate units.
+        """
+        m_tot = sum(self.masses)
+        com = sum(m * r for m, r in zip(self.masses, self.coordinates)) / m_tot
+        return com
+
+    def get_center_of_charge(self):
+        """Get the nuclear center of charge.
+        
+        Returns:
+            The center of charge in the current coordinate units.
+        """
+        q_tot = sum(self.charges)
+        coc = sum(q * r for q, r in zip(self.charges, self.coordinates)) / q_tot
+        return coc
 
     def set_units(self, units):
         """Convert `self.coordinates` to different units.
@@ -96,7 +101,7 @@ class Molecule(object):
             yield label, coordinate
 
     def __str__(self):
-        """Display the molecular geometry as a string."""
+        """Display the nuclear framework as a string."""
         geom_string = "units {:s}\n".format(self.units)
         geom_line_template = "{:2s} {: >15.10f} {: >15.10f} {: >15.10f}\n"
         for label, coordinate in self:
@@ -106,25 +111,64 @@ class Molecule(object):
     def __repr__(self):
         return self.__str__()
 
-    @classmethod
-    def build_molecule_from_xyz_string(cls, xyz_string, units="angstrom"):
-        pass
 
-    @classmethod
-    def build_molecule_from_zmat_string(cls, zmat_string, units="angstrom"):
-        pass
+class Molecule(object):
+    """A class to store information about a chemical system.
+  
+    Attributes:
+        nuclei (:obj:`scfexchange.nuclei.NuclearFramework`): The nuclear 
+            framework of this nuclei.
+        charge (int): Total molecular charge.
+        multiplicity (int): `2*S+1` where `S` is the spin-magnitude quantum
+            number.
+        nelec (int): The number of electrons.
+        nalpha (int): The number of alpha-spin electrons.
+        nbeta (int): The number of beta-spin electrons.
+    """
+
+    def __init__(self, nuclei, charge=0, multiplicity=1):
+        """Initialize this nuclei.
+        
+        Args:
+            nuclei (:obj:`scfexchange.nuclei.NuclearFramework`): The nuclear 
+                framework of this nuclei.
+            charge (int): Total molecular charge.
+            multiplicity (int): `2*S+1` where `S` is the spin-magnitude quantum
+                number.
+        """
+        self.nuclei = nuclei
+        self.charge = int(charge)
+        self.multiplicity = int(multiplicity)
+
+        # Determine the number of electrons, based on the number of protons and
+        # the total charge.
+        nprot = sum(atomdata.get_charge(label) for label, _ in self.nuclei)
+        self.nelec = nprot - self.charge
+
+        # Assuming a high-spin open-shell electronic state, so that S = M_S,
+        # determine the number of alpha and beta electrons.
+        nunpaired = self.multiplicity - 1
+        npaired = (self.nelec - nunpaired) // 2
+        self.nalpha = npaired + nunpaired
+        self.nbeta = npaired
+
+    def __str__(self):
+        """Display the nuclei as a string."""
+        charge_str = 'charge {:d}'.format(self.charge)
+        multp_str = 'multiplicity {:d}'.format(self.multiplicity)
+        return '\n'.join((charge_str, multp_str, str(self.nuclei)))
 
 
 if __name__ == "__main__":
     units = "bohr"
-    charge = +1
-    multiplicity = 2
     labels = ("O", "H", "H")
     coordinates = np.array([[0.000000000000, -0.143225816552, 0.000000000000],
                             [1.638036840407, 1.136548822547, -0.000000000000],
                             [-1.638036840407, 1.136548822547, -0.000000000000]])
 
-    mol = Molecule(labels, coordinates, units=units, charge=charge,
-                   multiplicity=multiplicity)
-    print(list(iter(mol)))
-    print(mol.nuclear_repulsion_energy)
+    nuclei = NuclearFramework(labels, coordinates, units)
+    print(nuclei)
+    print(nuclei.nuclear_repulsion_energy)
+    print(nuclei.get_center_of_charge())
+    print(nuclei.get_center_of_mass())
+    mol = Molecule(nuclei, charge=+1, multiplicity=2)

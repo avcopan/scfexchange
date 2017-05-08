@@ -11,16 +11,16 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
     """Molecular integrals.
     
     Attributes:
+        nuclei (:obj:`scfexchange.nuclei.NuclearFramework`): Specifies the
+            positions of the atomic centers.
         basis_label (str): The basis set label (e.g. 'sto-3g').
-        molecule: Together with `self.basis_label`, this specifies the atomic
-            orbitals entereing the integral computation.
         nbf (int): The number of basis functions.
     """
 
     def _compute_ao_1e(self, name, compute_ints, integrate_spin=True,
                        save=False):
-        ao_name = "ao_1e_{:s}".format(name)
-        aso_name = "aso_1e_{:s}".format(name)
+        ao_name = "_ao_1e_{:s}".format(name)
+        aso_name = "_aso_1e_{:s}".format(name)
         ints = compute_if_unknown(self, ao_name, compute_ints, save)
 
         def convert_to_aso():
@@ -32,8 +32,8 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
 
     def _compute_ao_2e(self, name, compute_ints, integrate_spin=True,
                        save=False, antisymmetrize=False):
-        ao_name = "ao_2e_chem_{:s}".format(name)
-        aso_name = "aso_2e_chem_{:s}".format(name)
+        ao_name = "_ao_2e_chem_{:s}".format(name)
+        aso_name = "_aso_2e_chem_{:s}".format(name)
         chem_ints = compute_if_unknown(self, ao_name, compute_ints, save)
 
         def convert_to_aso():
