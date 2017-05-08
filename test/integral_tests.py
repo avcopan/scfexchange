@@ -27,8 +27,8 @@ def check_interface(integrals_instance):
            == """Initialize Integrals object.
     
         Args:
-          molecule (:obj:`scfexchange.molecule.Molecule`): The molecule.
-          basis_label (str): What basis set to use.
+            molecule (:obj:`scfexchange.molecule.Molecule`): The molecule.
+            basis_label (str): What basis set to use.
         """)
     assert(integrals_instance.get_ao_1e_overlap.__doc__
            == IntegralsInterface.get_ao_1e_overlap.__doc__)

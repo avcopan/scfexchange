@@ -10,18 +10,18 @@ class Integrals(IntegralsInterface):
     """Molecular integrals.
     
     Attributes:
-      basis_label (str): The basis set label (e.g. 'sto-3g').
-      molecule: Together with `self.basis_label`, this specifies the atomic
-        orbitals entereing the integral computation.
-      nbf (int): The number of basis functions.
+        basis_label (str): The basis set label (e.g. 'sto-3g').
+        molecule: Together with `self.basis_label`, this specifies the atomic
+            orbitals entereing the integral computation.
+        nbf (int): The number of basis functions.
     """
 
     def __init__(self, molecule, basis_label):
         """Initialize Integrals object.
     
         Args:
-          molecule (:obj:`scfexchange.molecule.Molecule`): The molecule.
-          basis_label (str): What basis set to use.
+            molecule (:obj:`scfexchange.molecule.Molecule`): The molecule.
+            basis_label (str): What basis set to use.
         """
         molstr = str(molecule)
         self._psi4_molecule = psi4.core.Molecule.create_molecule_from_string(

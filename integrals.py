@@ -11,10 +11,10 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
     """Molecular integrals.
     
     Attributes:
-      basis_label (str): The basis set label (e.g. 'sto-3g').
-      molecule: Together with `self.basis_label`, this specifies the atomic
-        orbitals entereing the integral computation.
-      nbf (int): The number of basis functions.
+        basis_label (str): The basis set label (e.g. 'sto-3g').
+        molecule: Together with `self.basis_label`, this specifies the atomic
+            orbitals entereing the integral computation.
+        nbf (int): The number of basis functions.
     """
 
     def _compute_ao_1e(self, name, compute_ints, integrate_spin=True,

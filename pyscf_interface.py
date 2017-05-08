@@ -10,18 +10,18 @@ class Integrals(IntegralsInterface):
     """Molecular integrals.
     
     Attributes:
-      basis_label (str): The basis set label (e.g. 'sto-3g').
-      molecule: Together with `self.basis_label`, this specifies the atomic
-        orbitals entereing the integral computation.
-      nbf (int): The number of basis functions.
+        basis_label (str): The basis set label (e.g. 'sto-3g').
+        molecule: Together with `self.basis_label`, this specifies the atomic
+            orbitals entereing the integral computation.
+        nbf (int): The number of basis functions.
     """
 
     def __init__(self, molecule, basis_label):
         """Initialize Integrals object.
     
         Args:
-          molecule (:obj:`scfexchange.molecule.Molecule`): The molecule.
-          basis_label (str): What basis set to use.
+            molecule (:obj:`scfexchange.molecule.Molecule`): The molecule.
+            basis_label (str): What basis set to use.
         """
         self._pyscf_molecule = pyscf.gto.Mole(atom=list(iter(molecule)),
                                               unit=molecule.units,
@@ -190,31 +190,4 @@ if __name__ == "__main__":
     mol = Molecule(labels, coordinates, units=units, charge=charge,
                    multiplicity=multiplicity)
     integrals = Integrals(mol, "cc-pvdz")
-    orbitals = Orbitals(integrals, restrict_spin=False, n_frozen_orbitals=1)
-    core_energy = orbitals.core_energy
-    h = orbitals.get_mo_1e_kinetic(mo_type='spinor', mo_block='o,o') + \
-        orbitals.get_mo_1e_potential(mo_type='spinor', mo_block='o,o')
-    g = orbitals.get_mo_2e_repulsion(mo_type='spinor', mo_block='o,o,o,o')
-    g = g - g.transpose((0, 2, 1, 3))
-    valence_energy = np.trace(h) + 1. / 2 * np.einsum("ijij", g)
-    v = orbitals.get_mo_1e_core_field(mo_type='spinor', mo_block='o,o')
-    core_valence_energy = np.trace(v)
-    total_energy = valence_energy + core_energy + core_valence_energy
-    print("Core energy:            {:20.15f}".format(core_energy))
-    print("Valence energy:         {:20.15f}".format(valence_energy))
-    print("C-V interaction energy: {:20.15f}".format(core_valence_energy))
-    print("Total energy:           {:20.15f}".format(total_energy))
-    print("Total energy:           {:20.15f}".format(orbitals.hf_energy))
-    print(np.allclose(total_energy, orbitals.hf_energy, rtol=1e-09, atol=1e-10))
-    e = orbitals.get_mo_energies(mo_type='spinor', mo_block='ov')
-    g = orbitals.get_mo_2e_repulsion(mo_type='spinor', mo_block='o,o,v,v',
-                                     antisymmetrize=True)
-    nspocc = orbitals.naocc + orbitals.nbocc
-    o = slice(None, nspocc)
-    v = slice(nspocc, None)
-    x = np.newaxis
-    correlation_energy = (
-        1. / 4 * np.sum(g * g / (
-        e[o, x, x, x] + e[x, o, x, x] - e[x, x, v, x] - e[x, x, x, v]))
-    )
-    print("Correlation energy:     {:20.15f}".format(correlation_energy))
+    integrals.get_ao_1e_dipole()
