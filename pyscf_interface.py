@@ -102,6 +102,22 @@ class Integrals(IntegralsInterface):
         return self._compute_ao_1e('dipole', compute, integrate_spin, save,
                                    ncomp=3)
 
+    def get_ao_1e_dipole(self, integrate_spin=True, save=False):
+        """Compute the dipole operator in the atomic orbital basis.
+        
+        Args:
+          integrate_spin (bool): Use spatial orbitals instead of spin-orbitals?
+          save (bool): Save the computed array for later use?
+    
+        Returns:
+          A 3 x nbf x nbf array of dipole operator integrals,
+          < mu(1) | r | nu(1) >.
+        """
+        mu = self._pyscf_molecule.intor('cint1e_r_sph', comp=3)
+        print(mu)
+        print(mu.shape)
+        print(self._pyscf_molecule.atom_coords())
+
     def get_ao_2e_repulsion(self, integrate_spin=True, save=False,
                             antisymmetrize=False):
         """Compute electron-repulsion operator in the atomic orbital basis.
