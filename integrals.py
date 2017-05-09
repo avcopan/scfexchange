@@ -51,12 +51,12 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
         """Compute overlap integrals for the atomic orbital basis.
     
         Args:
-          integrate_spin (bool): Use spatial orbitals instead of spin-orbitals?
-          save (bool): Save the computed array for later use?
+            integrate_spin (bool): Use spatial orbitals instead of spin-orbitals?
+            save (bool): Save the computed array for later use?
     
         Returns:
-          A nbf x nbf array of overlap integrals,
-          < mu(1) | nu(1) >.
+            A nbf x nbf array of overlap integrals,
+            < mu(1) | nu(1) >.
         """
         return
 
@@ -65,12 +65,12 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
         """Compute nuclear potential operator in the atomic orbital basis.
     
         Args:
-          integrate_spin (bool): Use spatial orbitals instead of spin-orbitals?
-          save (bool): Save the computed array for later use?
+            integrate_spin (bool): Use spatial orbitals instead of spin-orbitals?
+            save (bool): Save the computed array for later use?
     
         Returns:
-          A nbf x nbf array of nuclear potential operator integrals,
-          < mu(1) | sum_A Z_A / r_1A | nu(1) >.
+            A nbf x nbf array of nuclear potential operator integrals,
+            < mu(1) | sum_A Z_A / r_1A | nu(1) >.
         """
         return
 
@@ -79,12 +79,12 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
         """Compute kinetic energy operator in the atomic orbital basis.
     
         Args:
-          integrate_spin (bool): Use spatial orbitals instead of spin-orbitals?
-          save (bool): Save the computed array for later use?
+            integrate_spin (bool): Use spatial orbitals instead of spin-orbitals?
+            save (bool): Save the computed array for later use?
     
         Returns:
-          A nbf x nbf array of kinetic energy operator integrals,
-          < mu(1) | - 1 / 2 * nabla_1^2 | nu(1) >.
+            A nbf x nbf array of kinetic energy operator integrals,
+            < mu(1) | - 1 / 2 * nabla_1^2 | nu(1) >.
         """
         return
 
@@ -94,14 +94,14 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
         """Compute electron-repulsion operator in the atomic orbital basis.
     
         Args:
-          integrate_spin (bool): Use spatial orbitals instead of spin-orbitals?
-          save (bool): Save the computed array for later use?
-          antisymmetrize (bool): Antisymmetrize the repulsion integrals?
+            integrate_spin (bool): Use spatial orbitals instead of spin-orbitals?
+            save (bool): Save the computed array for later use?
+            antisymmetrize (bool): Antisymmetrize the repulsion integrals?
     
         Returns:
-          A nbf x nbf x nbf x nbf array of electron
-          repulsion operator integrals,
-          < mu(1) nu(2) | 1 / r_12 | rh(1) si(2) >.
+            A nbf x nbf x nbf x nbf array of electron
+            repulsion operator integrals,
+            < mu(1) nu(2) | 1 / r_12 | rh(1) si(2) >.
         """
         return
 
@@ -110,7 +110,7 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
         """Convert AO basis one-electron operator to the atomic spin-orbital basis.
     
         Returns:
-          An np.ndarray with shape (2*nbf, 2*nbf) where nbf is `self.nbf`.
+            An np.ndarray with shape (2*nbf, 2*nbf) where nbf is `self.nbf`.
         """
         return spla.block_diag(ao_1e_operator, ao_1e_operator)
 
@@ -119,8 +119,8 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
         """Convert AO basis two-electron operator to the atomic spin-orbital basis.
     
         Returns:
-          An np.ndarray with shape (2*nbf, 2*nbf, 2*nbf, 2*nbf) where nbf is
-          `self.nbf`.
+            An np.ndarray with shape (2*nbf, 2*nbf, 2*nbf, 2*nbf) where nbf is
+            `self.nbf`.
         """
         aso_2e_chem_operator = np.kron(np.identity(2),
                                        np.kron(np.identity(2),

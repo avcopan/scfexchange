@@ -41,12 +41,12 @@ class Integrals(IntegralsInterface):
         """Compute overlap integrals for the atomic orbital basis.
     
         Args:
-          integrate_spin (bool): Use spatial orbitals instead of spin-orbitals?
-          save (bool): Save the computed array for later use?
+            integrate_spin (bool): Use spatial orbitals instead of spin-orbitals?
+            save (bool): Save the computed array for later use?
     
         Returns:
-          A nbf x nbf array of overlap integrals,
-          < mu(1) | nu(1) >.
+            A nbf x nbf array of overlap integrals,
+            < mu(1) | nu(1) >.
         """
         def compute(): return np.array(self._mints_helper.ao_overlap())
         return self._compute_ao_1e('overlap', compute, integrate_spin, save)
@@ -55,12 +55,12 @@ class Integrals(IntegralsInterface):
         """Compute nuclear potential operator in the atomic orbital basis.
     
         Args:
-          integrate_spin (bool): Use spatial orbitals instead of spin-orbitals?
-          save (bool): Save the computed array for later use?
+            integrate_spin (bool): Use spatial orbitals instead of spin-orbitals?
+            save (bool): Save the computed array for later use?
     
         Returns:
-          A nbf x nbf array of nuclear potential operator integrals,
-          < mu(1) | sum_A Z_A / r_1A | nu(1) >.
+            A nbf x nbf array of nuclear potential operator integrals,
+            < mu(1) | sum_A Z_A / r_1A | nu(1) >.
         """
         def compute(): return np.array(self._mints_helper.ao_potential())
         return self._compute_ao_1e('potential', compute, integrate_spin, save)
@@ -69,12 +69,12 @@ class Integrals(IntegralsInterface):
         """Compute kinetic energy operator in the atomic orbital basis.
     
         Args:
-          integrate_spin (bool): Use spatial orbitals instead of spin-orbitals?
-          save (bool): Save the computed array for later use?
+            integrate_spin (bool): Use spatial orbitals instead of spin-orbitals?
+            save (bool): Save the computed array for later use?
     
         Returns:
-          A nbf x nbf array of kinetic energy operator integrals,
-          < mu(1) | - 1 / 2 * nabla_1^2 | nu(1) >.
+            A nbf x nbf array of kinetic energy operator integrals,
+            < mu(1) | - 1 / 2 * nabla_1^2 | nu(1) >.
         """
         def compute(): return np.array(self._mints_helper.ao_kinetic())
         return self._compute_ao_1e('kinetic', compute, integrate_spin, save)
@@ -84,14 +84,14 @@ class Integrals(IntegralsInterface):
         """Compute electron-repulsion operator in the atomic orbital basis.
     
         Args:
-          integrate_spin (bool): Use spatial orbitals instead of spin-orbitals?
-          save (bool): Save the computed array for later use?
-          antisymmetrize (bool): Antisymmetrize the repulsion integrals?
+            integrate_spin (bool): Use spatial orbitals instead of spin-orbitals?
+            save (bool): Save the computed array for later use?
+            antisymmetrize (bool): Antisymmetrize the repulsion integrals?
     
         Returns:
-          A nbf x nbf x nbf x nbf array of electron
-          repulsion operator integrals,
-          < mu(1) nu(2) | 1 / r_12 | rh(1) si(2) >.
+            A nbf x nbf x nbf x nbf array of electron
+            repulsion operator integrals,
+            < mu(1) nu(2) | 1 / r_12 | rh(1) si(2) >.
         """
         def compute(): return np.array(self._mints_helper.ao_eri())
         return self._compute_ao_2e('repulsion', compute, integrate_spin, save,
