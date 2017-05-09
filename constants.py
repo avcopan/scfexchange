@@ -1,60 +1,74 @@
+"""Physical constants, atom/isotope data, and conversion factors.
+
+Attributes:
+    BOHR_TO_ANGSTROM (float): Bohr to angstrom conversion factor.
+    ELEMENT_LABELS (list): A list of atomic symbols, indexed by element.
+    ELEMENT_CORE_ELECTRON_COUNTS (list): Atomic core electron counts, indexed
+        by element.
+    ISOTOPE_LABELS (list): Contains the atomic symbol of each element as well as
+        the labels of its isotopes, such as "H", "H1", "H2", etc.
+    ISOTOPE_MASSES (list): Isotopic masses, indexed by isotope.
+"""
 import re
 
 
-def get_charge(mass_label):
-    """Determine atomic charge from isotope label.
+# Helper functions
+def get_charge(isotope_label):
+    """Determine an atom's charge from its label.
   
     Args:
-      mass_label: A string containing an atomic symbol, followed by an optional
-        mass number identifying the isotope.
+        isotope_label: A string containing an atomic symbol, followed by an
+            optional mass number identifying the isotope.
     """
     try:
-        charge_label = re.search(r'([A-Za-z]{1,3})[0-9]{0,3}',
-                                 mass_label).group(1)
-        return charge_labels.index(charge_label.upper())
+        match = re.search(r'([A-Za-z]{1,3})[0-9]{0,3}', isotope_label)
+        element_label = match.group(1)
+        element_index = ELEMENT_LABELS.index(element_label.upper())
+        """int: The element index, which is equal to its charge."""
+        return element_index
     except:
         raise ValueError("Label {:s} does not identify an atom or isotope"
-                         .format(mass_label))
+                         .format(isotope_label))
 
 
-def get_mass(mass_label):
-    """Determine isotopic mass from isotope label.
+def get_mass(isotope_label):
+    """Determine an atom's mass from its label.
   
     Args:
-      mass_label: A string containing an atomic symbol, followed by an optional
-        mass number identifying the isotope.
+        isotope_label: A string containing an atomic symbol, followed by an
+            optional mass number identifying the isotope.
     """
     try:
-        return atomic_masses_lookup[mass_labels.index(mass_label.upper())]
+        isotope_index = ISOTOPE_LABELS.index(isotope_label.upper())
+        return ISOTOPE_MASSES[isotope_index]
     except:
         raise ValueError("Label {:s} does not identify an atom or isotope"
-                         .format(mass_label))
+                         .format(isotope_label))
 
 
-def get_ncore(mass_label):
-    """Determine the numer of core electrons from the isotope label.
+def get_core_electron_count(isotope_label):
+    """Determine an atom's core electron count from its label.
   
     Args:
-      mass_label: A string containing an atomic symbol, followed by an optional
-        mass number identifying the isotope.
+        isotope_label: A string containing an atomic symbol, followed by an
+            optional mass number identifying the isotope.
     """
     try:
-        charge_label = re.search(r'([A-Za-z]{1,3})[0-9]{0,3}',
-                                 mass_label).group(1)
-        return atomic_cores_lookup[charge_labels.index(charge_label.upper())]
+        match = re.search(r'([A-Za-z]{1,3})[0-9]{0,3}', isotope_label)
+        element_label = match.group(1)
+        element_index = ELEMENT_LABELS.index(element_label.upper())
+        return ELEMENT_CORE_ELECTRON_COUNTS[element_index]
     except:
         raise ValueError("Label {:s} does not identify an atom or isotope"
-                         .format(mass_label))
+                         .format(isotope_label))
 
 
-period_lengths = [2, 8, 8, 18, 18, 32, 32]
+# Conversion factors.
+BOHR_TO_ANGSTROM = 0.52917720859
 
-atomic_cores = ([sum(period_lengths[:period])] * period_length for
-                period, period_length in enumerate(period_lengths))
 
-atomic_cores_lookup = sum(atomic_cores, [0])
-
-charge_labels = [
+# Atomic data.
+ELEMENT_LABELS = [
     "X", "H", "HE", "LI", "BE", "B", "C", "N", "O", "F", "NE", "NA", "MG", "AL",
     "SI", "P", "S", "CL", "AR", "K", "CA", "SC", "TI", "V", "CR", "MN", "FE",
     "CO", "NI", "CU", "ZN", "GA", "GE", "AS", "SE", "BR", "KR", "RB", "SR", "Y",
@@ -66,7 +80,17 @@ charge_labels = [
     "LR", "RF", "DB", "SG", "BH", "HS", "MT", "DS", "RG", "UUB", "UUT", "UUQ",
     "UUP", "UUH", "UUS", "UUO"]
 
-mass_labels = [
+ELEMENT_CORE_ELECTRON_COUNTS = [
+    0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 10, 10, 10, 10, 10, 10, 10, 10, 18, 18, 18,
+    18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 36, 36, 36, 36,
+    36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 54, 54, 54, 54, 54,
+    54, 54, 54, 54, 54, 54, 54, 54, 54, 54, 54, 54, 54, 54, 54, 54, 54, 54, 54,
+    54, 54, 54, 54, 54, 54, 54, 54, 86, 86, 86, 86, 86, 86, 86, 86, 86, 86, 86,
+    86, 86, 86, 86, 86, 86, 86, 86, 86, 86, 86, 86, 86, 86, 86, 86, 86, 86, 86,
+    86, 86]
+
+# Isotope data
+ISOTOPE_LABELS = [
     "X", "H", "H1", "H2", "H3", "H4", "H5", "H6", "H7", "HE", "HE3", "HE4",
     "HE5", "HE6", "HE7", "HE8", "HE9", "HE10", "LI", "LI3", "LI4", "LI5", "LI6",
     "LI7", "LI8", "LI9", "LI10", "LI11", "LI12", "BE", "BE5", "BE6", "BE7",
@@ -457,7 +481,7 @@ mass_labels = [
     "UUP", "UUP287", "UUP288", "UUP289", "UUP290", "UUP291", "UUH", "UUH289",
     "UUH290", "UUH291", "UUH292", "UUS", "UUS291", "UUS292", "UUO", "UUO293"]
 
-atomic_masses_lookup = [
+ISOTOPE_MASSES = [
     0.0, 1.00782503207, 1.00782503207, 2.01410177785, 3.01604927767,
     4.027806424, 5.035311488, 6.044942594, 7.052749, 4.00260325415,
     3.01602931914, 4.00260325415, 5.012223624, 6.018889124, 7.028020618,
@@ -1085,5 +1109,5 @@ atomic_masses_lookup = [
 if __name__ == "__main__":
     print(get_charge("UUO293"))
     print(get_mass("UUO293"))
-    print(get_ncore("FR"))
-    print(get_ncore("RN"))
+    print(get_core_electron_count("FR"))
+    print(get_core_electron_count("RN"))

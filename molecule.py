@@ -1,8 +1,6 @@
 import numpy as np
 
-from . import atomdata
-
-bohr2angstrom = 0.52917720859
+from . import constants
 
 
 class NuclearFramework(object):
@@ -32,16 +30,15 @@ class NuclearFramework(object):
         """
         self.natoms = len(labels)
         self.labels = tuple(labels)
-        self.charges = tuple(atomdata.get_charge(lbl) for lbl in self.labels)
-        self.masses = tuple(atomdata.get_mass(lbl) for lbl in self.labels)
+        self.charges = tuple(constants.get_charge(lbl) for lbl in self.labels)
+        self.masses = tuple(constants.get_mass(lbl) for lbl in self.labels)
         self.coordinates = np.array(coordinates)
-        self.units = str(units.lower())
+        self.units = units.lower()
         # Determine the nuclear repulsion energy.
         self.nuclear_repulsion_energy = self._get_nuclear_repulsion_energy()
         # Make sure units have an allowed value.
         if self.units not in ("angstrom", "bohr"):
-            raise ValueError("{:s} is not a valid entry for self.units.  "
-                             "Try 'bohr' or 'angstrom'.".format(self.units))
+            raise ValueError("Units must be 'bohr' or 'angstrom'.")
 
     def _get_nuclear_repulsion_energy(self):
         """Calculate the nuclear repulsion energy.
@@ -49,9 +46,9 @@ class NuclearFramework(object):
         Returns:
             float: The nuclear repulsion energy.
         """
-        z = list(atomdata.get_charge(label) for label in self.labels)
+        z = list(constants.get_charge(label) for label in self.labels)
         r = (self.coordinates if self.units == 'bohr'
-             else self.coordinates / bohr2angstrom)
+             else self.coordinates / constants.BOHR_TO_ANGSTROM)
         nuclear_repulsion_energy = 0
         for a in range(self.natoms):
             for b in range(a):
@@ -87,13 +84,12 @@ class NuclearFramework(object):
         """
         if units == "angstrom" and self.units == "bohr":
             self.units = "angstrom"
-            self.coordinates *= bohr2angstrom
+            self.coordinates *= constants.BOHR_TO_ANGSTROM
         elif units == "bohr" and self.units == "angstrom":
             self.units = "bohr"
-            self.coordinates /= bohr2angstrom
+            self.coordinates /= constants.BOHR_TO_ANGSTROM
         elif self.units not in ("angstrom", "bohr"):
-            raise ValueError("{:s} is not a valid entry for coordinate units.  "
-                             "Try 'bohr' or 'angstrom'.".format(self.units))
+            raise ValueError("Units must be 'bohr' or 'angstrom'.")
 
     def __iter__(self):
         """Iterate over atomic labels and coordinates."""
@@ -142,7 +138,7 @@ class Molecule(object):
 
         # Determine the number of electrons, based on the number of protons and
         # the total charge.
-        nprot = sum(atomdata.get_charge(label) for label, _ in self.nuclei)
+        nprot = sum(constants.get_charge(label) for label, _ in self.nuclei)
         self.nelec = nprot - self.charge
 
         # Assuming a high-spin open-shell electronic state, so that S = M_S,

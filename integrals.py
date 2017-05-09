@@ -18,13 +18,13 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
     """
 
     def _compute_ao_1e(self, name, compute_ints, integrate_spin=True,
-                       save=False):
+                       save=False, ncomp=3):
         ao_name = "_ao_1e_{:s}".format(name)
         aso_name = "_aso_1e_{:s}".format(name)
         ints = compute_if_unknown(self, ao_name, compute_ints, save)
 
         def convert_to_aso():
-            return IntegralsInterface.convert_1e_ao_to_aso(ints)
+            return IntegralsInterface.convert_1e_ao_to_aso(ints, ncomp=3)
 
         if not integrate_spin:
             ints = compute_if_unknown(self, aso_name, convert_to_aso, save)
@@ -61,6 +61,20 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
         return
 
     @abc.abstractmethod
+    def get_ao_1e_kinetic(self, integrate_spin=True, save=False):
+        """Compute kinetic energy operator in the atomic orbital basis.
+    
+        Args:
+            integrate_spin (bool): Use spatial orbitals instead of spin-orbitals?
+            save (bool): Save the computed array for later use?
+    
+        Returns:
+            A nbf x nbf array of kinetic energy operator integrals,
+            < mu(1) | - 1 / 2 * nabla_1^2 | nu(1) >.
+        """
+        return
+
+    @abc.abstractmethod
     def get_ao_1e_potential(self, integrate_spin=True, save=False):
         """Compute nuclear potential operator in the atomic orbital basis.
     
@@ -74,19 +88,21 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
         """
         return
 
+    '''
     @abc.abstractmethod
-    def get_ao_1e_kinetic(self, integrate_spin=True, save=False):
-        """Compute kinetic energy operator in the atomic orbital basis.
-    
+    def get_ao_1e_dipole(self, integrate_spin=True, save=False):
+        """Compute the dipole operator in the atomic orbital basis.
+        
         Args:
-            integrate_spin (bool): Use spatial orbitals instead of spin-orbitals?
+            integrate_spin (bool): Use spatial orbitals?
             save (bool): Save the computed array for later use?
     
         Returns:
-            A nbf x nbf array of kinetic energy operator integrals,
-            < mu(1) | - 1 / 2 * nabla_1^2 | nu(1) >.
+            A 3 x nbf x nbf array of dipole operator integrals,
+            < mu(1) | [x, y, z] | nu(1) >
         """
-        return
+        pass
+    '''
 
     @abc.abstractmethod
     def get_ao_2e_repulsion(self, integrate_spin=True, save=False,
@@ -106,17 +122,27 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
         return
 
     @staticmethod
-    def convert_1e_ao_to_aso(ao_1e_operator):
-        """Convert AO basis one-electron operator to the atomic spin-orbital basis.
+    def convert_1e_ao_to_aso(ao_1e_operator, ncomp=1):
+        """Convert one-electron operator to the atomic spin-orbital basis.
+        
+        Args:
+            ao_1e_operator (np.ndarray): An AO basis one-electron operator.
     
         Returns:
             An np.ndarray with shape (2*nbf, 2*nbf) where nbf is `self.nbf`.
         """
-        return spla.block_diag(ao_1e_operator, ao_1e_operator)
+        comps = ao_1e_operator
+        if ncomp is 1 and ao_1e_operator.ndim is 2:
+            comps = [ao_1e_operator]
+        return np.array([spla.block_diag(comp, comp) for comp in comps])
 
     @staticmethod
     def convert_2e_ao_to_aso(ao_2e_chem_operator):
-        """Convert AO basis two-electron operator to the atomic spin-orbital basis.
+        """Convert two-electron operator to the atomic spin-orbital basis.
+
+        Args:
+            ao_2e_chem_operator (np.ndarray): An AO basis two-electron operator
+                with axes ordered in chemist's notation.
     
         Returns:
             An np.ndarray with shape (2*nbf, 2*nbf, 2*nbf, 2*nbf) where nbf is
