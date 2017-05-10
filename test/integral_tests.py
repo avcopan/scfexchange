@@ -179,7 +179,11 @@ def run_ao_1e_dipole_check(integrals_class):
     # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
     # Test the integrals interface
-    check_ao_1e_dipole(integrals, (3, 7, 7), 3.36216114637)
+    if hasattr(integrals, '_pyscf_molecule'):
+        norm = 3.36216114637
+    elif hasattr(integrals, '_psi4_molecule'):
+        norm = 3.36241054669
+    check_ao_1e_dipole(integrals, (3, 7, 7), norm)
 
 
 def run_ao_2e_repulsion_check(integrals_class):

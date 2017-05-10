@@ -86,9 +86,11 @@ class Integrals(IntegralsInterface):
     
         Returns:
             A 3 x nbf x nbf array of dipole operator integrals,
-            < mu(1) | [x, y, z] | nu(1) >
+            < mu(1) | [-x, -y, -z] | nu(1) >
         """
-        def compute(): return self._pyscf_molecule.intor('cint1e_r_sph', comp=3)
+        def compute():
+            ao_1e_position = self._pyscf_molecule.intor('cint1e_r_sph', comp=3)
+            return -ao_1e_position
         return self._compute_ao_1e('dipole', compute, integrate_spin, save,
                                    ncomp=3)
 
@@ -210,18 +212,11 @@ if __name__ == "__main__":
     # Build integrals
     integrals = Integrals(nuclei, "sto-3g")
     # Build orbitals
-    orbitals = Orbitals(integrals, charge=0, multiplicity=1,
-                               restrict_spin=False, n_frozen_orbitals=0)
-    e = orbitals.get_mo_energies(mo_type='spinor', mo_block='ov')
-    g = orbitals.get_mo_2e_repulsion(mo_type='spinor',
-                                              mo_block='o,o,v,v',
-                                              antisymmetrize=True)
-    nspocc = orbitals.naocc + orbitals.nbocc
-    o = slice(None, nspocc)
-    v = slice(nspocc, None)
-    x = np.newaxis
-    e_corr = (
-        1. / 4 * np.sum(g * g / (
-            e[o, x, x, x] + e[x, o, x, x] - e[x, x, v, x] - e[x, x, x, v]))
-    )
-    print(e_corr)
+    orbitals = Orbitals(integrals, charge=1, multiplicity=2,
+                        restrict_spin=False)
+    mu_nuc = nuclei.get_dipole_moment()
+    mu_ref = orbitals._pyscf_hf.dip_moment(unit_symbol='a.u.') - mu_nuc
+    print(nuclei.get_nuclear_repulsion_energy())
+    print(mu_ref.round(8))
+    print(orbitals.hf_energy)
+    print(mu_nuc)

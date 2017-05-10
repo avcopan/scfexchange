@@ -130,6 +130,13 @@ def check_mp2_energy(orbitals_instance, correlation_energy):
     assert(np.isclose(e_corr, correlation_energy))
 
 
+def check_dipole_moment(orbitals_instance, dipole_moment):
+    mo_1e_dipole = orbitals_instance.get_mo_1e_dipole(mo_type='spinor',
+                                                      mo_block='o,o')
+    mu = [np.trace(component) for component in mo_1e_dipole]
+    assert(np.allclose(mu, dipole_moment))
+
+
 def run_interface_check(integrals_class, orbitals_class):
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000,  0.0000000000, -0.1247219248],
@@ -244,13 +251,19 @@ def run_dipole_moment_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349,  0.9864370414],
                             [0.0000000000,  1.4343021349,  0.9864370414]])
     nuclei = NuclearFramework(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
-    orbitals = orbitals_class(integrals)
-    mo_1e_dipole = orbitals.get_mo_1e_dipole(mo_type='spinor',
-                                             mo_block='o,o')
-    mu_elec = [-np.trace(comp) for comp in mo_1e_dipole]
-    mu_nuc = nuclei.get_dipole_moment()
-    mu_ref = orbitals._pyscf_hf.dip_moment(unit_symbol='a.u.') - mu_nuc
-    assert(np.allclose(mu_elec, mu_ref))
+    orbitals1 = orbitals_class(integrals, charge=0, multiplicity=1,
+                               restrict_spin=False)
+    orbitals2 = orbitals_class(integrals, charge=1, multiplicity=2,
+                               restrict_spin=False)
+    # PySCF and Psi4 give different answers for the dipole, so I'm testing them
+    # separately for now.
+    if hasattr(integrals, '_pyscf_molecule'):
+        dipole_ref_1 = [0.0, 0.0, -0.29749417]
+        dipole_ref_2 = [0.0, 0.0, +0.09273273]
+    elif hasattr(integrals, '_psi4_molecule'):
+        dipole_ref_1 = [0.0, 0.0, -0.30116127]
+        dipole_ref_2 = [0.0, 0.0,  0.08943234]
+    check_dipole_moment(orbitals1, dipole_ref_1)
+    check_dipole_moment(orbitals2, dipole_ref_2)
 
