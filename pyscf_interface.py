@@ -43,7 +43,7 @@ class Integrals(IntegralsInterface):
         """
         self._pyscf_molecule.set_common_orig(origin)
 
-    def get_ao_1e_overlap(self, integrate_spin=True, save=False):
+    def get_ao_1e_overlap(self, integrate_spin=True, save=True):
         """Compute overlap integrals for the atomic orbital basis.
     
         Args:
@@ -54,12 +54,11 @@ class Integrals(IntegralsInterface):
             A nbf x nbf array of overlap integrals,
             < mu(1) | nu(1) >.
         """
-        def compute_ints():
-            return self._pyscf_molecule.intor('cint1e_ovlp_sph')
+        def compute_ints(): return self._pyscf_molecule.intor('cint1e_ovlp_sph')
         return self._compute_ao_1e('overlap', compute_ints, integrate_spin,
                                    save)
 
-    def get_ao_1e_kinetic(self, integrate_spin=True, save=False):
+    def get_ao_1e_kinetic(self, integrate_spin=True, save=True):
         """Compute kinetic energy operator in the atomic orbital basis.
     
         Args:
@@ -73,7 +72,7 @@ class Integrals(IntegralsInterface):
         def compute(): return self._pyscf_molecule.intor('cint1e_kin_sph')
         return self._compute_ao_1e('kinetic', compute, integrate_spin, save)
 
-    def get_ao_1e_potential(self, integrate_spin=True, save=False):
+    def get_ao_1e_potential(self, integrate_spin=True, save=True):
         """Compute nuclear potential operator in the atomic orbital basis.
     
         Args:
@@ -87,7 +86,7 @@ class Integrals(IntegralsInterface):
         def compute(): return self._pyscf_molecule.intor('cint1e_nuc_sph')
         return self._compute_ao_1e('potential', compute, integrate_spin, save)
 
-    def get_ao_1e_dipole(self, integrate_spin=True, save=False):
+    def get_ao_1e_dipole(self, integrate_spin=True, save=True):
         """Compute the dipole operator in the atomic orbital basis.
         
         Args:
@@ -102,23 +101,7 @@ class Integrals(IntegralsInterface):
         return self._compute_ao_1e('dipole', compute, integrate_spin, save,
                                    ncomp=3)
 
-    def get_ao_1e_dipole(self, integrate_spin=True, save=False):
-        """Compute the dipole operator in the atomic orbital basis.
-        
-        Args:
-          integrate_spin (bool): Use spatial orbitals instead of spin-orbitals?
-          save (bool): Save the computed array for later use?
-    
-        Returns:
-          A 3 x nbf x nbf array of dipole operator integrals,
-          < mu(1) | r | nu(1) >.
-        """
-        mu = self._pyscf_molecule.intor('cint1e_r_sph', comp=3)
-        print(mu)
-        print(mu.shape)
-        print(self._pyscf_molecule.atom_coords())
-
-    def get_ao_2e_repulsion(self, integrate_spin=True, save=False,
+    def get_ao_2e_repulsion(self, integrate_spin=True, save=True,
                             antisymmetrize=False):
         """Compute electron-repulsion operator in the atomic orbital basis.
     
@@ -232,14 +215,22 @@ if __name__ == "__main__":
     coordinates = np.array([[0.000, 0.000, -0.066],
                             [0.000, -0.759, 0.522],
                             [0.000, 0.759, 0.522]])
-
-    nuclei = NuclearFramework(labels, coordinates, units="angstrom")
-    integrals = Integrals(nuclei, "cc-pvdz")
-    print(np.linalg.norm(integrals.get_ao_1e_kinetic()))
-    '''
-    coc = nuclei.get_center_of_charge()
-    integrals.set_gauge_origin((0, 0, 0))
-    mu = integrals.get_ao_1e_dipole()
-    print(mu.shape)
-    print(np.linalg.norm(mu))
-    '''
+    nuclei = NuclearFramework(labels, coordinates)
+    # Build integrals
+    integrals = Integrals(nuclei, "sto-3g")
+    # Build orbitals
+    orbitals = Orbitals(integrals, charge=0, multiplicity=1,
+                               restrict_spin=False, n_frozen_orbitals=0)
+    e = orbitals.get_mo_energies(mo_type='spinor', mo_block='ov')
+    g = orbitals.get_mo_2e_repulsion(mo_type='spinor',
+                                              mo_block='o,o,v,v',
+                                              antisymmetrize=True)
+    nspocc = orbitals.naocc + orbitals.nbocc
+    o = slice(None, nspocc)
+    v = slice(nspocc, None)
+    x = np.newaxis
+    e_corr = (
+        1. / 4 * np.sum(g * g / (
+            e[o, x, x, x] + e[x, o, x, x] - e[x, x, v, x] - e[x, x, x, v]))
+    )
+    print(e_corr)

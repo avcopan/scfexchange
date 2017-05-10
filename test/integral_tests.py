@@ -72,23 +72,54 @@ def check_interface(integrals_instance):
            == (integrals_instance.nbf,) * 4)
 
 
-def check_save_option(integrals_instance):
+def check_ao_1e_overlap(integrals_instance, shape, norm):
     s = integrals_instance.get_ao_1e_overlap(save=True)
-    v = integrals_instance.get_ao_1e_potential(save=True)
-    t = integrals_instance.get_ao_1e_kinetic(save=True)
-    g = integrals_instance.get_ao_2e_repulsion(save=True)
-    assert(np.linalg.norm(s) != 0.0)
-    assert(np.linalg.norm(v) != 0.0)
-    assert(np.linalg.norm(t) != 0.0)
-    assert(np.linalg.norm(g) != 0.0)
-    s[:, :] = np.zeros(s.shape)
-    v[:, :] = np.zeros(v.shape)
-    t[:, :] = np.zeros(t.shape)
-    g[:, :, :, :] = np.zeros(g.shape)
-    assert(np.linalg.norm(integrals_instance.get_ao_1e_overlap()) == 0.0)
-    assert(np.linalg.norm(integrals_instance.get_ao_1e_potential()) == 0.0)
-    assert(np.linalg.norm(integrals_instance.get_ao_1e_kinetic()) == 0.0)
-    assert(np.linalg.norm(integrals_instance.get_ao_2e_repulsion()) == 0.0)
+    assert(s.shape == shape)
+    assert(np.isclose(np.linalg.norm(s), norm))
+    assert(hasattr(integrals_instance, '_ao_1e_overlap'))
+    integrals_instance._ao_1e_overlap[:, :] = np.zeros(s.shape)
+    s_new = integrals_instance.get_ao_1e_overlap()
+    assert(np.linalg.norm(s_new) == 0.0)
+
+
+def check_ao_1e_kinetic(integrals_instance, shape, norm):
+    s = integrals_instance.get_ao_1e_kinetic(save=True)
+    assert(s.shape == shape)
+    assert(np.isclose(np.linalg.norm(s), norm))
+    assert(hasattr(integrals_instance, '_ao_1e_kinetic'))
+    integrals_instance._ao_1e_kinetic[:, :] = np.zeros(s.shape)
+    s_new = integrals_instance.get_ao_1e_kinetic()
+    assert(np.linalg.norm(s_new) == 0.0)
+
+
+def check_ao_1e_potential(integrals_instance, shape, norm):
+    s = integrals_instance.get_ao_1e_potential(save=True)
+    assert(s.shape == shape)
+    assert(np.isclose(np.linalg.norm(s), norm))
+    assert(hasattr(integrals_instance, '_ao_1e_potential'))
+    integrals_instance._ao_1e_potential[:, :] = np.zeros(s.shape)
+    s_new = integrals_instance.get_ao_1e_potential()
+    assert(np.linalg.norm(s_new) == 0.0)
+
+
+def check_ao_1e_dipole(integrals_instance, shape, norm):
+    s = integrals_instance.get_ao_1e_dipole(save=True)
+    assert(s.shape == shape)
+    assert(np.isclose(np.linalg.norm(s), norm))
+    assert(hasattr(integrals_instance, '_ao_1e_dipole'))
+    integrals_instance._ao_1e_dipole[:, :, :] = np.zeros(s.shape)
+    s_new = integrals_instance.get_ao_1e_dipole()
+    assert(np.linalg.norm(s_new) == 0.0)
+
+
+def check_ao_2e_repulsion(integrals_instance, shape, norm):
+    s = integrals_instance.get_ao_2e_repulsion(save=True)
+    assert(s.shape == shape)
+    assert(np.isclose(np.linalg.norm(s), norm))
+    assert(hasattr(integrals_instance, '_ao_2e_chem_repulsion'))
+    integrals_instance._ao_2e_chem_repulsion[:, :, :, :] = np.zeros(s.shape)
+    s_new = integrals_instance.get_ao_2e_repulsion()
+    assert(np.linalg.norm(s_new) == 0.0)
 
 
 def run_interface_check(integrals_class):
@@ -103,14 +134,61 @@ def run_interface_check(integrals_class):
     check_interface(integrals)
 
 
-def run_save_option_check(integrals_class):
+def run_ao_1e_overlap_check(integrals_class):
     labels = ("O", "H", "H")
     coordinates = np.array([[0.000, 0.000, -0.066],
                             [0.000, -0.759, 0.522],
                             [0.000, 0.759, 0.522]])
     nuclei = NuclearFramework(labels, coordinates)
     # Build integrals
-    integrals = integrals_class(nuclei, "cc-pvdz")
-    # Test the save option
-    check_save_option(integrals)
+    integrals = integrals_class(nuclei, "sto-3g")
+    # Test the integrals interface
+    check_ao_1e_overlap(integrals, (7, 7), 2.95961615642)
 
+
+def run_ao_1e_kinetic_check(integrals_class):
+    labels = ("O", "H", "H")
+    coordinates = np.array([[0.000, 0.000, -0.066],
+                            [0.000, -0.759, 0.522],
+                            [0.000, 0.759, 0.522]])
+    nuclei = NuclearFramework(labels, coordinates)
+    # Build integrals
+    integrals = integrals_class(nuclei, "sto-3g")
+    # Test the integrals interface
+    check_ao_1e_kinetic(integrals, (7, 7), 29.3703412473)
+
+
+def run_ao_1e_potential_check(integrals_class):
+    labels = ("O", "H", "H")
+    coordinates = np.array([[0.000, 0.000, -0.066],
+                            [0.000, -0.759, 0.522],
+                            [0.000, 0.759, 0.522]])
+    nuclei = NuclearFramework(labels, coordinates)
+    # Build integrals
+    integrals = integrals_class(nuclei, "sto-3g")
+    # Test the integrals interface
+    check_ao_1e_potential(integrals, (7, 7), 67.1181391119)
+
+
+def run_ao_1e_dipole_check(integrals_class):
+    labels = ("O", "H", "H")
+    coordinates = np.array([[0.000, 0.000, -0.066],
+                            [0.000, -0.759, 0.522],
+                            [0.000, 0.759, 0.522]])
+    nuclei = NuclearFramework(labels, coordinates)
+    # Build integrals
+    integrals = integrals_class(nuclei, "sto-3g")
+    # Test the integrals interface
+    check_ao_1e_dipole(integrals, (3, 7, 7), 3.36216114637)
+
+
+def run_ao_2e_repulsion_check(integrals_class):
+    labels = ("O", "H", "H")
+    coordinates = np.array([[0.000, 0.000, -0.066],
+                            [0.000, -0.759, 0.522],
+                            [0.000, 0.759, 0.522]])
+    nuclei = NuclearFramework(labels, coordinates)
+    # Build integrals
+    integrals = integrals_class(nuclei, "sto-3g")
+    # Test the integrals interface
+    check_ao_2e_repulsion(integrals, (7, 7, 7, 7), 8.15009229415)

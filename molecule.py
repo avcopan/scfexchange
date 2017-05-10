@@ -76,6 +76,18 @@ class NuclearFramework(object):
         coc = sum(q * r for q, r in zip(self.charges, self.coordinates)) / q_tot
         return coc
 
+    def get_dipole_moment(self, origin=(0.0, 0.0, 0.0)):
+        """Get the nuclear dipole moment.
+        
+        Args:
+            origin (tuple): The point about which to compute the dipole moment.
+        
+        Returns:
+            np.ndarray: The dipole moment vector, [mu_x, mu_y, mu_z].
+        """
+        o = np.array(origin)
+        return sum(q * (r - o) for q, r in zip(self.charges, self.coordinates))
+
     def set_units(self, units):
         """Convert `self.coordinates` to different units.
     
