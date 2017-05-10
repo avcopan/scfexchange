@@ -182,7 +182,8 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         h = (self.integrals.get_ao_1e_kinetic(integrate_spin=True)
              + self.integrals.get_ao_1e_potential(integrate_spin=True))
         core_energy = np.sum((h + va / 2) * da + (h + vb / 2) * db)
-        return core_energy + self.integrals.nuclei.nuclear_repulsion_energy
+        e_nuc = self.molecule.nuclei.get_nuclear_repulsion_energy()
+        return core_energy + e_nuc
 
     def get_mo_1e_core_field(self, mo_type='alpha', mo_block='ov,ov',
                              r_matrix=None):

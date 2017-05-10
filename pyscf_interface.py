@@ -25,23 +25,14 @@ class Integrals(IntegralsInterface):
                 positions of the atomic centers.
             basis_label (str): What basis set to use.
         """
-        self._pyscf_molecule = pyscf.gto.Mole(atom=list(iter(nuclei)),
-                                              unit=nuclei.units,
+        self._pyscf_molecule = pyscf.gto.Mole(atom=str(nuclei),
+                                              unit="bohr",
                                               basis=basis_label)
         self._pyscf_molecule.build()
 
         self.nuclei = nuclei
         self.basis_label = basis_label
         self.nbf = int(self._pyscf_molecule.nao_nr())
-
-    def set_gauge_origin(self, origin=(0, 0, 0)):
-        """Set the gauge origin for integral computations.
-
-        Args:
-             origin: A 3-tuples specifying the gauge origin for the gauge
-                 integrals.
-        """
-        self._pyscf_molecule.set_common_orig(origin)
 
     def get_ao_1e_overlap(self, integrate_spin=True, save=True):
         """Compute overlap integrals for the atomic orbital basis.
@@ -212,9 +203,9 @@ if __name__ == "__main__":
     from . import constants
 
     labels = ("O", "H", "H")
-    coordinates = np.array([[0.000, 0.000, -0.066],
-                            [0.000, -0.759, 0.522],
-                            [0.000, 0.759, 0.522]])
+    coordinates = np.array([[0.0000000000,  0.0000000000, -0.1247219248],
+                            [0.0000000000, -1.4343021349,  0.9864370414],
+                            [0.0000000000,  1.4343021349,  0.9864370414]])
     nuclei = NuclearFramework(labels, coordinates)
     # Build integrals
     integrals = Integrals(nuclei, "sto-3g")
