@@ -28,8 +28,8 @@ class Integrals(IntegralsInterface):
         """
         self.nuclei = nuclei
         self.basis_label = basis_label
-        self._psi4_molecule = psi4.core.Molecule.create_molecule_from_string(
-            str(nuclei))
+        s = '\n'.join(["units bohr", str(nuclei)])
+        self._psi4_molecule = psi4.core.Molecule.create_molecule_from_string(s)
         self._psi4_molecule.reset_point_group("c1")
         self._psi4_molecule.update_geometry()
         self._mints_helper = self._get_mints_helper()
@@ -39,18 +39,6 @@ class Integrals(IntegralsInterface):
         basis = psi4.core.BasisSet.build(self._psi4_molecule, "BASIS",
                                          self.basis_label)
         return psi4.core.MintsHelper(basis)
-
-    def set_gauge_origin(self, origin, units="angstrom"):
-        """Set the gauge origin for integral computations.
-
-        Args:
-            origin (np.ndarray): A 3-component vector specifying the gauge 
-                origin for the integrals.
-            units (str): Either 'angstrom' or 'bohr', indicating the units of
-                `self.coordinates`.
-        """
-        raise NotImplementedError("Setting the gauge origin is not implemented "
-                                  "in the Psi4 interface.")
 
     def get_ao_1e_overlap(self, integrate_spin=True, save=True):
         """Compute overlap integrals for the atomic orbital basis.
@@ -231,9 +219,9 @@ if __name__ == "__main__":
     from . import constants
 
     labels = ("O", "H", "H")
-    coordinates = np.array([[0.000, 0.000, -0.066],
-                            [0.000, -0.759, 0.522],
-                            [0.000, 0.759, 0.522]])
+    coordinates = np.array([[0.0000000000,  0.0000000000, -0.1247219248],
+                            [0.0000000000, -1.4343021349,  0.9864370414],
+                            [0.0000000000,  1.4343021349,  0.9864370414]])
     nuclei = NuclearFramework(labels, coordinates)
     # Build integrals
     integrals = Integrals(nuclei, "sto-3g")

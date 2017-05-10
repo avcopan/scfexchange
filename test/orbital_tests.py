@@ -132,9 +132,9 @@ def check_mp2_energy(orbitals_instance, correlation_energy):
 
 def run_interface_check(integrals_class, orbitals_class):
     labels = ("O", "H", "H")
-    coordinates = np.array([[0.000, 0.000, -0.066],
-                            [0.000, -0.759, 0.522],
-                            [0.000, 0.759, 0.522]])
+    coordinates = np.array([[0.0000000000,  0.0000000000, -0.1247219248],
+                            [0.0000000000, -1.4343021349,  0.9864370414],
+                            [0.0000000000,  1.4343021349,  0.9864370414]])
     nuclei = NuclearFramework(labels, coordinates)
     # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
@@ -148,9 +148,9 @@ def run_interface_check(integrals_class, orbitals_class):
 
 def run_mo_1e_kinetic_check(integrals_class, orbitals_class):
     labels = ("O", "H", "H")
-    coordinates = np.array([[0.000, 0.000, -0.066],
-                            [0.000, -0.759, 0.522],
-                            [0.000, 0.759, 0.522]])
+    coordinates = np.array([[0.0000000000,  0.0000000000, -0.1247219248],
+                            [0.0000000000, -1.4343021349,  0.9864370414],
+                            [0.0000000000,  1.4343021349,  0.9864370414]])
     nuclei = NuclearFramework(labels, coordinates)
     # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
@@ -161,9 +161,9 @@ def run_mo_1e_kinetic_check(integrals_class, orbitals_class):
 
 def run_mo_1e_dipole_check(integrals_class, orbitals_class):
     labels = ("O", "H", "H")
-    coordinates = np.array([[0.000, 0.000, -0.066],
-                            [0.000, -0.759, 0.522],
-                            [0.000, 0.759, 0.522]])
+    coordinates = np.array([[0.0000000000,  0.0000000000, -0.1247219248],
+                            [0.0000000000, -1.4343021349,  0.9864370414],
+                            [0.0000000000,  1.4343021349,  0.9864370414]])
     nuclei = NuclearFramework(labels, coordinates)
     # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
@@ -174,9 +174,9 @@ def run_mo_1e_dipole_check(integrals_class, orbitals_class):
 
 def run_mo_slicing_check(integrals_class, orbitals_class):
     labels = ("O", "H", "H")
-    coordinates = np.array([[0.000, 0.000, -0.066],
-                            [0.000, -0.759, 0.522],
-                            [0.000, 0.759, 0.522]])
+    coordinates = np.array([[0.0000000000,  0.0000000000, -0.1247219248],
+                            [0.0000000000, -1.4343021349,  0.9864370414],
+                            [0.0000000000,  1.4343021349,  0.9864370414]])
     nuclei = NuclearFramework(labels, coordinates)
     # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
@@ -194,9 +194,9 @@ def run_mo_slicing_check(integrals_class, orbitals_class):
 
 def run_core_energy_check(integrals_class, orbitals_class):
     labels = ("O", "H", "H")
-    coordinates = np.array([[0.000, 0.000, -0.066],
-                            [0.000, -0.759, 0.522],
-                            [0.000, 0.759, 0.522]])
+    coordinates = np.array([[0.0000000000,  0.0000000000, -0.1247219248],
+                            [0.0000000000, -1.4343021349,  0.9864370414],
+                            [0.0000000000,  1.4343021349,  0.9864370414]])
     nuclei = NuclearFramework(labels, coordinates)
     # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
@@ -210,9 +210,9 @@ def run_core_energy_check(integrals_class, orbitals_class):
 
 def run_mp2_energy_check(integrals_class, orbitals_class):
     labels = ("O", "H", "H")
-    coordinates = np.array([[0.000, 0.000, -0.066],
-                            [0.000, -0.759, 0.522],
-                            [0.000, 0.759, 0.522]])
+    coordinates = np.array([[0.0000000000,  0.0000000000, -0.1247219248],
+                            [0.0000000000, -1.4343021349,  0.9864370414],
+                            [0.0000000000,  1.4343021349,  0.9864370414]])
     nuclei = NuclearFramework(labels, coordinates)
     # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
@@ -240,11 +240,10 @@ def run_mp2_energy_check(integrals_class, orbitals_class):
 
 def run_dipole_moment_check(integrals_class, orbitals_class):
     labels = ("O", "H", "H")
-    coordinates = np.array([[0.000, 0.000, -0.066],
-                            [0.000, -0.759, 0.522],
-                            [0.000, 0.759, 0.522]])
+    coordinates = np.array([[0.0000000000,  0.0000000000, -0.1247219248],
+                            [0.0000000000, -1.4343021349,  0.9864370414],
+                            [0.0000000000,  1.4343021349,  0.9864370414]])
     nuclei = NuclearFramework(labels, coordinates)
-    nuclei.set_units("bohr")
     # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
     orbitals = orbitals_class(integrals)
