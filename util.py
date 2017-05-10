@@ -1,4 +1,4 @@
-def compute_if_unknown(instance, attr_name, compute_attr, set_attr=False):
+def compute_if_unknown(instance, attr_name, compute_attr, set_attr=True):
     """Compute a value if the instance doesn't know it already.
   
     If the instance has this value stored as an attribute, return that.  Otherwise

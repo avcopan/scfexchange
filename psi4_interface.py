@@ -5,6 +5,7 @@ import numpy as np
 from .integrals import IntegralsInterface
 from .orbitals import OrbitalsInterface
 from .molecule import Molecule
+from . import constants
 
 
 class Integrals(IntegralsInterface):
@@ -25,23 +26,37 @@ class Integrals(IntegralsInterface):
                 positions of the atomic centers.
             basis_label (str): What basis set to use.
         """
-        self._psi4_molecule = (
-            psi4.core.Molecule.create_molecule_from_string(str(nuclei))
-        )
-        self._psi4_molecule.reset_point_group("c1")
-        self._psi4_molecule.update_geometry()
-        basisset = psi4.core.BasisSet.build(self._psi4_molecule, "BASIS",
-                                            basis_label)
-        self._mints_helper = psi4.core.MintsHelper(basisset)
         self.nuclei = nuclei
         self.basis_label = basis_label
+        self._psi4_molecule = psi4.core.Molecule.create_molecule_from_string(
+            str(nuclei))
+        self._psi4_molecule.reset_point_group("c1")
+        self._psi4_molecule.update_geometry()
+        self._mints_helper = self._get_mints_helper()
         self.nbf = int(self._mints_helper.nbf())
 
-    def get_ao_1e_overlap(self, integrate_spin=True, save=False):
+    def _get_mints_helper(self):
+        basis = psi4.core.BasisSet.build(self._psi4_molecule, "BASIS",
+                                         self.basis_label)
+        return psi4.core.MintsHelper(basis)
+
+    def set_gauge_origin(self, origin, units="angstrom"):
+        """Set the gauge origin for integral computations.
+
+        Args:
+            origin (np.ndarray): A 3-component vector specifying the gauge 
+                origin for the integrals.
+            units (str): Either 'angstrom' or 'bohr', indicating the units of
+                `self.coordinates`.
+        """
+        raise NotImplementedError("Setting the gauge origin is not implemented "
+                                  "in the Psi4 interface.")
+
+    def get_ao_1e_overlap(self, integrate_spin=True, save=True):
         """Compute overlap integrals for the atomic orbital basis.
     
         Args:
-            integrate_spin (bool): Use spatial orbitals instead of spin-orbitals?
+            integrate_spin (bool): Use spatial orbitals?
             save (bool): Save the computed array for later use?
     
         Returns:
@@ -51,25 +66,11 @@ class Integrals(IntegralsInterface):
         def compute(): return np.array(self._mints_helper.ao_overlap())
         return self._compute_ao_1e('overlap', compute, integrate_spin, save)
 
-    def get_ao_1e_potential(self, integrate_spin=True, save=False):
-        """Compute nuclear potential operator in the atomic orbital basis.
-    
-        Args:
-            integrate_spin (bool): Use spatial orbitals instead of spin-orbitals?
-            save (bool): Save the computed array for later use?
-    
-        Returns:
-            A nbf x nbf array of nuclear potential operator integrals,
-            < mu(1) | sum_A Z_A / r_1A | nu(1) >.
-        """
-        def compute(): return np.array(self._mints_helper.ao_potential())
-        return self._compute_ao_1e('potential', compute, integrate_spin, save)
-
-    def get_ao_1e_kinetic(self, integrate_spin=True, save=False):
+    def get_ao_1e_kinetic(self, integrate_spin=True, save=True):
         """Compute kinetic energy operator in the atomic orbital basis.
     
         Args:
-            integrate_spin (bool): Use spatial orbitals instead of spin-orbitals?
+            integrate_spin (bool): Use spatial orbitals?
             save (bool): Save the computed array for later use?
     
         Returns:
@@ -79,12 +80,40 @@ class Integrals(IntegralsInterface):
         def compute(): return np.array(self._mints_helper.ao_kinetic())
         return self._compute_ao_1e('kinetic', compute, integrate_spin, save)
 
-    def get_ao_2e_repulsion(self, integrate_spin=True, save=False,
+    def get_ao_1e_potential(self, integrate_spin=True, save=True):
+        """Compute nuclear potential operator in the atomic orbital basis.
+    
+        Args:
+            integrate_spin (bool): Use spatial orbitals?
+            save (bool): Save the computed array for later use?
+    
+        Returns:
+            A nbf x nbf array of nuclear potential operator integrals,
+            < mu(1) | sum_A Z_A / r_1A | nu(1) >.
+        """
+        def compute(): return np.array(self._mints_helper.ao_potential())
+        return self._compute_ao_1e('potential', compute, integrate_spin, save)
+
+    def get_ao_1e_dipole(self, integrate_spin=True, save=True):
+        """Compute the dipole operator in the atomic orbital basis.
+        
+        Args:
+            integrate_spin (bool): Use spatial orbitals?
+            save (bool): Save the computed array for later use?
+    
+        Returns:
+            A 3 x nbf x nbf array of dipole operator integrals,
+            < mu(1) | [x, y, z] | nu(1) >
+        """
+        raise NotImplementedError("Dipole integrals are not implemented in "
+                                  "the Psi4 interface.")
+
+    def get_ao_2e_repulsion(self, integrate_spin=True, save=True,
                             antisymmetrize=False):
         """Compute electron-repulsion operator in the atomic orbital basis.
     
         Args:
-            integrate_spin (bool): Use spatial orbitals instead of spin-orbitals?
+            integrate_spin (bool): Use spatial orbitals?
             save (bool): Save the computed array for later use?
             antisymmetrize (bool): Antisymmetrize the repulsion integrals?
     
@@ -199,20 +228,29 @@ class Orbitals(OrbitalsInterface):
 if __name__ == "__main__":
     import numpy as np
     from .molecule import NuclearFramework
+    from . import constants
 
     labels = ("O", "H", "H")
     coordinates = np.array([[0.000, 0.000, -0.066],
                             [0.000, -0.759, 0.522],
                             [0.000, 0.759, 0.522]])
-
-    nuclei = NuclearFramework(labels, coordinates, units="angstrom")
+    nuclei = NuclearFramework(labels, coordinates)
+    # Build integrals
     integrals = Integrals(nuclei, "sto-3g")
-    s = integrals.get_ao_1e_overlap(integrate_spin=False, save=True)
-    g = integrals.get_ao_2e_repulsion(integrate_spin=False, save=True,
-                                      antisymmetrize=True)
-    print(g.shape)
-    orbitals = Orbitals(integrals, charge=+1, multiplicity=2)
-    t = orbitals.get_mo_1e_kinetic(mo_type='spinor', save=True)
-    g = orbitals.get_mo_2e_repulsion(mo_type='spinor', save=True,
-                                     antisymmetrize=True)
-
+    # Build orbitals
+    orbitals = Orbitals(integrals, charge=1, multiplicity=2,
+                               restrict_spin=False, n_frozen_orbitals=1)
+    e = orbitals.get_mo_energies(mo_type='spinor', mo_block='ov')
+    g = orbitals.get_mo_2e_repulsion(mo_type='spinor',
+                                              mo_block='o,o,v,v',
+                                              antisymmetrize=True)
+    nspocc = orbitals.naocc + orbitals.nbocc
+    o = slice(None, nspocc)
+    v = slice(nspocc, None)
+    x = np.newaxis
+    e_corr = (
+        1. / 4 * np.sum(g * g / (
+            e[o, x, x, x] + e[x, o, x, x] - e[x, x, v, x] - e[x, x, x, v]))
+    )
+    print()
+    print(e_corr)

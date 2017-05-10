@@ -168,8 +168,6 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
     def _compute_ao_1e_core_field(self):
         da = self._get_ao_1e_density_matrix('alpha', mo_block='c')
         db = self._get_ao_1e_density_matrix('beta', mo_block='c')
-        h = (self.integrals.get_ao_1e_kinetic(integrate_spin=True)
-             + self.integrals.get_ao_1e_potential(integrate_spin=True))
         g = self.integrals.get_ao_2e_repulsion(integrate_spin=True)
         j = np.tensordot(g, da + db, axes=[(1, 3), (1, 0)])
         va = j - np.tensordot(g, da, axes=[(1, 2), (1, 0)])
@@ -179,7 +177,7 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
     def _compute_core_energy(self):
         da = self._get_ao_1e_density_matrix('alpha', mo_block='c')
         db = self._get_ao_1e_density_matrix('beta', mo_block='c')
-        va, vb = compute_if_unknown(self, 'ao_core_field',
+        va, vb = compute_if_unknown(self, '_ao_core_field',
                                     self._compute_ao_1e_core_field)
         h = (self.integrals.get_ao_1e_kinetic(integrate_spin=True)
              + self.integrals.get_ao_1e_potential(integrate_spin=True))
@@ -187,7 +185,7 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         return core_energy + self.integrals.nuclei.nuclear_repulsion_energy
 
     def get_mo_1e_core_field(self, mo_type='alpha', mo_block='ov,ov',
-                             r_matrix=None, save=True):
+                             r_matrix=None):
         """Compute mean-field of the core electrons in the molecular orbital basis.
     
         Args:
@@ -200,7 +198,6 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
                 have the full dimension of the spatial or spin-orbital basis,
                 including frozen orbitals.  For spatial orbitals, this can be a
                 pair of arrays, one for each spin.
-            save (bool): Save the computed array for later use?
     
         Returns:
             A nbf x nbf array of core field integrals,
@@ -211,8 +208,8 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
                                       r_matrix=r_matrix)
         c2 = self.get_mo_coefficients(mo_type=mo_type, mo_block=mo_spaces[1],
                                       r_matrix=r_matrix)
-        va, vb = compute_if_unknown(self, 'ao_core_field',
-                                    self._compute_ao_1e_core_field, save)
+        va, vb = compute_if_unknown(self, '_ao_1e_core_field',
+                                    self._compute_ao_1e_core_field)
         if mo_type is 'alpha':
             v = va
         elif mo_type is 'beta':
@@ -222,7 +219,7 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         return c1.T.dot(v.dot(c2))
 
     def get_mo_1e_kinetic(self, mo_type='alpha', mo_block='ov,ov',
-                          r_matrix=None, save=False):
+                          r_matrix=None):
         """Compute kinetic energy operator in the molecular orbital basis.
     
         Args:
@@ -235,7 +232,6 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
                 have the full dimension of the spatial or spin-orbital basis,
                 including frozen orbitals.  For spatial orbitals, this can be a
                 pair of arrays, one for each spin.
-            save (bool): Save the computed array for later use?
     
         Returns:
             A nbf x nbf array of kinetic energy operator integrals,
@@ -246,12 +242,13 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
                                       r_matrix=r_matrix)
         c2 = self.get_mo_coefficients(mo_type=mo_type, mo_block=mo_spaces[1],
                                       r_matrix=r_matrix)
-        kwargs = {'integrate_spin': (mo_type is not 'spinor'), 'save': save}
-        t = self.integrals.get_ao_1e_kinetic(**kwargs)
+        t = self.integrals.get_ao_1e_kinetic(
+            integrate_spin=(mo_type is not 'spinor'),
+        )
         return c1.T.dot(t.dot(c2))
 
     def get_mo_1e_potential(self, mo_type='alpha', mo_block='ov,ov',
-                            r_matrix=None, save=False):
+                            r_matrix=None):
         """Compute nuclear potential operator in the molecular orbital basis.
     
         Args:
@@ -264,7 +261,6 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
                 have the full dimension of the spatial or spin-orbital basis,
                 including frozen orbitals.  For spatial orbitals, this can be a
                 pair of arrays, one for each spin.
-            save (bool): Save the computed array for later use?
     
         Returns:
             A nbf x nbf array of nuclear potential operator integrals,
@@ -275,12 +271,42 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
                                       r_matrix=r_matrix)
         c2 = self.get_mo_coefficients(mo_type=mo_type, mo_block=mo_spaces[1],
                                       r_matrix=r_matrix)
-        kwargs = {'integrate_spin': (mo_type is not 'spinor'), 'save': save}
-        v = self.integrals.get_ao_1e_potential(**kwargs)
+        v = self.integrals.get_ao_1e_potential(
+            integrate_spin=(mo_type is not 'spinor'),
+        )
         return c1.T.dot(v.dot(c2))
 
+    def get_mo_1e_dipole(self, mo_type='alpha', mo_block='ov,ov',
+                         r_matrix=None):
+        """Compute nuclear potential operator in the molecular orbital basis.
+    
+        Args:
+            mo_type (str): Molecular orbital type, 'alpha', 'beta', or 'spinor'.
+            mo_block (str): Any contiguous combination of 'c' (core),
+                'o' (occupied), and 'v' (virtual).  Defaults to 'ov', 
+                which denotes all unfrozen orbitals.
+            r_matrix (np.ndarray or tuple): Molecular orbital rotation to be
+                applied to the MO coefficients prior to transformation.  Must
+                have the full dimension of the spatial or spin-orbital basis,
+                including frozen orbitals.  For spatial orbitals, this can be a
+                pair of arrays, one for each spin.
+    
+        Returns:
+            A nbf x nbf array of nuclear potential operator integrals,
+            < p(1) | sum_A Z_A / r_1A | q(1) >.
+        """
+        mo_spaces = mo_block.split(',')
+        c1 = self.get_mo_coefficients(mo_type=mo_type, mo_block=mo_spaces[0],
+                                      r_matrix=r_matrix)
+        c2 = self.get_mo_coefficients(mo_type=mo_type, mo_block=mo_spaces[1],
+                                      r_matrix=r_matrix)
+        mu_comps = self.integrals.get_ao_1e_dipole(
+            integrate_spin=(mo_type is not 'spinor'),
+        )
+        return np.array([c1.T.dot(mu_comp.dot(c2)) for mu_comp in mu_comps])
+
     def get_mo_2e_repulsion(self, mo_type='alpha', mo_block='ov,ov,ov,ov',
-                            r_matrix=None, antisymmetrize=False, save=False):
+                            r_matrix=None, antisymmetrize=False):
         """Compute electron-repulsion operator in the molecular orbital basis.
     
         Args:
@@ -295,7 +321,6 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
                 pair of arrays, one for each spin.
             antisymmetrize (bool): Whether or not to symmetrize the repulsion
                 integrals as < p q || r s > = < p q | r s > - < p q | s r >.
-            save (bool): Save the computed array for later use?
     
         Returns:
             A nbf x nbf x nbf x nbf array of electron repulsion integrals,
@@ -303,11 +328,11 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         """
         mo_spaces = mo_block.split(',')
         kwargs = {
-            'integrate_spin': (mo_type is not 'spinor'),
-            'antisymmetrize': antisymmetrize,
-            'save': save
         }
-        g = self.integrals.get_ao_2e_repulsion(**kwargs)
+        g = self.integrals.get_ao_2e_repulsion(
+            integrate_spin=(mo_type is not 'spinor'),
+            antisymmetrize=antisymmetrize
+        )
         if mo_type is 'mixed':
             c1 = self.get_mo_coefficients(mo_type='alpha',
                                           mo_block=mo_spaces[0],

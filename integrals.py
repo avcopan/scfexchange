@@ -18,20 +18,20 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
     """
 
     def _compute_ao_1e(self, name, compute_ints, integrate_spin=True,
-                       save=False):
+                       save=True, ncomp=None):
         ao_name = "_ao_1e_{:s}".format(name)
-        aso_name = "_aso_1e_{:s}".format(name)
         ints = compute_if_unknown(self, ao_name, compute_ints, save)
 
         def convert_to_aso():
-            return IntegralsInterface.convert_1e_ao_to_aso(ints)
+            return IntegralsInterface.convert_1e_ao_to_aso(ints, ncomp)
 
         if not integrate_spin:
+            aso_name = "_aso_1e_{:s}".format(name)
             ints = compute_if_unknown(self, aso_name, convert_to_aso, save)
-        return ints
+        return ints.copy()
 
     def _compute_ao_2e(self, name, compute_ints, integrate_spin=True,
-                       save=False, antisymmetrize=False):
+                       save=True, antisymmetrize=False):
         ao_name = "_ao_2e_chem_{:s}".format(name)
         aso_name = "_aso_2e_chem_{:s}".format(name)
         chem_ints = compute_if_unknown(self, ao_name, compute_ints, save)
@@ -44,14 +44,14 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
         ints = chem_ints.transpose((0, 2, 1, 3))
         if antisymmetrize:
             ints = ints - ints.transpose((0, 1, 3, 2))
-        return ints
+        return ints.copy()
 
     @abc.abstractmethod
-    def get_ao_1e_overlap(self, integrate_spin=True, save=False):
+    def get_ao_1e_overlap(self, integrate_spin=True, save=True):
         """Compute overlap integrals for the atomic orbital basis.
     
         Args:
-            integrate_spin (bool): Use spatial orbitals instead of spin-orbitals?
+            integrate_spin (bool): Use spatial orbitals?
             save (bool): Save the computed array for later use?
     
         Returns:
@@ -61,25 +61,11 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
         return
 
     @abc.abstractmethod
-    def get_ao_1e_potential(self, integrate_spin=True, save=False):
-        """Compute nuclear potential operator in the atomic orbital basis.
-    
-        Args:
-            integrate_spin (bool): Use spatial orbitals instead of spin-orbitals?
-            save (bool): Save the computed array for later use?
-    
-        Returns:
-            A nbf x nbf array of nuclear potential operator integrals,
-            < mu(1) | sum_A Z_A / r_1A | nu(1) >.
-        """
-        return
-
-    @abc.abstractmethod
-    def get_ao_1e_kinetic(self, integrate_spin=True, save=False):
+    def get_ao_1e_kinetic(self, integrate_spin=True, save=True):
         """Compute kinetic energy operator in the atomic orbital basis.
     
         Args:
-            integrate_spin (bool): Use spatial orbitals instead of spin-orbitals?
+            integrate_spin (bool): Use spatial orbitals?
             save (bool): Save the computed array for later use?
     
         Returns:
@@ -89,12 +75,40 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
         return
 
     @abc.abstractmethod
-    def get_ao_2e_repulsion(self, integrate_spin=True, save=False,
+    def get_ao_1e_potential(self, integrate_spin=True, save=True):
+        """Compute nuclear potential operator in the atomic orbital basis.
+    
+        Args:
+            integrate_spin (bool): Use spatial orbitals?
+            save (bool): Save the computed array for later use?
+    
+        Returns:
+            A nbf x nbf array of nuclear potential operator integrals,
+            < mu(1) | sum_A Z_A / r_1A | nu(1) >.
+        """
+        return
+
+    @abc.abstractmethod
+    def get_ao_1e_dipole(self, integrate_spin=True, save=True):
+        """Compute the dipole operator in the atomic orbital basis.
+        
+        Args:
+            integrate_spin (bool): Use spatial orbitals?
+            save (bool): Save the computed array for later use?
+    
+        Returns:
+            A 3 x nbf x nbf array of dipole operator integrals,
+            < mu(1) | [x, y, z] | nu(1) >
+        """
+        pass
+
+    @abc.abstractmethod
+    def get_ao_2e_repulsion(self, integrate_spin=True, save=True,
                             antisymmetrize=False):
         """Compute electron-repulsion operator in the atomic orbital basis.
     
         Args:
-            integrate_spin (bool): Use spatial orbitals instead of spin-orbitals?
+            integrate_spin (bool): Use spatial orbitals?
             save (bool): Save the computed array for later use?
             antisymmetrize (bool): Antisymmetrize the repulsion integrals?
     
@@ -106,17 +120,30 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
         return
 
     @staticmethod
-    def convert_1e_ao_to_aso(ao_1e_operator):
-        """Convert AO basis one-electron operator to the atomic spin-orbital basis.
+    def convert_1e_ao_to_aso(ao_1e_operator, ncomp=None):
+        """Convert one-electron operator to the atomic spin-orbital basis.
+        
+        Args:
+            ao_1e_operator (np.ndarray): An AO basis one-electron operator.
+            ncomp (int): For multi-component integrals, this gives the number
+                of components.
     
         Returns:
             An np.ndarray with shape (2*nbf, 2*nbf) where nbf is `self.nbf`.
         """
-        return spla.block_diag(ao_1e_operator, ao_1e_operator)
+        if ncomp is None:
+            return spla.block_diag(ao_1e_operator, ao_1e_operator)
+        else:
+            comps = ao_1e_operator
+            return np.array([spla.block_diag(comp, comp) for comp in comps])
 
     @staticmethod
     def convert_2e_ao_to_aso(ao_2e_chem_operator):
-        """Convert AO basis two-electron operator to the atomic spin-orbital basis.
+        """Convert two-electron operator to the atomic spin-orbital basis.
+
+        Args:
+            ao_2e_chem_operator (np.ndarray): An AO basis two-electron operator
+                with axes ordered in chemist's notation.
     
         Returns:
             An np.ndarray with shape (2*nbf, 2*nbf, 2*nbf, 2*nbf) where nbf is
