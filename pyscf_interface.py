@@ -34,85 +34,99 @@ class Integrals(IntegralsInterface):
         self.basis_label = basis_label
         self.nbf = int(self._pyscf_molecule.nao_nr())
 
-    def get_ao_1e_overlap(self, integrate_spin=True, save=True):
-        """Compute overlap integrals for the atomic orbital basis.
+    def get_ao_1e_overlap(self, use_spinorbs=False, recompute=False):
+        """Get the overlap integrals.
+       
+        Returns the overlap matrix of the atomic-orbital basis, <mu(1)|nu(1)>.
     
         Args:
-            integrate_spin (bool): Use spatial orbitals?
-            save (bool): Save the computed array for later use?
+            use_spinorbs (bool): Return the integrals in the spin-orbital basis?
+            recompute (bool): Recompute the integrals, if we already have them?
     
         Returns:
-            A nbf x nbf array of overlap integrals,
-            < mu(1) | nu(1) >.
+            np.ndarray: The integrals.
         """
-        def compute_ints(): return self._pyscf_molecule.intor('cint1e_ovlp_sph')
-        return self._compute_ao_1e('overlap', compute_ints, integrate_spin,
-                                   save)
+        def integrate(): return self._pyscf_molecule.intor('cint1e_ovlp_sph')
+        s = self._compute_ao_1e('overlap', integrate, use_spinorbs, recompute)
+        return s
 
-    def get_ao_1e_kinetic(self, integrate_spin=True, save=True):
-        """Compute kinetic energy operator in the atomic orbital basis.
+    def get_ao_1e_kinetic(self, use_spinorbs=False, recompute=False):
+        """Get the kinetic energy integrals.
+        
+        Returns the representation of the electron kinetic-energy operator in
+        the atomic-orbital basis, <mu(1)| - 1 / 2 * nabla_1^2 |nu(1)>.
     
         Args:
-            integrate_spin (bool): Use spatial orbitals?
-            save (bool): Save the computed array for later use?
+            use_spinorbs (bool): Return the integrals in the spin-orbital basis?
+            recompute (bool): Recompute the integrals, if we already have them?
     
         Returns:
-            A nbf x nbf array of kinetic energy operator integrals,
-            < mu(1) | - 1 / 2 * nabla_1^2 | nu(1) >.
+            np.ndarray: The integrals.
         """
-        def compute(): return self._pyscf_molecule.intor('cint1e_kin_sph')
-        return self._compute_ao_1e('kinetic', compute, integrate_spin, save)
+        def integrate(): return self._pyscf_molecule.intor('cint1e_kin_sph')
+        t = self._compute_ao_1e('kinetic', integrate, use_spinorbs, recompute)
+        return t
 
-    def get_ao_1e_potential(self, integrate_spin=True, save=True):
-        """Compute nuclear potential operator in the atomic orbital basis.
+    def get_ao_1e_potential(self, use_spinorbs=False, recompute=False):
+        """Get the potential energy integrals.
+
+        Returns the representation of the nuclear potential operator in the
+        atomic-orbital basis, <mu(1)| sum_A Z_A / ||r_1 - r_A|| |nu(1)>.
     
         Args:
-            integrate_spin (bool): Use spatial orbitals?
-            save (bool): Save the computed array for later use?
+            use_spinorbs (bool): Return the integrals in the spin-orbital basis?
+            recompute (bool): Recompute the integrals, if we already have them?
     
         Returns:
-            A nbf x nbf array of nuclear potential operator integrals,
-            < mu(1) | sum_A Z_A / r_1A | nu(1) >.
+            np.ndarray: The integrals.
         """
-        def compute(): return self._pyscf_molecule.intor('cint1e_nuc_sph')
-        return self._compute_ao_1e('potential', compute, integrate_spin, save)
+        def integrate(): return self._pyscf_molecule.intor('cint1e_nuc_sph')
+        v = self._compute_ao_1e('potential', integrate, use_spinorbs, recompute)
+        return v
 
-    def get_ao_1e_dipole(self, integrate_spin=True, save=True):
-        """Compute the dipole operator in the atomic orbital basis.
+    def get_ao_1e_dipole(self, use_spinorbs=False, recompute=False):
+        """Get the dipole integrals.
+
+        Returns the representation of the electric dipole operator in the
+        atomic-orbital basis, <mu(1)| [-x, -y, -z] |nu(1)>.
         
         Args:
-            integrate_spin (bool): Use spatial orbitals?
-            save (bool): Save the computed array for later use?
+            use_spinorbs (bool): Return the integrals in the spin-orbital basis?
+            recompute (bool): Recompute the integrals, if we already have them?
     
         Returns:
-            A 3 x nbf x nbf array of dipole operator integrals,
-            < mu(1) | [-x, -y, -z] | nu(1) >
+            np.ndarray: The integrals.
         """
-        def compute():
-            ao_1e_position = self._pyscf_molecule.intor('cint1e_r_sph', comp=3)
-            return -ao_1e_position
-        return self._compute_ao_1e('dipole', compute, integrate_spin, save,
-                                   ncomp=3)
+        def integrate():
+            return -self._pyscf_molecule.intor('cint1e_r_sph', comp=3)
+        mu = self._compute_ao_1e('dipole', integrate, use_spinorbs, recompute,
+                                 ncomp=3)
+        return mu
 
-    def get_ao_2e_repulsion(self, integrate_spin=True, save=True,
+    def get_ao_2e_repulsion(self, use_spinorbs=False, recompute=False,
                             antisymmetrize=False):
-        """Compute electron-repulsion operator in the atomic orbital basis.
+        """Get the electron-repulsion integrals.
+
+        Returns the representation of the electron repulsion operator in the 
+        atomic-orbital basis, <mu(1) nu(2)| 1 / ||r_1 - r_2|| |rh(1) si(2)>.
+        Note that these are returned in physicist's notation.
     
         Args:
-            integrate_spin (bool): Use spatial orbitals?
-            save (bool): Save the computed array for later use?
-            antisymmetrize (bool): Antisymmetrize the repulsion integrals?
+            use_spinorbs (bool): Return the integrals in the spin-orbital basis?
+            recompute (bool): Recompute the integrals, if we already have them?
+            antisymmetrize (bool): Antisymmetrize the integral tensor?
     
         Returns:
-            A nbf x nbf x nbf x nbf array of electron
-            repulsion operator integrals,
-            < mu(1) nu(2) | 1 / r_12 | rh(1) si(2) >.
+            np.ndarray: The integrals.
         """
-        def compute():
+        def integrate():
             shape = (self.nbf, self.nbf, self.nbf, self.nbf)
             return self._pyscf_molecule.intor('cint2e_sph').reshape(shape)
-        return self._compute_ao_2e('repulsion', compute, integrate_spin, save,
-                                   antisymmetrize)
+        g = self._compute_ao_2e('repulsion', integrate, use_spinorbs, recompute)
+        g = g.transpose((0, 2, 1, 3))
+        if antisymmetrize:
+            g = g - g.transpose((0, 1, 3, 2))
+        return g
 
 
 class Orbitals(OrbitalsInterface):
@@ -200,7 +214,7 @@ class Orbitals(OrbitalsInterface):
 
 
 if __name__ == "__main__":
-    import numpy as np
+    import itertools as it
     from .molecule import NuclearFramework
     from . import constants
 
@@ -211,12 +225,15 @@ if __name__ == "__main__":
     nuclei = NuclearFramework(labels, coordinates)
     # Build integrals
     integrals = Integrals(nuclei, "sto-3g")
-    # Build orbitals
-    orbitals = Orbitals(integrals, charge=1, multiplicity=2,
-                        restrict_spin=False)
-    mu_nuc = nuclei.get_dipole_moment()
-    mu_ref = orbitals._pyscf_hf.dip_moment(unit_symbol='a.u.') - mu_nuc
-    print(nuclei.get_nuclear_repulsion_energy())
-    print(mu_ref.round(8))
-    print(orbitals.hf_energy)
-    print(mu_nuc)
+    # Test the integrals interface
+    shapes = []
+    norms = []
+    vars = ([(0, 1), (1, 2)], [True, False], [0, 1], ['alpha', 'beta', 'spinorb'])
+    for (charge, multp), restr, nfrz, mo_type in it.product(*vars):
+        orbitals = Orbitals(integrals, charge, multp,
+                                  restrict_spin=restr, n_frozen_orbitals=nfrz)
+        s = orbitals.get_mo_2e_repulsion(mo_type, mo_block='o,o,o,o')
+        shapes.append(s.shape)
+        norms.append(spla.norm(s))
+    print(shapes)
+    print(norms)

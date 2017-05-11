@@ -36,6 +36,26 @@ def test__orbital_mo_slicing():
     orbital_tests.run_mo_slicing_check(Integrals, Orbitals)
 
 
+def test__orbital_mo_1e_core_field():
+    orbital_tests.run_mo_1e_core_field_check(Integrals, Orbitals)
+
+
+def test__orbital_mo_1e_kinetic():
+    orbital_tests.run_mo_1e_kinetic_check(Integrals, Orbitals)
+
+
+def test__orbital_mo_1e_potential():
+    orbital_tests.run_mo_1e_potential_check(Integrals, Orbitals)
+
+
+def test__orbital_mo_1e_dipole():
+    orbital_tests.run_mo_1e_dipole_check(Integrals, Orbitals)
+
+
+def test__orbital_mo_2e_repulsion():
+    orbital_tests.run_mo_2e_repulsion_check(Integrals, Orbitals)
+
+
 def test__orbital_core_energy():
     orbital_tests.run_core_energy_check(Integrals, Orbitals)
 

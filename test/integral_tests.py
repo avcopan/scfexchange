@@ -21,6 +21,7 @@ def check_interface(integrals_instance):
     assert(hasattr(integrals_instance, 'get_ao_1e_overlap'))
     assert(hasattr(integrals_instance, 'get_ao_1e_potential'))
     assert(hasattr(integrals_instance, 'get_ao_1e_kinetic'))
+    assert(hasattr(integrals_instance, 'get_ao_1e_dipole'))
     assert(hasattr(integrals_instance, 'get_ao_2e_repulsion'))
     # Check method documentation
     assert(integrals_class.__init__.__doc__
@@ -37,6 +38,8 @@ def check_interface(integrals_instance):
            == IntegralsInterface.get_ao_1e_kinetic.__doc__)
     assert(integrals_instance.get_ao_1e_potential.__doc__
            == IntegralsInterface.get_ao_1e_potential.__doc__)
+    assert(integrals_instance.get_ao_1e_dipole.__doc__
+           == IntegralsInterface.get_ao_1e_dipole.__doc__)
     assert(integrals_instance.get_ao_2e_repulsion.__doc__
            == IntegralsInterface.get_ao_2e_repulsion.__doc__)
     # Check method signature
@@ -55,71 +58,87 @@ def check_interface(integrals_instance):
            inspect.signature(IntegralsInterface.get_ao_1e_kinetic))
     assert(inspect.signature(integrals_class.get_ao_1e_potential) ==
            inspect.signature(IntegralsInterface.get_ao_1e_potential))
+    assert(inspect.signature(integrals_class.get_ao_1e_dipole) ==
+           inspect.signature(IntegralsInterface.get_ao_1e_dipole))
     assert(inspect.signature(integrals_class.get_ao_2e_repulsion) ==
            inspect.signature(IntegralsInterface.get_ao_2e_repulsion))
     # Check method output
     assert(isinstance(integrals_instance.get_ao_1e_overlap(), np.ndarray))
     assert(isinstance(integrals_instance.get_ao_1e_kinetic(), np.ndarray))
     assert(isinstance(integrals_instance.get_ao_1e_potential(), np.ndarray))
+    assert(isinstance(integrals_instance.get_ao_1e_dipole(), np.ndarray))
     assert(isinstance(integrals_instance.get_ao_2e_repulsion(), np.ndarray))
+    nbf = integrals_instance.nbf
     assert(integrals_instance.get_ao_1e_overlap().shape
-           == (integrals_instance.nbf,) * 2)
+           == (nbf, nbf))
     assert(integrals_instance.get_ao_1e_kinetic().shape
-           == (integrals_instance.nbf,) * 2)
+           == (nbf, nbf))
     assert(integrals_instance.get_ao_1e_potential().shape
-           == (integrals_instance.nbf,) * 2)
+           == (nbf, nbf))
+    assert(integrals_instance.get_ao_1e_dipole().shape
+           == (3, nbf, nbf))
     assert(integrals_instance.get_ao_2e_repulsion().shape
-           == (integrals_instance.nbf,) * 4)
+           == (nbf, nbf, nbf, nbf))
 
 
 def check_ao_1e_overlap(integrals_instance, shape, norm):
-    s = integrals_instance.get_ao_1e_overlap(save=True)
+    s = integrals_instance.get_ao_1e_overlap()
     assert(s.shape == shape)
     assert(np.isclose(np.linalg.norm(s), norm))
     assert(hasattr(integrals_instance, '_ao_1e_overlap'))
     integrals_instance._ao_1e_overlap[:, :] = np.zeros(s.shape)
-    s_new = integrals_instance.get_ao_1e_overlap()
-    assert(np.linalg.norm(s_new) == 0.0)
+    s = integrals_instance.get_ao_1e_overlap()
+    assert(np.linalg.norm(s) == 0.0)
+    s = integrals_instance.get_ao_1e_overlap(recompute=True)
+    assert(np.isclose(np.linalg.norm(s), norm))
 
 
 def check_ao_1e_kinetic(integrals_instance, shape, norm):
-    s = integrals_instance.get_ao_1e_kinetic(save=True)
+    s = integrals_instance.get_ao_1e_kinetic()
     assert(s.shape == shape)
     assert(np.isclose(np.linalg.norm(s), norm))
     assert(hasattr(integrals_instance, '_ao_1e_kinetic'))
     integrals_instance._ao_1e_kinetic[:, :] = np.zeros(s.shape)
-    s_new = integrals_instance.get_ao_1e_kinetic()
-    assert(np.linalg.norm(s_new) == 0.0)
+    s = integrals_instance.get_ao_1e_kinetic()
+    assert(np.linalg.norm(s) == 0.0)
+    s = integrals_instance.get_ao_1e_kinetic(recompute=True)
+    assert(np.isclose(np.linalg.norm(s), norm))
 
 
 def check_ao_1e_potential(integrals_instance, shape, norm):
-    s = integrals_instance.get_ao_1e_potential(save=True)
+    s = integrals_instance.get_ao_1e_potential()
     assert(s.shape == shape)
     assert(np.isclose(np.linalg.norm(s), norm))
     assert(hasattr(integrals_instance, '_ao_1e_potential'))
     integrals_instance._ao_1e_potential[:, :] = np.zeros(s.shape)
-    s_new = integrals_instance.get_ao_1e_potential()
-    assert(np.linalg.norm(s_new) == 0.0)
+    s = integrals_instance.get_ao_1e_potential()
+    assert(np.linalg.norm(s) == 0.0)
+    s = integrals_instance.get_ao_1e_potential(recompute=True)
+    assert(np.isclose(np.linalg.norm(s), norm))
 
 
 def check_ao_1e_dipole(integrals_instance, shape, norm):
-    s = integrals_instance.get_ao_1e_dipole(save=True)
+    s = integrals_instance.get_ao_1e_dipole()
     assert(s.shape == shape)
     assert(np.isclose(np.linalg.norm(s), norm))
     assert(hasattr(integrals_instance, '_ao_1e_dipole'))
     integrals_instance._ao_1e_dipole[:, :, :] = np.zeros(s.shape)
-    s_new = integrals_instance.get_ao_1e_dipole()
-    assert(np.linalg.norm(s_new) == 0.0)
+    s = integrals_instance.get_ao_1e_dipole()
+    assert(np.linalg.norm(s) == 0.0)
+    s = integrals_instance.get_ao_1e_dipole(recompute=True)
+    assert(np.isclose(np.linalg.norm(s), norm))
 
 
 def check_ao_2e_repulsion(integrals_instance, shape, norm):
-    s = integrals_instance.get_ao_2e_repulsion(save=True)
+    s = integrals_instance.get_ao_2e_repulsion()
     assert(s.shape == shape)
     assert(np.isclose(np.linalg.norm(s), norm))
-    assert(hasattr(integrals_instance, '_ao_2e_chem_repulsion'))
-    integrals_instance._ao_2e_chem_repulsion[:, :, :, :] = np.zeros(s.shape)
-    s_new = integrals_instance.get_ao_2e_repulsion()
-    assert(np.linalg.norm(s_new) == 0.0)
+    assert(hasattr(integrals_instance, '_ao_2e_repulsion'))
+    integrals_instance._ao_2e_repulsion[:, :, :, :] = np.zeros(s.shape)
+    s = integrals_instance.get_ao_2e_repulsion()
+    assert(np.linalg.norm(s) == 0.0)
+    s = integrals_instance.get_ao_2e_repulsion(recompute=True)
+    assert(np.isclose(np.linalg.norm(s), norm))
 
 
 def run_interface_check(integrals_class):
