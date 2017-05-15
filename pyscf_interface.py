@@ -226,6 +226,42 @@ if __name__ == "__main__":
     # Build integrals
     integrals = Integrals(nuclei, "sto-3g")
     # Test the integrals interface
+    orbitals = Orbitals(integrals, charge=1, multiplicity=2,
+                        restrict_spin=False, n_frozen_orbitals=1)
+    nbf = integrals.nbf
+    i = np.identity(nbf)
+    norm_a = np.linalg.norm(orbitals._mo_coefficients[0,:,1:])
+    norm_b = np.linalg.norm(orbitals._mo_coefficients[1,:,1:])
+    print(norm_a)
+    print(norm_b)
+    norm_s = np.sqrt(norm_a ** 2 + norm_b ** 2)
+    c = orbitals.get_mo_coefficients(mo_type='alpha', mo_space='ov',
+                                     transformation=None)
+    assert(np.linalg.norm(c) == norm_a)
+    c = orbitals.get_mo_coefficients(mo_type='alpha', mo_space='ov',
+                                     transformation=i)
+    assert(np.linalg.norm(c) == norm_a)
+    c = orbitals.get_mo_coefficients(mo_type='alpha', mo_space='ov',
+                                     transformation=(i, i))
+    assert(np.linalg.norm(c) == norm_a)
+    c = orbitals.get_mo_coefficients(mo_type='beta', mo_space='ov',
+                                     transformation=None)
+    assert(np.linalg.norm(c) == norm_b)
+    c = orbitals.get_mo_coefficients(mo_type='beta', mo_space='ov',
+                                     transformation=i)
+    assert(np.linalg.norm(c) == norm_b)
+    c = orbitals.get_mo_coefficients(mo_type='beta', mo_space='ov',
+                                     transformation=(i, i))
+    assert(np.linalg.norm(c) == norm_b)
+    c = orbitals.get_mo_coefficients(mo_type='spinorb', mo_space='ov',
+                                     transformation=None)
+    assert(np.linalg.norm(c) == norm_s)
+    c = orbitals.get_mo_coefficients(mo_type='spinorb', mo_space='ov',
+                                     transformation=spla.block_diag(i, i))
+    assert(np.linalg.norm(c) == norm_s)
+
+
+    '''
     shapes = []
     norms = []
     vars = ([(0, 1), (1, 2)], [True, False], [0, 1], ['alpha', 'beta', 'spinorb'])
@@ -237,3 +273,4 @@ if __name__ == "__main__":
         norms.append(spla.norm(s))
     print(shapes)
     print(norms)
+    '''

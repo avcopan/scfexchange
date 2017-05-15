@@ -1,5 +1,6 @@
 import inspect
 import numpy as np
+import scipy.linalg as spla
 import itertools as it
 from scfexchange.integrals import IntegralsInterface
 from scfexchange.orbitals import OrbitalsInterface
@@ -94,17 +95,17 @@ def check_interface(orbitals_instance):
 
 
 def check_mo_slicing(orbitals_instance, mo_type, core_offset, occ_offset):
-    assert(orbitals_instance.get_mo_slice(mo_type, mo_block='c') ==
+    assert(orbitals_instance.get_mo_slice(mo_type, mo_space='c') ==
            slice(None, core_offset, None))
-    assert(orbitals_instance.get_mo_slice(mo_type, mo_block='o') ==
+    assert(orbitals_instance.get_mo_slice(mo_type, mo_space='o') ==
            slice(core_offset, occ_offset, None))
-    assert(orbitals_instance.get_mo_slice(mo_type, mo_block='v') ==
+    assert(orbitals_instance.get_mo_slice(mo_type, mo_space='v') ==
            slice(occ_offset, None, None))
-    assert(orbitals_instance.get_mo_slice(mo_type, mo_block='co') ==
+    assert(orbitals_instance.get_mo_slice(mo_type, mo_space='co') ==
            slice(None, occ_offset, None))
-    assert(orbitals_instance.get_mo_slice(mo_type, mo_block='ov') ==
+    assert(orbitals_instance.get_mo_slice(mo_type, mo_space='ov') ==
            slice(core_offset, None, None))
-    assert(orbitals_instance.get_mo_slice(mo_type, mo_block='cov') ==
+    assert(orbitals_instance.get_mo_slice(mo_type, mo_space='cov') ==
            slice(None, None, None))
 
 
@@ -127,7 +128,7 @@ def check_core_energy(orbitals_instance):
 
 
 def check_mp2_energy(orbitals_instance, correlation_energy):
-    e = orbitals_instance.get_mo_energies(mo_type='spinorb', mo_block='ov')
+    e = orbitals_instance.get_mo_energies(mo_type='spinorb', mo_space='ov')
     g = orbitals_instance.get_mo_2e_repulsion(mo_type='spinorb',
                                               mo_block='o,o,v,v',
                                               antisymmetrize=True)
@@ -140,13 +141,6 @@ def check_mp2_energy(orbitals_instance, correlation_energy):
             e[o, x, x, x] + e[x, o, x, x] - e[x, x, v, x] - e[x, x, x, v]))
     )
     assert(np.isclose(e_corr, correlation_energy))
-
-
-def check_dipole_moment(orbitals_instance, dipole_moment):
-    mo_1e_dipole = orbitals_instance.get_mo_1e_dipole(mo_type='spinorb',
-                                                      mo_block='o,o')
-    mu = [np.trace(component) for component in mo_1e_dipole]
-    assert(np.allclose(mu, dipole_moment))
 
 
 def run_interface_check(integrals_class, orbitals_class):
@@ -185,7 +179,7 @@ def run_mo_slicing_check(integrals_class, orbitals_class):
         check_mo_slicing(orbitals, 'spinorb', 2 * nfrz, naocc + nbocc)
 
 
-def run_core_energy_check(integrals_class, orbitals_class):
+def run_mo_coefficient_check(integrals_class, orbitals_class):
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000,  0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349,  0.9864370414],
@@ -194,64 +188,36 @@ def run_core_energy_check(integrals_class, orbitals_class):
     # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
     # Build orbitals
-    vars = ([(0, 1), (1, 2)], [True, False], [0, 1])
-    for (charge, multp), restr, nfrz in it.product(*vars):
-        orbitals = orbitals_class(integrals, charge, multp,
-                                  restrict_spin=restr, n_frozen_orbitals=nfrz)
-        check_core_energy(orbitals)
-
-
-def run_mp2_energy_check(integrals_class, orbitals_class):
-    labels = ("O", "H", "H")
-    coordinates = np.array([[0.0000000000,  0.0000000000, -0.1247219248],
-                            [0.0000000000, -1.4343021349,  0.9864370414],
-                            [0.0000000000,  1.4343021349,  0.9864370414]])
-    nuclei = NuclearFramework(labels, coordinates)
-    # Build integrals
-    integrals = integrals_class(nuclei, "sto-3g")
-    # Build orbitals
-    orbitals1 = orbitals_class(integrals, charge=0, multiplicity=1,
-                               restrict_spin=False, n_frozen_orbitals=0)
-    orbitals2 = orbitals_class(integrals, charge=0, multiplicity=1,
-                               restrict_spin=False, n_frozen_orbitals=1)
-    orbitals3 = orbitals_class(integrals, charge=0, multiplicity=1,
-                               restrict_spin=True, n_frozen_orbitals=0)
-    orbitals4 = orbitals_class(integrals, charge=0, multiplicity=1,
-                               restrict_spin=True, n_frozen_orbitals=1)
-    orbitals5 = orbitals_class(integrals, charge=1, multiplicity=2,
-                               restrict_spin=False, n_frozen_orbitals=0)
-    orbitals6 = orbitals_class(integrals, charge=1, multiplicity=2,
-                               restrict_spin=False, n_frozen_orbitals=1)
-    # Test the mp2 energy
-    check_mp2_energy(orbitals1, -0.0357395812441)
-    check_mp2_energy(orbitals2, -0.0356400911261)
-    check_mp2_energy(orbitals3, -0.0357395812441)
-    check_mp2_energy(orbitals4, -0.0356400911261)
-    check_mp2_energy(orbitals5, -0.0277892244936)
-    check_mp2_energy(orbitals6, -0.0277117354355)
-
-
-def run_dipole_moment_check(integrals_class, orbitals_class):
-    labels = ("O", "H", "H")
-    coordinates = np.array([[0.0000000000,  0.0000000000, -0.1247219248],
-                            [0.0000000000, -1.4343021349,  0.9864370414],
-                            [0.0000000000,  1.4343021349,  0.9864370414]])
-    nuclei = NuclearFramework(labels, coordinates)
-    integrals = integrals_class(nuclei, "sto-3g")
-    orbitals1 = orbitals_class(integrals, charge=0, multiplicity=1,
-                               restrict_spin=False)
-    orbitals2 = orbitals_class(integrals, charge=1, multiplicity=2,
-                               restrict_spin=False)
-    # PySCF and Psi4 give different answers for the dipole, so I'm testing them
-    # separately for now.
-    if hasattr(integrals, '_pyscf_molecule'):
-        dipole_ref_1 = [0.0, 0.0, -0.29749417]
-        dipole_ref_2 = [0.0, 0.0, +0.09273273]
-    elif hasattr(integrals, '_psi4_molecule'):
-        dipole_ref_1 = [0.0, 0.0, -0.30116127]
-        dipole_ref_2 = [0.0, 0.0,  0.08943234]
-    check_dipole_moment(orbitals1, dipole_ref_1)
-    check_dipole_moment(orbitals2, dipole_ref_2)
+    orbitals = orbitals_class(integrals, charge=1, multiplicity=2,
+                              restrict_spin=False, n_frozen_orbitals=1)
+    i = np.identity(integrals.nbf)
+    norm_a = 2.93589263808
+    norm_b = 2.93571596355
+    norm_s = np.sqrt(norm_a ** 2 + norm_b ** 2)
+    c = orbitals.get_mo_coefficients(mo_type='alpha', mo_space='ov',
+                                     transformation=None)
+    assert(np.isclose(np.linalg.norm(c), norm_a))
+    c = orbitals.get_mo_coefficients(mo_type='alpha', mo_space='ov',
+                                     transformation=i)
+    assert(np.isclose(np.linalg.norm(c), norm_a))
+    c = orbitals.get_mo_coefficients(mo_type='alpha', mo_space='ov',
+                                     transformation=(i, i))
+    assert(np.isclose(np.linalg.norm(c), norm_a))
+    c = orbitals.get_mo_coefficients(mo_type='beta', mo_space='ov',
+                                     transformation=None)
+    assert(np.isclose(np.linalg.norm(c), norm_b))
+    c = orbitals.get_mo_coefficients(mo_type='beta', mo_space='ov',
+                                     transformation=i)
+    assert(np.isclose(np.linalg.norm(c), norm_b))
+    c = orbitals.get_mo_coefficients(mo_type='beta', mo_space='ov',
+                                     transformation=(i, i))
+    assert(np.isclose(np.linalg.norm(c), norm_b))
+    c = orbitals.get_mo_coefficients(mo_type='spinorb', mo_space='ov',
+                                     transformation=None)
+    assert(np.isclose(np.linalg.norm(c), norm_s))
+    c = orbitals.get_mo_coefficients(mo_type='spinorb', mo_space='ov',
+                                     transformation=spla.block_diag(i, i))
+    assert(np.isclose(np.linalg.norm(c), norm_s))
 
 
 def run_mo_1e_core_field_check(integrals_class, orbitals_class):
@@ -430,3 +396,76 @@ def run_mo_2e_repulsion_check(integrals_class, orbitals_class):
         s = orbitals.get_mo_2e_repulsion(mo_type, 'o,o,o,o')
         assert(s.shape == next(shapes))
         assert(np.isclose(np.linalg.norm(s), next(norms)))
+
+
+def run_core_energy_check(integrals_class, orbitals_class):
+    labels = ("O", "H", "H")
+    coordinates = np.array([[0.0000000000,  0.0000000000, -0.1247219248],
+                            [0.0000000000, -1.4343021349,  0.9864370414],
+                            [0.0000000000,  1.4343021349,  0.9864370414]])
+    nuclei = NuclearFramework(labels, coordinates)
+    # Build integrals
+    integrals = integrals_class(nuclei, "sto-3g")
+    # Build orbitals
+    vars = ([(0, 1), (1, 2)], [True, False], [0, 1])
+    for (charge, multp), restr, nfrz in it.product(*vars):
+        orbitals = orbitals_class(integrals, charge, multp,
+                                  restrict_spin=restr, n_frozen_orbitals=nfrz)
+        check_core_energy(orbitals)
+
+
+def run_mp2_energy_check(integrals_class, orbitals_class):
+    labels = ("O", "H", "H")
+    coordinates = np.array([[0.0000000000,  0.0000000000, -0.1247219248],
+                            [0.0000000000, -1.4343021349,  0.9864370414],
+                            [0.0000000000,  1.4343021349,  0.9864370414]])
+    nuclei = NuclearFramework(labels, coordinates)
+    # Build integrals
+    integrals = integrals_class(nuclei, "sto-3g")
+    # Build orbitals
+    orbitals1 = orbitals_class(integrals, charge=0, multiplicity=1,
+                               restrict_spin=False, n_frozen_orbitals=0)
+    orbitals2 = orbitals_class(integrals, charge=0, multiplicity=1,
+                               restrict_spin=False, n_frozen_orbitals=1)
+    orbitals3 = orbitals_class(integrals, charge=0, multiplicity=1,
+                               restrict_spin=True, n_frozen_orbitals=0)
+    orbitals4 = orbitals_class(integrals, charge=0, multiplicity=1,
+                               restrict_spin=True, n_frozen_orbitals=1)
+    orbitals5 = orbitals_class(integrals, charge=1, multiplicity=2,
+                               restrict_spin=False, n_frozen_orbitals=0)
+    orbitals6 = orbitals_class(integrals, charge=1, multiplicity=2,
+                               restrict_spin=False, n_frozen_orbitals=1)
+    # Test the mp2 energy
+    check_mp2_energy(orbitals1, -0.0357395812441)
+    check_mp2_energy(orbitals2, -0.0356400911261)
+    check_mp2_energy(orbitals3, -0.0357395812441)
+    check_mp2_energy(orbitals4, -0.0356400911261)
+    check_mp2_energy(orbitals5, -0.0277892244936)
+    check_mp2_energy(orbitals6, -0.0277117354355)
+
+
+def run_dipole_moment_check(integrals_class, orbitals_class):
+    labels = ("O", "H", "H")
+    coordinates = np.array([[0.0000000000,  0.0000000000, -0.1247219248],
+                            [0.0000000000, -1.4343021349,  0.9864370414],
+                            [0.0000000000,  1.4343021349,  0.9864370414]])
+    nuclei = NuclearFramework(labels, coordinates)
+    integrals = integrals_class(nuclei, "sto-3g")
+    orbitals1 = orbitals_class(integrals, charge=0, multiplicity=1,
+                               restrict_spin=False)
+    orbitals2 = orbitals_class(integrals, charge=1, multiplicity=2,
+                               restrict_spin=False)
+    # PySCF and Psi4 give different answers for the dipole, so I'm testing them
+    # separately for now.
+    if hasattr(integrals, '_pyscf_molecule'):
+        dipole_ref_1 = [0.0, 0.0, -0.29749417]
+        dipole_ref_2 = [0.0, 0.0, +0.09273273]
+    elif hasattr(integrals, '_psi4_molecule'):
+        dipole_ref_1 = [0.0, 0.0, -0.30116127]
+        dipole_ref_2 = [0.0, 0.0,  0.08943234]
+    dipole_ints_1 = orbitals1.get_mo_1e_dipole('spinorb', 'o,o')
+    dipole_ints_2 = orbitals2.get_mo_1e_dipole('spinorb', 'o,o')
+    mu_1 = [np.trace(component) for component in dipole_ints_1]
+    mu_2 = [np.trace(component) for component in dipole_ints_2]
+    assert(np.allclose(mu_1, dipole_ref_1))
+    assert(np.allclose(mu_2, dipole_ref_2))
