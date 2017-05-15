@@ -216,7 +216,6 @@ class Orbitals(OrbitalsInterface):
 if __name__ == "__main__":
     import itertools as it
     from .molecule import NuclearFramework
-    from . import constants
 
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000,  0.0000000000, -0.1247219248],

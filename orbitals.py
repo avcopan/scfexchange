@@ -5,7 +5,6 @@ import scipy.linalg as spla
 
 from six import with_metaclass
 from .integrals import IntegralsInterface
-from .util import compute_if_unknown
 
 
 class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
