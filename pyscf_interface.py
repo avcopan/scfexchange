@@ -121,9 +121,9 @@ class Integrals(IntegralsInterface):
         """
         def integrate():
             shape = (self.nbf, self.nbf, self.nbf, self.nbf)
-            return self._pyscf_molecule.intor('cint2e_sph').reshape(shape)
+            g_chem = self._pyscf_molecule.intor('cint2e_sph').reshape(shape)
+            return g_chem.transpose((0, 2, 1, 3))
         g = self._compute_ao_2e('repulsion', integrate, use_spinorbs, recompute)
-        g = g.transpose((0, 2, 1, 3))
         if antisymmetrize:
             g = g - g.transpose((0, 1, 3, 2))
         return g

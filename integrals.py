@@ -4,6 +4,8 @@ import numpy as np
 import scipy.linalg as spla
 from six import with_metaclass
 
+import tensorutils as tu
+
 
 class IntegralsInterface(with_metaclass(abc.ABCMeta)):
     """Molecular integrals.
@@ -45,8 +47,11 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
         # If requested, transform the integrals to the spin-orbital basis and
         # store them as an attribute.
         if use_spinorbs:
-            integrals = IntegralsInterface.convert_1e_ao_to_aso(integrals,
-                                                                ncomp)
+            if ncomp is None:
+                integrals = tu.construct_spinorb_integrals(integrals)
+            else:
+                integrals = np.array([tu.construct_spinorb_integrals(comp)
+                                      for comp in integrals])
             setattr(self, "_aso_1e_" + name, integrals)
         return integrals
 
@@ -76,7 +81,7 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
         # If requested, transform the integrals to the spin-orbital basis and
         # store them as an attribute.
         if use_spinorbs:
-            integrals = IntegralsInterface.convert_2e_ao_to_aso(integrals)
+            integrals = tu.construct_spinorb_integrals(integrals)
             setattr(self, "_aso_2e_" + name, integrals)
         return integrals
 
@@ -161,41 +166,3 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
             np.ndarray: The integrals.
         """
         return
-
-    @staticmethod
-    def convert_1e_ao_to_aso(ao_1e_integrals, ncomp=None):
-        """Convert one-electron integrals to the atomic spin-orbital basis.
-        
-        Args:
-            ao_1e_integrals (np.ndarray): Spatial one-electron integrals.
-            ncomp (int): For multi-component integrals, this specifies the 
-                number of components.
-    
-        Returns:
-            np.ndarray: The spin-orbital one-electron integrals.
-        """
-        if ncomp is None:
-            return spla.block_diag(ao_1e_integrals, ao_1e_integrals)
-        else:
-            comps = ao_1e_integrals
-            return np.array([spla.block_diag(comp, comp) for comp in comps])
-
-    @staticmethod
-    def convert_2e_ao_to_aso(ao_2e_integrals):
-        """Convert two-electron operator to the atomic spin-orbital basis.
-
-        Converts spatial chemist notation integrals, (mu(1) rh(1)|nu(2) si(2)),
-        to the spin-orbital basis.
-        
-        Args:
-            ao_2e_integrals (np.ndarray): Spatial two-electron integrals in
-                chemist's notation.
-    
-        Returns:
-            np.ndarray: The spin-orbital two-electron integrals.
-        """
-        # Expand the integral over electron 2 in the spin-orbital basis.
-        partial_transform = np.kron(np.identity(2), ao_2e_integrals)
-        # Transpose and expand the other integral in the spin-orbital basis.
-        aso_2e_integrals = np.kron(np.identity(2), partial_transform.T)
-        return aso_2e_integrals
