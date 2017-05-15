@@ -99,9 +99,9 @@ class Integrals(IntegralsInterface):
         """
         def integrate():
             return -self._pyscf_molecule.intor('cint1e_r_sph', comp=3)
-        mu = self._compute_ao_1e('dipole', integrate, use_spinorbs, recompute,
-                                 ncomp=3)
-        return mu
+        d = self._compute_ao_1e('dipole', integrate, use_spinorbs, recompute,
+                                ncomp=3)
+        return d
 
     def get_ao_2e_repulsion(self, use_spinorbs=False, recompute=False,
                             antisymmetrize=False):

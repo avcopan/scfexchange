@@ -106,9 +106,9 @@ class Integrals(IntegralsInterface):
         def integrate():
             comps = self._mints_helper.ao_dipole()
             return np.array([np.array(comp) for comp in comps])
-        mu = self._compute_ao_1e('dipole', integrate, use_spinorbs, recompute,
-                                 ncomp=3)
-        return mu
+        d = self._compute_ao_1e('dipole', integrate, use_spinorbs, recompute,
+                                ncomp=3)
+        return d
 
     def get_ao_2e_repulsion(self, use_spinorbs=False, recompute=False,
                             antisymmetrize=False):
