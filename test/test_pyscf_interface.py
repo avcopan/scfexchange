@@ -36,6 +36,10 @@ def test__orbital_mo_slicing():
     orbital_tests.run_mo_slicing_check(Integrals, Orbitals)
 
 
+def test__orbital_mo_coefficients():
+    orbital_tests.run_mo_coefficient_check(Integrals, Orbitals)
+
+
 def test__orbital_mo_1e_core_field():
     orbital_tests.run_mo_1e_core_field_check(Integrals, Orbitals)
 
