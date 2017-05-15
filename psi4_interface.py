@@ -126,9 +126,10 @@ class Integrals(IntegralsInterface):
         Returns:
             np.ndarray: The integrals.
         """
-        def integrate(): return np.array(self._mints_helper.ao_eri())
+        def integrate():
+            g_chem = np.array(self._mints_helper.ao_eri())
+            return g_chem.transpose((0, 2, 1, 3))
         g = self._compute_ao_2e('repulsion', integrate, use_spinorbs, recompute)
-        g = g.transpose((0, 2, 1, 3))
         if antisymmetrize:
             g = g - g.transpose((0, 1, 3, 2))
         return g
