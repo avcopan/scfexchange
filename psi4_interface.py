@@ -180,8 +180,6 @@ class Orbitals(OrbitalsInterface):
         if not isinstance(integrals, Integrals):
             raise ValueError(
                 "Please use an integrals object from this interface.")
-        integrals._psi4_molecule.set_molecular_charge(charge)
-        integrals._psi4_molecule.set_multiplicity(multiplicity)
         self.integrals = integrals
         self.options = {
             'restrict_spin': restrict_spin,
@@ -196,6 +194,8 @@ class Orbitals(OrbitalsInterface):
         self.nbocc = self.molecule.nbeta - self.nfrz
         self.norb = self.integrals.nbf - self.nfrz
         # Build Psi4 HF object and compute the energy.
+        self.integrals._psi4_molecule.set_molecular_charge(charge)
+        self.integrals._psi4_molecule.set_multiplicity(multiplicity)
         wfn = psi4.core.Wavefunction.build(integrals._psi4_molecule,
                                            integrals.basis_label)
         sf, _ = psi4.driver.dft_functional.build_superfunctional("HF")

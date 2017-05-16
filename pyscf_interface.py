@@ -174,7 +174,6 @@ class Orbitals(OrbitalsInterface):
         if not isinstance(integrals, Integrals):
             raise ValueError(
                 "Please use an integrals object from this interface.")
-        integrals._pyscf_molecule.build(charge=charge, spin=multiplicity-1)
         self.integrals = integrals
         self.options = {
             'restrict_spin': restrict_spin,
@@ -189,6 +188,7 @@ class Orbitals(OrbitalsInterface):
         self.nbocc = self.molecule.nbeta - self.nfrz
         self.norb = self.integrals.nbf - self.nfrz
         # Build PySCF HF object and compute the energy.
+        self.integrals._pyscf_molecule.build(charge=charge, spin=multiplicity-1)
         if self.options['restrict_spin']:
             self._pyscf_hf = pyscf.scf.RHF(integrals._pyscf_molecule)
         else:
