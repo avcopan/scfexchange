@@ -53,7 +53,7 @@ class Integrals(IntegralsInterface):
             np.ndarray: The integrals.
         """
         def integrate(): return np.array(self._mints_helper.ao_overlap())
-        s = self._compute_ao_1e('overlap', integrate, use_spinorbs, recompute)
+        s = self._get_ints('1e_overlap', integrate, use_spinorbs, recompute)
         return s
 
     def get_ao_1e_kinetic(self, use_spinorbs=False, recompute=False):
@@ -70,7 +70,7 @@ class Integrals(IntegralsInterface):
             np.ndarray: The integrals.
         """
         def integrate(): return np.array(self._mints_helper.ao_kinetic())
-        t = self._compute_ao_1e('kinetic', integrate, use_spinorbs, recompute)
+        t = self._get_ints('1e_kinetic', integrate, use_spinorbs, recompute)
         return t
 
     def get_ao_1e_potential(self, use_spinorbs=False, recompute=False):
@@ -87,7 +87,7 @@ class Integrals(IntegralsInterface):
             np.ndarray: The integrals.
         """
         def integrate(): return np.array(self._mints_helper.ao_potential())
-        v = self._compute_ao_1e('potential', integrate, use_spinorbs, recompute)
+        v = self._get_ints('1e_potential', integrate, use_spinorbs, recompute)
         return v
 
     def get_ao_1e_dipole(self, use_spinorbs=False, recompute=False):
@@ -106,8 +106,8 @@ class Integrals(IntegralsInterface):
         def integrate():
             comps = self._mints_helper.ao_dipole()
             return np.array([np.array(comp) for comp in comps])
-        d = self._compute_ao_1e('dipole', integrate, use_spinorbs, recompute,
-                                ncomp=3)
+        d = self._get_ints('1e_dipole', integrate, use_spinorbs, recompute,
+                           ncomp=3)
         return d
 
     def get_ao_2e_repulsion(self, use_spinorbs=False, recompute=False,
@@ -129,7 +129,7 @@ class Integrals(IntegralsInterface):
         def integrate():
             g_chem = np.array(self._mints_helper.ao_eri())
             return g_chem.transpose((0, 2, 1, 3))
-        g = self._compute_ao_2e('repulsion', integrate, use_spinorbs, recompute)
+        g = self._get_ints('2e_repulsion', integrate, use_spinorbs, recompute)
         if antisymmetrize:
             g = g - g.transpose((0, 1, 3, 2))
         return g
