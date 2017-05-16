@@ -61,6 +61,36 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
             setattr(self, "_aso_" + name, integrals)
         return integrals
 
+    def get_ao_1e_core_hamiltonian(self, use_spinorbs=False, recompute=False,
+                                   electric_field=None):
+        """Get the core Hamiltonian integrals.
+
+        Returns the one-particle contribution to the Hamiltonian, i.e.
+        everything except for two-electron repulsion.  May include an external
+        static electric field in the dipole approximation.
+        
+        Args:
+            use_spinorbs (bool): Return the integrals in the spin-orbital basis?
+            recompute (bool): Recompute the integrals, if we already have them?
+            electric_field (np.ndarray): A three-component vector specifying 
+                the magnitude of an external static electric field.  Its 
+                negative dot product with the dipole integrals will be added 
+                to the core Hamiltonian.
+
+        Returns:
+            np.ndarray: The integrals.
+        """
+        t = self.get_ao_1e_kinetic(use_spinorbs=use_spinorbs,
+                                   recompute=recompute)
+        v = self.get_ao_1e_potential(use_spinorbs=use_spinorbs,
+                                     recompute=recompute)
+        h = t + v
+        if electric_field is not None:
+            d = self.get_ao_1e_dipole(use_spinorbs=use_spinorbs,
+                                      recompute=recompute)
+            h += -np.tensordot(d, electric_field, axes=(0, 0))
+        return h
+
     @abc.abstractmethod
     def get_ao_1e_overlap(self, use_spinorbs=False, recompute=False):
         """Get the overlap integrals.

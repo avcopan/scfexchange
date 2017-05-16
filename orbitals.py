@@ -162,9 +162,10 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
                                       transformation=transformation)
         c2 = self.get_mo_coefficients(mo_type=mo_type, mo_space=mo_spaces[1],
                                       transformation=transformation)
-        v = self.get_ao_1e_core_field(mo_type=mo_type,
-                                      transformation=transformation)
-        return c1.T.dot(v.dot(c2))
+        w_ao = self.get_ao_1e_core_field(mo_type=mo_type,
+                                         transformation=transformation)
+        w_mo = c1.T.dot(w_ao.dot(c2))
+        return w_mo
 
     def get_mo_1e_kinetic(self, mo_type='alpha', mo_block='ov,ov',
                           transformation=None):
@@ -252,6 +253,50 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         mu_ao = self.integrals.get_ao_1e_dipole(use_spinorbs)
         mu_mo = np.array([c1.T.dot(mu_ao_x.dot(c2)) for mu_ao_x in mu_ao])
         return mu_mo
+
+    def get_mo_1e_core_hamiltonian(self, mo_type='alpha', mo_block='ov,ov',
+                                   transformation=None, electric_field=None,
+                                   add_core_repulsion=True):
+        """Get the core Hamiltonian integrals.
+
+        Returns the one-particle contribution to the Hamiltonian, i.e.
+        everything except for two-electron repulsion.  May include an external
+        static electric field in the dipole approximation and/or the mean 
+        field of the frozen core electrons.
+        
+        Args:
+            mo_type (str): Orbital type, 'alpha', 'beta', or 'spinorb'.
+            mo_block (str): Any contiguous combination of 'c' (core),
+                'o' (occupied), and 'v' (virtual).  Defaults to 'ov', 
+                which denotes all unfrozen orbitals.
+            transformation (np.ndarray): Orbital transformation matrix to be
+                applied to the MO coefficients.  Either a single matrix or a 
+                pair of matrices for alpha and beta spins.
+            electric_field (np.ndarray): A three-component vector specifying the
+                magnitude of an external static electric field.  Its dot product
+                with the dipole integrals will be added to the core Hamiltonian.
+            add_core_repulsion (bool): Add in the core electron mean field?
+
+        Returns:
+            np.ndarray: The integrals.
+        """
+        mo_spaces = mo_block.split(',')
+        c1 = self.get_mo_coefficients(mo_type=mo_type, mo_space=mo_spaces[0],
+                                      transformation=transformation)
+        c2 = self.get_mo_coefficients(mo_type=mo_type, mo_space=mo_spaces[1],
+                                      transformation=transformation)
+        use_spinorbs = (mo_type is 'spinorb')
+        h_ao = self.integrals.get_ao_1e_core_hamiltonian(
+            use_spinorbs=use_spinorbs,
+            recompute=False,
+            electric_field=electric_field
+        )
+        if add_core_repulsion:
+            w_ao = self.get_ao_1e_core_field(mo_type=mo_type,
+                                             transformation=transformation)
+            h_ao += w_ao
+        h_mo = c1.T.dot(h_ao.dot(c2))
+        return h_mo
 
     def get_mo_2e_repulsion(self, mo_type='alpha', mo_block='ov,ov,ov,ov',
                             transformation=None, antisymmetrize=False):

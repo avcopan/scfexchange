@@ -24,6 +24,10 @@ def test__integral_get_ao_1e_dipole():
     integral_tests.run_ao_1e_dipole_check(Integrals)
 
 
+def test__integral_get_ao_1e_core_hamiltonian():
+    integral_tests.run_ao_1e_core_hamiltonian_check(Integrals)
+
+
 def test__integral_get_ao_2e_repulsion():
     integral_tests.run_ao_2e_repulsion_check(Integrals)
 

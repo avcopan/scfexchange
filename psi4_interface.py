@@ -233,9 +233,7 @@ class Orbitals(OrbitalsInterface):
 
 if __name__ == "__main__":
     import itertools as it
-    import numpy as np
     from .molecule import NuclearFramework
-    from . import constants
 
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000,  0.0000000000, -0.1247219248],
@@ -247,12 +245,14 @@ if __name__ == "__main__":
     # Test the integrals interface
     shapes = []
     norms = []
-    vars = ([(0, 1), (1, 2)], [True, False], [0, 1], ['alpha', 'beta', 'spinorb'])
-    for (charge, multp), restr, nfrz, mo_type in it.product(*vars):
+    ls = ([(0, 1), (1, 2)], [True, False], [0, 1], ['alpha', 'beta', 'spinorb'])
+    for (charge, multp), restr, nfrz, mo_type in it.product(*ls):
         orbitals = Orbitals(integrals, charge, multp,
-                                  restrict_spin=restr, n_frozen_orbitals=nfrz)
-        s = orbitals.get_mo_1e_dipole(mo_type, mo_block='o,o,o,o')
+                            restrict_spin=restr, n_frozen_orbitals=nfrz)
+        s = orbitals.get_mo_1e_core_hamiltonian(mo_type, 'o,o',
+                                                electric_field=[0, 0, 1],
+                                                add_core_repulsion=True)
         shapes.append(s.shape)
-        norms.append(spla.norm(s))
+        norms.append(np.linalg.norm(s))
     print(shapes)
     print(norms)
