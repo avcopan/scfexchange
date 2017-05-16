@@ -229,8 +229,6 @@ class Orbitals(OrbitalsInterface):
         sorting_indices = mso_energies.argsort()
         self._mso_energies = mso_energies[sorting_indices]
         self._mso_coefficients = mso_coefficients[:, sorting_indices]
-        # Get the core field and energy
-        self.core_energy = self._compute_core_energy()
 
 
 if __name__ == "__main__":

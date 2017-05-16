@@ -19,7 +19,6 @@ def check_interface(orbitals_instance):
     assert(hasattr(orbitals_instance, 'norb'))
     assert(hasattr(orbitals_instance, 'naocc'))
     assert(hasattr(orbitals_instance, 'nbocc'))
-    assert(hasattr(orbitals_instance, 'core_energy'))
     assert(hasattr(orbitals_instance, 'hf_energy'))
     # Check attribute types
     assert(isinstance(getattr(orbitals_instance, 'integrals'),
@@ -30,7 +29,6 @@ def check_interface(orbitals_instance):
     assert(isinstance(getattr(orbitals_instance, 'norb'), int))
     assert(isinstance(getattr(orbitals_instance, 'naocc'), int))
     assert(isinstance(getattr(orbitals_instance, 'nbocc'), int))
-    assert(isinstance(getattr(orbitals_instance, 'core_energy'), float))
     assert(isinstance(getattr(orbitals_instance, 'hf_energy'), float))
     # Check 'options' attribute
     assert(set(orbitals_instance.options.keys()) ==
@@ -121,7 +119,7 @@ def check_core_energy(orbitals_instance):
     g = orbitals_instance.get_mo_2e_repulsion(mo_type='spinorb',
                                               mo_block='o,o,o,o',
                                               antisymmetrize=True)
-    e_c = orbitals_instance.core_energy
+    e_c = orbitals_instance.get_core_energy()
     e_v = np.trace(h) + 1. / 2 * np.einsum("ijij", g)
     e_cv = np.trace(v)
     assert(np.isclose(e_c + e_v + e_cv, orbitals_instance.hf_energy))
