@@ -30,6 +30,35 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         hf_energy (float): The total Hartree-Fock energy.
     """
 
+    def get_mo_count(self, mo_type='alpha', mo_space='ov'):
+        """Return the number of orbitals in a given space.
+
+        Args:
+            mo_type (str): Orbital type, 'alpha', 'beta', or 'spinorb'.
+            mo_space (str): Any contiguous combination of 'c' (core),
+                'o' (occupied), and 'v' (virtual).  Defaults to 'ov', 
+                which denotes all unfrozen orbitals.
+
+        Returns:
+            np.ndarray: The orbital energies.
+        """
+        count = 0
+        if mo_type in ('alpha', 'spinorb'):
+            if 'c' in mo_space:
+                count += self.n_frozen_orbitals
+            if 'o' in mo_space:
+                count += self.molecule.nalpha - self.n_frozen_orbitals
+            if 'v' in mo_space:
+                count += self.integrals.nbf - self.molecule.nalpha
+        if mo_type in ('beta', 'spinorb'):
+            if 'c' in mo_space:
+                count += self.n_frozen_orbitals
+            if 'o' in mo_space:
+                count += self.molecule.nbeta - self.n_frozen_orbitals
+            if 'v' in mo_space:
+                count += self.integrals.nbf - self.molecule.nbeta
+        return count
+
     def get_mo_slice(self, mo_type='alpha', mo_space='ov'):
         """Return the slice for a specific subset of molecular orbitals.
     
@@ -43,39 +72,25 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
             slice: The slice for the requested MO space.
         """
         # Check the arguments to make sure all is kosher
-        if not mo_type in ('spinorb', 'alpha', 'beta'):
-            raise ValueError(
-                "Invalid mo_type argument '{:s}'.  Please use 'alpha', "
-                "'beta', or 'spinorb'.".format(mo_type))
-        if not mo_space in ('c', 'o', 'v', 'co', 'ov', 'cov'):
-            raise ValueError(
-                "Invalid mo_space argument '{:s}'.  Please use 'c', "
-                "'o', 'v', 'co', 'ov', or 'cov'.".format(mo_space))
-        # Assign slice start point
-        if mo_space.startswith('c'):
-            start = None
-        elif mo_type is 'spinorb':
-            start = 2 * self.nfrz if mo_space.startswith(
-                'o') else 2 * self.nfrz + self.naocc + self.nbocc
-        elif mo_type is 'alpha':
-            start = self.nfrz if mo_space.startswith(
-                'o') else self.nfrz + self.naocc
-        elif mo_type is 'beta':
-            start = self.nfrz if mo_space.startswith(
-                'o') else self.nfrz + self.nbocc
-        # Assign slice end point
-        if mo_space.endswith('v'):
-            end = None
-        elif mo_type is 'spinorb':
-            end = 2 * self.nfrz if mo_space.endswith(
-                'c') else 2 * self.nfrz + self.naocc + self.nbocc
-        elif mo_type is 'alpha':
-            end = self.nfrz if mo_space.endswith(
-                'c') else self.nfrz + self.naocc
-        elif mo_type is 'beta':
-            end = self.nfrz if mo_space.endswith(
-                'c') else self.nfrz + self.nbocc
+        if mo_type not in ('spinorb', 'alpha', 'beta'):
+            raise ValueError("Invalid 'mo_type' argument.")
+        if mo_space not in ('c', 'o', 'v', 'co', 'ov', 'cov'):
+            raise ValueError("Invalid 'mo_space' argument.")
+        i_start = 'cov'.index(mo_space[0])
+        i_end = 'cov'.index(mo_space[-1])
+        start = self.get_mo_count(mo_type, 'cov'[:i_start])
+        end = self.get_mo_count(mo_type, 'cov'[:i_end + 1])
         return slice(start, end)
+
+    def get_spinorb_order(self):
+        """Determine indices that would sort the concatenated orbital energies.
+        
+        Returns:
+            np.ndarray: The sorting indices.
+        """
+        spinorb_energies = np.concatenate(self.mo_energies)
+        spinorb_order = np.argsort(spinorb_energies)
+        return spinorb_order
 
     def get_mo_energies(self, mo_type='alpha', mo_space='ov'):
         """Return the molecular orbital energies.
@@ -91,11 +106,13 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         """
         slc = self.get_mo_slice(mo_type=mo_type, mo_space=mo_space)
         if mo_type is 'alpha':
-            return self._mo_energies[0][slc]
+            e = self.mo_energies[0]
         elif mo_type is 'beta':
-            return self._mo_energies[1][slc]
+            e = self.mo_energies[1]
         elif mo_type is 'spinorb':
-            return self._mso_energies[slc]
+            spinorb_order = self.get_spinorb_order()
+            e = np.concatenate(self.mo_energies)[spinorb_order]
+        return e[slc]
 
     def get_mo_coefficients(self, mo_type='alpha', mo_space='ov',
                             transformation=None):
@@ -116,11 +133,12 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         slc = self.get_mo_slice(mo_type=mo_type, mo_space=mo_space)
         # Grab the appropriate set of coefficients
         if mo_type is 'alpha':
-            c = self._mo_coefficients[0]
+            c = self.mo_coefficients[0]
         elif mo_type is 'beta':
-            c = self._mo_coefficients[1]
+            c = self.mo_coefficients[1]
         elif mo_type is 'spinorb':
-            c = self._mso_coefficients
+            spinorb_order = self.get_spinorb_order()
+            c = spla.block_diag(*self.mo_coefficients)[:, spinorb_order]
         # Check the transformation matrix.
         t_array = np.array(transformation, dtype=np.float64)
         if t_array.ndim is 0:

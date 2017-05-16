@@ -36,6 +36,10 @@ def test__orbital_interface():
     orbital_tests.run_interface_check(Integrals, Orbitals)
 
 
+def test__orbital_mo_counting():
+    orbital_tests.run_mo_counting_check(Integrals, Orbitals)
+
+
 def test__orbital_mo_slicing():
     orbital_tests.run_mo_slicing_check(Integrals, Orbitals)
 

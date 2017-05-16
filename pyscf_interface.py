@@ -182,11 +182,7 @@ class Orbitals(OrbitalsInterface):
             'd_threshold': d_threshold,
         }
         self.molecule = Molecule(self.integrals.nuclei, charge, multiplicity)
-        # Determine the orbital counts (total, frozen, and occupied)
-        self.nfrz = n_frozen_orbitals
-        self.naocc = self.molecule.nalpha - self.nfrz
-        self.nbocc = self.molecule.nbeta - self.nfrz
-        self.norb = self.integrals.nbf - self.nfrz
+        self.n_frozen_orbitals = n_frozen_orbitals
         # Build PySCF HF object and compute the energy.
         self.integrals._pyscf_molecule.build(charge=charge, spin=multiplicity-1)
         if self.options['restrict_spin']:
@@ -198,41 +194,9 @@ class Orbitals(OrbitalsInterface):
         self._pyscf_hf.max_cycle = self.options['n_iterations']
         self._pyscf_hf.kernel()
         self.hf_energy = self._pyscf_hf.e_tot
-        self._mo_energies = self._pyscf_hf.mo_energy
-        self._mo_coefficients = self._pyscf_hf.mo_coeff
+        self.mo_energies = self._pyscf_hf.mo_energy
+        self.mo_coefficients = self._pyscf_hf.mo_coeff
         if self.options['restrict_spin']:
-            self._mo_energies = np.array([self._mo_energies] * 2)
-            self._mo_coefficients = np.array([self._mo_coefficients] * 2)
-        # Build spin-orbital energy and coefficient arrays
-        mso_energies = np.concatenate(self._mo_energies)
-        mso_coefficients = spla.block_diag(*self._mo_coefficients)
-        sorting_indices = mso_energies.argsort()
-        self._mso_energies = mso_energies[sorting_indices]
-        self._mso_coefficients = mso_coefficients[:, sorting_indices]
+            self.mo_energies = np.array([self.mo_energies] * 2)
+            self.mo_coefficients = np.array([self.mo_coefficients] * 2)
 
-
-if __name__ == "__main__":
-    import itertools as it
-    from .molecule import NuclearFramework
-
-    labels = ("O", "H", "H")
-    coordinates = np.array([[0.0000000000,  0.0000000000, -0.1247219248],
-                            [0.0000000000, -1.4343021349,  0.9864370414],
-                            [0.0000000000,  1.4343021349,  0.9864370414]])
-    nuclei = NuclearFramework(labels, coordinates)
-    # Build integrals
-    integrals = Integrals(nuclei, "sto-3g")
-    # Test the integrals interface
-    shapes = []
-    norms = []
-    ls = ([(0, 1), (1, 2)], [True, False], [0, 1], ['alpha', 'beta', 'spinorb'])
-    for (charge, multp), restr, nfrz, mo_type in it.product(*ls):
-        orbitals = Orbitals(integrals, charge, multp,
-                            restrict_spin=restr, n_frozen_orbitals=nfrz)
-        s = orbitals.get_mo_1e_core_hamiltonian(mo_type, 'o,o',
-                                                electric_field=[0, 0, 1],
-                                                add_core_repulsion=True)
-        shapes.append(s.shape)
-        norms.append(np.linalg.norm(s))
-    print(shapes)
-    print(norms)

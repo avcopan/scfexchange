@@ -15,21 +15,23 @@ def check_interface(orbitals_instance):
     assert(hasattr(orbitals_instance, 'integrals'))
     assert(hasattr(orbitals_instance, 'molecule'))
     assert(hasattr(orbitals_instance, 'options'))
-    assert(hasattr(orbitals_instance, 'nfrz'))
-    assert(hasattr(orbitals_instance, 'norb'))
-    assert(hasattr(orbitals_instance, 'naocc'))
-    assert(hasattr(orbitals_instance, 'nbocc'))
+    assert(hasattr(orbitals_instance, 'mo_energies'))
+    assert(hasattr(orbitals_instance, 'mo_coefficients'))
     assert(hasattr(orbitals_instance, 'hf_energy'))
+    assert(hasattr(orbitals_instance, 'n_frozen_orbitals'))
     # Check attribute types
     assert(isinstance(getattr(orbitals_instance, 'integrals'),
                       IntegralsInterface))
-    assert(isinstance(getattr(orbitals_instance, 'molecule'), Molecule))
-    assert(isinstance(getattr(orbitals_instance, 'options'), dict))
-    assert(isinstance(getattr(orbitals_instance, 'nfrz'), int))
-    assert(isinstance(getattr(orbitals_instance, 'norb'), int))
-    assert(isinstance(getattr(orbitals_instance, 'naocc'), int))
-    assert(isinstance(getattr(orbitals_instance, 'nbocc'), int))
-    assert(isinstance(getattr(orbitals_instance, 'hf_energy'), float))
+    assert(isinstance(orbitals_instance.molecule, Molecule))
+    assert(isinstance(orbitals_instance.options, dict))
+    assert(isinstance(orbitals_instance.mo_energies, np.ndarray))
+    assert(isinstance(orbitals_instance.mo_coefficients, np.ndarray))
+    assert(isinstance(orbitals_instance.hf_energy, float))
+    assert(isinstance(orbitals_instance.n_frozen_orbitals, int))
+    # Check array shapes
+    norb = orbitals_instance.get_mo_count('alpha', 'cov')
+    assert(orbitals_instance.mo_energies.shape == (2, norb))
+    assert(orbitals_instance.mo_coefficients.shape == (2, norb, norb))
     # Check 'options' attribute
     assert(set(orbitals_instance.options.keys()) ==
            {'restrict_spin', 'n_iterations', 'e_threshold', 'd_threshold'})
@@ -39,24 +41,6 @@ def check_interface(orbitals_instance):
     assert(isinstance(orbitals_instance.options['d_threshold'], float))
     # Check methods
     assert(hasattr(orbitals_instance, '__init__'))
-    # Check method documentation
-    assert(orbitals_class.__init__.__doc__
-           == """Initialize Orbitals object.
-        
-        Args:
-            integrals (:obj:`scfexchange.integrals.IntegralsInterface`): The
-                atomic-orbital integrals object.
-            charge (int): Total molecular charge.
-            multiplicity (int): Spin multiplicity.
-            restrict_spin (bool): Spin-restrict the orbitals?
-            n_iterations (int): Maximum number of Hartree-Fock iterations 
-                allowed before the orbitals are considered unconverged.
-            e_threshold (float): Energy convergence threshold.
-            d_threshold (float): Density convergence threshold, based on the 
-                norm of the orbital gradient
-            n_frozen_orbitals (int): How many core orbitals should be set to 
-                `frozen`.
-        """)
     # Check method signature
     kind = inspect.Parameter.POSITIONAL_OR_KEYWORD
     assert(inspect.signature(orbitals_class.__init__) ==
@@ -79,7 +63,7 @@ def check_interface(orbitals_instance):
     assert(isinstance(orbitals_instance.get_mo_1e_potential(), np.ndarray))
     assert(isinstance(orbitals_instance.get_mo_1e_dipole(), np.ndarray))
     assert(isinstance(orbitals_instance.get_mo_2e_repulsion(), np.ndarray))
-    norb = orbitals_instance.norb
+    norb = orbitals_instance.get_mo_count()
     assert(orbitals_instance.get_mo_1e_core_field().shape
            == (norb, norb))
     assert(orbitals_instance.get_mo_1e_kinetic().shape
@@ -93,18 +77,20 @@ def check_interface(orbitals_instance):
 
 
 def check_mo_slicing(orbitals_instance, mo_type, core_offset, occ_offset):
+    nbf = orbitals_instance.integrals.nbf
+    norb = 2 * nbf if mo_type is 'spinorb' else nbf
     assert(orbitals_instance.get_mo_slice(mo_type, mo_space='c') ==
-           slice(None, core_offset, None))
+           slice(0, core_offset, None))
     assert(orbitals_instance.get_mo_slice(mo_type, mo_space='o') ==
            slice(core_offset, occ_offset, None))
     assert(orbitals_instance.get_mo_slice(mo_type, mo_space='v') ==
-           slice(occ_offset, None, None))
+           slice(occ_offset, norb, None))
     assert(orbitals_instance.get_mo_slice(mo_type, mo_space='co') ==
-           slice(None, occ_offset, None))
+           slice(0, occ_offset, None))
     assert(orbitals_instance.get_mo_slice(mo_type, mo_space='ov') ==
-           slice(core_offset, None, None))
+           slice(core_offset, norb, None))
     assert(orbitals_instance.get_mo_slice(mo_type, mo_space='cov') ==
-           slice(None, None, None))
+           slice(0, norb, None))
 
 
 def check_core_energy(orbitals_instance):
@@ -126,7 +112,7 @@ def check_mp2_energy(orbitals_instance, correlation_energy):
     g = orbitals_instance.get_mo_2e_repulsion(mo_type='spinorb',
                                               mo_block='o,o,v,v',
                                               antisymmetrize=True)
-    nspocc = orbitals_instance.naocc + orbitals_instance.nbocc
+    nspocc = orbitals_instance.get_mo_count('spinorb', 'o')
     o = slice(None, nspocc)
     v = slice(nspocc, None)
     x = np.newaxis
@@ -153,6 +139,30 @@ def run_interface_check(integrals_class, orbitals_class):
         check_interface(orbitals)
 
 
+def run_mo_counting_check(integrals_class, orbitals_class):
+    labels = ("O", "H", "H")
+    coordinates = np.array([[0.0000000000,  0.0000000000, -0.1247219248],
+                            [0.0000000000, -1.4343021349,  0.9864370414],
+                            [0.0000000000,  1.4343021349,  0.9864370414]])
+    nuclei = NuclearFramework(labels, coordinates)
+    # Build integrals
+    integrals = integrals_class(nuclei, "sto-3g")
+    counts = iter([
+        0, 5, 2, 5, 7, 7, 0, 5, 2, 5, 7, 7, 0, 10, 4, 10, 14, 14, 1, 4, 2, 5, 6,
+        7, 1, 4, 2, 5, 6, 7, 2, 8, 4, 10, 12, 14, 0, 5, 2, 5, 7, 7, 0, 4, 3, 4,
+        7, 7, 0, 9, 5, 9, 14, 14, 1, 4, 2, 5, 6, 7, 1, 3, 3, 4, 6, 7, 2, 7, 5,
+        9, 12, 14
+    ])
+    iterables = ([0, 1], ['alpha', 'beta', 'spinorb'],
+                 ['c', 'o', 'v', 'co', 'ov', 'cov'])
+    for charge, multp in [(0, 1), (1, 2)]:
+        orbitals = orbitals_class(integrals, charge, multp)
+        for nfrz, mo_type, mo_space in it.product(*iterables):
+            orbitals.n_frozen_orbitals = nfrz
+            count = orbitals.get_mo_count(mo_type, mo_space)
+            assert(count == next(counts))
+
+
 def run_mo_slicing_check(integrals_class, orbitals_class):
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000,  0.0000000000, -0.1247219248],
@@ -161,16 +171,40 @@ def run_mo_slicing_check(integrals_class, orbitals_class):
     nuclei = NuclearFramework(labels, coordinates)
     # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
-    # Build orbitals
-    vars = ([(0, 1), (1, 2)], [True, False], [0, 1])
-    for (charge, multp), restr, nfrz in it.product(*vars):
-        orbitals = orbitals_class(integrals, charge, multp,
-                                  restrict_spin=restr, n_frozen_orbitals=nfrz)
-        naocc = orbitals.naocc + nfrz
-        nbocc = orbitals.nbocc + nfrz
-        check_mo_slicing(orbitals, 'alpha', nfrz, naocc)
-        check_mo_slicing(orbitals,  'beta', nfrz, nbocc)
-        check_mo_slicing(orbitals, 'spinorb', 2 * nfrz, naocc + nbocc)
+    slices = iter([
+        slice(0, 0, None), slice(0, 5, None), slice(5, 7, None),
+        slice(0, 5, None), slice(0, 7, None), slice(0, 7, None),
+        slice(0, 0, None), slice(0, 5, None), slice(5, 7, None),
+        slice(0, 5, None), slice(0, 7, None), slice(0, 7, None),
+        slice(0, 0, None), slice(0, 10, None), slice(10, 14, None),
+        slice(0, 10, None), slice(0, 14, None), slice(0, 14, None),
+        slice(0, 1, None), slice(1, 5, None), slice(5, 7, None),
+        slice(0, 5, None), slice(1, 7, None), slice(0, 7, None),
+        slice(0, 1, None), slice(1, 5, None), slice(5, 7, None),
+        slice(0, 5, None), slice(1, 7, None), slice(0, 7, None),
+        slice(0, 2, None), slice(2, 10, None), slice(10, 14, None),
+        slice(0, 10, None), slice(2, 14, None), slice(0, 14, None),
+        slice(0, 0, None), slice(0, 5, None), slice(5, 7, None),
+        slice(0, 5, None), slice(0, 7, None), slice(0, 7, None),
+        slice(0, 0, None), slice(0, 4, None), slice(4, 7, None),
+        slice(0, 4, None), slice(0, 7, None), slice(0, 7, None),
+        slice(0, 0, None), slice(0, 9, None), slice(9, 14, None),
+        slice(0, 9, None), slice(0, 14, None), slice(0, 14, None),
+        slice(0, 1, None), slice(1, 5, None), slice(5, 7, None),
+        slice(0, 5, None), slice(1, 7, None), slice(0, 7, None),
+        slice(0, 1, None), slice(1, 4, None), slice(4, 7, None),
+        slice(0, 4, None), slice(1, 7, None), slice(0, 7, None),
+        slice(0, 2, None), slice(2, 9, None), slice(9, 14, None),
+        slice(0, 9, None), slice(2, 14, None), slice(0, 14, None)
+    ])
+    iterables = ([0, 1], ['alpha', 'beta', 'spinorb'],
+                 ['c', 'o', 'v', 'co', 'ov', 'cov'])
+    for charge, multp in [(0, 1), (1, 2)]:
+        orbitals = orbitals_class(integrals, charge, multp)
+        for nfrz, mo_type, mo_space in it.product(*iterables):
+            orbitals.n_frozen_orbitals = nfrz
+            slc = orbitals.get_mo_slice(mo_type, mo_space)
+            assert(slc == next(slices))
 
 
 def run_mo_coefficient_check(integrals_class, orbitals_class):
@@ -235,13 +269,15 @@ def run_mo_1e_core_field_check(integrals_class, orbitals_class):
         4.0389401209706373, 3.3841013799690915, 5.2692674491522125, 0.0, 0.0,
         0.0, 4.0706002676019741, 3.3453108084444305, 5.268860497655651
     ])
-    ls = ([(0, 1), (1, 2)], [True, False], [0, 1], ['alpha', 'beta', 'spinorb'])
-    for (charge, multp), restr, nfrz, mo_type in it.product(*ls):
-        orbitals = orbitals_class(integrals, charge, multp,
-                                  restrict_spin=restr, n_frozen_orbitals=nfrz)
-        s = orbitals.get_mo_1e_core_field(mo_type, 'o,o')
-        assert(s.shape == next(shapes))
-        assert(np.isclose(np.linalg.norm(s), next(norms)))
+    iterables1 = ([(0, 1), (1, 2)], [True, False])
+    iterables2 = ([0, 1], ['alpha', 'beta', 'spinorb'])
+    for (charge, multp), restr in it.product(*iterables1):
+        orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
+        for nfrz, mo_type in it.product(*iterables2):
+            orbitals.n_frozen_orbitals = nfrz
+            s = orbitals.get_mo_1e_core_field(mo_type, 'o,o')
+            assert(s.shape == next(shapes))
+            assert(np.isclose(np.linalg.norm(s), next(norms)))
 
 
 def run_mo_1e_kinetic_check(integrals_class, orbitals_class):
@@ -268,13 +304,15 @@ def run_mo_1e_kinetic_check(integrals_class, orbitals_class):
         30.979616455563132, 30.783938540445401, 43.673647750032508,
         4.7321884887434562, 3.8361091324132044, 6.0917436886848897
     ])
-    ls = ([(0, 1), (1, 2)], [True, False], [0, 1], ['alpha', 'beta', 'spinorb'])
-    for (charge, multp), restr, nfrz, mo_type in it.product(*ls):
-        orbitals = orbitals_class(integrals, charge, multp,
-                                  restrict_spin=restr, n_frozen_orbitals=nfrz)
-        s = orbitals.get_mo_1e_kinetic(mo_type, 'o,o')
-        assert(s.shape == next(shapes))
-        assert(np.isclose(np.linalg.norm(s), next(norms)))
+    iterables1 = ([(0, 1), (1, 2)], [True, False])
+    iterables2 = ([0, 1], ['alpha', 'beta', 'spinorb'])
+    for (charge, multp), restr in it.product(*iterables1):
+        orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
+        for nfrz, mo_type in it.product(*iterables2):
+            orbitals.n_frozen_orbitals = nfrz
+            s = orbitals.get_mo_1e_kinetic(mo_type, 'o,o')
+            assert(s.shape == next(shapes))
+            assert(np.isclose(np.linalg.norm(s), next(norms)))
 
 
 def run_mo_1e_potential_check(integrals_class, orbitals_class):
@@ -301,13 +339,15 @@ def run_mo_1e_potential_check(integrals_class, orbitals_class):
         65.39520742385892, 64.507649324867955, 91.857334902713831,
         19.398723766126142, 16.285996600827634, 25.328722214907962
     ])
-    ls = ([(0, 1), (1, 2)], [True, False], [0, 1], ['alpha', 'beta', 'spinorb'])
-    for (charge, multp), restr, nfrz, mo_type in it.product(*ls):
-        orbitals = orbitals_class(integrals, charge, multp,
-                                  restrict_spin=restr, n_frozen_orbitals=nfrz)
-        s = orbitals.get_mo_1e_potential(mo_type, 'o,o')
-        assert(s.shape == next(shapes))
-        assert(np.isclose(np.linalg.norm(s), next(norms)))
+    iterables1 = ([(0, 1), (1, 2)], [True, False])
+    iterables2 = ([0, 1], ['alpha', 'beta', 'spinorb'])
+    for (charge, multp), restr in it.product(*iterables1):
+        orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
+        for nfrz, mo_type in it.product(*iterables2):
+            orbitals.n_frozen_orbitals = nfrz
+            s = orbitals.get_mo_1e_potential(mo_type, 'o,o')
+            assert(s.shape == next(shapes))
+            assert(np.isclose(np.linalg.norm(s), next(norms)))
 
 
 def run_mo_1e_dipole_check(integrals_class, orbitals_class):
@@ -347,13 +387,15 @@ def run_mo_1e_dipole_check(integrals_class, orbitals_class):
             1.7407225575316854, 1.5577741876001878, 2.3359741954595861,
             1.7308541651322562, 1.5497093220734159, 2.3232423730375018
         ])
-    ls = ([(0, 1), (1, 2)], [True, False], [0, 1], ['alpha', 'beta', 'spinorb'])
-    for (charge, multp), restr, nfrz, mo_type in it.product(*ls):
-        orbitals = orbitals_class(integrals, charge, multp,
-                                  restrict_spin=restr, n_frozen_orbitals=nfrz)
-        s = orbitals.get_mo_1e_dipole(mo_type, 'o,o')
-        assert(s.shape == next(shapes))
-        assert(np.isclose(np.linalg.norm(s), next(norms)))
+    iterables1 = ([(0, 1), (1, 2)], [True, False])
+    iterables2 = ([0, 1], ['alpha', 'beta', 'spinorb'])
+    for (charge, multp), restr in it.product(*iterables1):
+        orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
+        for nfrz, mo_type in it.product(*iterables2):
+            orbitals.n_frozen_orbitals = nfrz
+            s = orbitals.get_mo_1e_dipole(mo_type, 'o,o')
+            assert(s.shape == next(shapes))
+            assert(np.isclose(np.linalg.norm(s), next(norms)))
 
 
 def run_mo_1e_core_hamiltonian_check(integrals_class, orbitals_class):
@@ -392,15 +434,17 @@ def run_mo_1e_core_hamiltonian_check(integrals_class, orbitals_class):
             36.004978088129249, 35.123589972785446, 50.299354068447229,
             10.707611901771482, 9.1274167489492939, 14.069921433610016
         ])
-    ls = ([(0, 1), (1, 2)], [True, False], [0, 1], ['alpha', 'beta', 'spinorb'])
-    for (charge, multp), restr, nfrz, mo_type in it.product(*ls):
-        orbitals = orbitals_class(integrals, charge, multp,
-                                  restrict_spin=restr, n_frozen_orbitals=nfrz)
-        s = orbitals.get_mo_1e_core_hamiltonian(mo_type, 'o,o',
-                                                electric_field=[0, 0, 1],
-                                                add_core_repulsion=True)
-        assert(s.shape == next(shapes))
-        assert(np.isclose(np.linalg.norm(s), next(norms)))
+    iterables1 = ([(0, 1), (1, 2)], [True, False])
+    iterables2 = ([0, 1], ['alpha', 'beta', 'spinorb'])
+    for (charge, multp), restr in it.product(*iterables1):
+        orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
+        for nfrz, mo_type in it.product(*iterables2):
+            orbitals.n_frozen_orbitals = nfrz
+            s = orbitals.get_mo_1e_core_hamiltonian(mo_type, 'o,o',
+                                                    electric_field=[0, 0, 1],
+                                                    add_core_repulsion=True)
+            assert(s.shape == next(shapes))
+            assert(np.isclose(np.linalg.norm(s), next(norms)))
 
 
 def run_mo_2e_repulsion_check(integrals_class, orbitals_class):
@@ -430,13 +474,15 @@ def run_mo_2e_repulsion_check(integrals_class, orbitals_class):
         6.4030784817836075, 5.8131324766771062, 12.18845750103489,
         3.0018963441591642, 2.1465213178463722, 5.1210698203967588
     ])
-    ls = ([(0, 1), (1, 2)], [True, False], [0, 1], ['alpha', 'beta', 'spinorb'])
-    for (charge, multp), restr, nfrz, mo_type in it.product(*ls):
-        orbitals = orbitals_class(integrals, charge, multp,
-                                  restrict_spin=restr, n_frozen_orbitals=nfrz)
-        s = orbitals.get_mo_2e_repulsion(mo_type, 'o,o,o,o')
-        assert(s.shape == next(shapes))
-        assert(np.isclose(np.linalg.norm(s), next(norms)))
+    iterables1 = ([(0, 1), (1, 2)], [True, False])
+    iterables2 = ([0, 1], ['alpha', 'beta', 'spinorb'])
+    for (charge, multp), restr in it.product(*iterables1):
+        orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
+        for nfrz, mo_type in it.product(*iterables2):
+            orbitals.n_frozen_orbitals = nfrz
+            s = orbitals.get_mo_2e_repulsion(mo_type, 'o,o,o,o')
+            assert(s.shape == next(shapes))
+            assert(np.isclose(np.linalg.norm(s), next(norms)))
 
 
 def run_core_energy_check(integrals_class, orbitals_class):
@@ -448,11 +494,12 @@ def run_core_energy_check(integrals_class, orbitals_class):
     # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
     # Build orbitals
-    vars = ([(0, 1), (1, 2)], [True, False], [0, 1])
-    for (charge, multp), restr, nfrz in it.product(*vars):
-        orbitals = orbitals_class(integrals, charge, multp,
-                                  restrict_spin=restr, n_frozen_orbitals=nfrz)
-        check_core_energy(orbitals)
+    iterables1 = ([(0, 1), (1, 2)], [True, False])
+    for (charge, multp), restr in it.product(*iterables1):
+        orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
+        for nfrz in [0, 1]:
+            orbitals.n_frozen_orbitals = nfrz
+            check_core_energy(orbitals)
 
 
 def run_mp2_energy_check(integrals_class, orbitals_class):

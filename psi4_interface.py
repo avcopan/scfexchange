@@ -188,11 +188,7 @@ class Orbitals(OrbitalsInterface):
             'd_threshold': d_threshold,
         }
         self.molecule = Molecule(self.integrals.nuclei, charge, multiplicity)
-        # Determine the orbital counts (total, frozen, and occupied)
-        self.nfrz = n_frozen_orbitals
-        self.naocc = self.molecule.nalpha - self.nfrz
-        self.nbocc = self.molecule.nbeta - self.nfrz
-        self.norb = self.integrals.nbf - self.nfrz
+        self.n_frozen_orbitals = n_frozen_orbitals
         # Build Psi4 HF object and compute the energy.
         self.integrals._psi4_molecule.set_molecular_charge(charge)
         self.integrals._psi4_molecule.set_multiplicity(multiplicity)
@@ -221,38 +217,6 @@ class Orbitals(OrbitalsInterface):
         mo_beta_energies = self._psi4_hf.epsilon_b().to_array()
         mo_alpha_coeffs = np.array(self._psi4_hf.Ca())
         mo_beta_coeffs = np.array(self._psi4_hf.Cb())
-        self._mo_energies = np.array([mo_alpha_energies, mo_beta_energies])
-        self._mo_coefficients = np.array([mo_alpha_coeffs, mo_beta_coeffs])
-        # Build spin-orbital energy and coefficient arrays, sorted by energy
-        mso_energies = np.concatenate(self._mo_energies)
-        mso_coefficients = spla.block_diag(*self._mo_coefficients)
-        sorting_indices = mso_energies.argsort()
-        self._mso_energies = mso_energies[sorting_indices]
-        self._mso_coefficients = mso_coefficients[:, sorting_indices]
+        self.mo_energies = np.array([mo_alpha_energies, mo_beta_energies])
+        self.mo_coefficients = np.array([mo_alpha_coeffs, mo_beta_coeffs])
 
-
-if __name__ == "__main__":
-    import itertools as it
-    from .molecule import NuclearFramework
-
-    labels = ("O", "H", "H")
-    coordinates = np.array([[0.0000000000,  0.0000000000, -0.1247219248],
-                            [0.0000000000, -1.4343021349,  0.9864370414],
-                            [0.0000000000,  1.4343021349,  0.9864370414]])
-    nuclei = NuclearFramework(labels, coordinates)
-    # Build integrals
-    integrals = Integrals(nuclei, "sto-3g")
-    # Test the integrals interface
-    shapes = []
-    norms = []
-    ls = ([(0, 1), (1, 2)], [True, False], [0, 1], ['alpha', 'beta', 'spinorb'])
-    for (charge, multp), restr, nfrz, mo_type in it.product(*ls):
-        orbitals = Orbitals(integrals, charge, multp,
-                            restrict_spin=restr, n_frozen_orbitals=nfrz)
-        s = orbitals.get_mo_1e_core_hamiltonian(mo_type, 'o,o',
-                                                electric_field=[0, 0, 1],
-                                                add_core_repulsion=True)
-        shapes.append(s.shape)
-        norms.append(np.linalg.norm(s))
-    print(shapes)
-    print(norms)
