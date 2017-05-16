@@ -19,7 +19,12 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
 
     def _get_ints(self, name, integrate, use_spinorbs=False, recompute=False,
                   ncomp=None):
-        """Retrieve an integral array, computing them only when necessary.
+        """Retrieve a set of integrals, computing them only when necessary.
+        
+        The first time this function is called for a given set of integrals,
+        they are computed and stored as an attribute.  If the function gets
+        called at any later time, the attribute is returned without recomputing,
+        unless the user specifically requests otherwise.
         
         Args:
             name (str): A unique name for the type of integral, such as
@@ -37,14 +42,16 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
         Returns:
             np.ndarray: The integrals.
         """
+        # If spinorb integrals are requested and we have them, return them.
         if use_spinorbs and hasattr(self, "_aso_" + name) and not recompute:
             return getattr(self, "_aso_" + name)
-        elif hasattr(self, "_ao_" + name) and not recompute:
+        # Otherwise, compute or retrieve the spatial integrals.
+        if hasattr(self, "_ao_" + name) and not recompute:
             integrals = getattr(self, "_ao_" + name)
         else:
             integrals = integrate()
-            setattr(self, "_ao_" + name, integrals)
-        # If requested, transform the integrals to the spin-orbital basis.
+        setattr(self, "_ao_" + name, integrals)
+        # If requested, construct spin-orbital integrals from the spatial ones.
         if use_spinorbs:
             if ncomp is None:
                 integrals = tu.construct_spinorb_integrals(integrals)
@@ -53,6 +60,36 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
                                       for comp in integrals])
             setattr(self, "_aso_" + name, integrals)
         return integrals
+
+    def get_ao_1e_core_hamiltonian(self, use_spinorbs=False, recompute=False,
+                                   electric_field=None):
+        """Get the core Hamiltonian integrals.
+
+        Returns the one-particle contribution to the Hamiltonian, i.e.
+        everything except for two-electron repulsion.  May include an external
+        static electric field in the dipole approximation.
+        
+        Args:
+            use_spinorbs (bool): Return the integrals in the spin-orbital basis?
+            recompute (bool): Recompute the integrals, if we already have them?
+            electric_field (np.ndarray): A three-component vector specifying 
+                the magnitude of an external static electric field.  Its 
+                negative dot product with the dipole integrals will be added 
+                to the core Hamiltonian.
+
+        Returns:
+            np.ndarray: The integrals.
+        """
+        t = self.get_ao_1e_kinetic(use_spinorbs=use_spinorbs,
+                                   recompute=recompute)
+        v = self.get_ao_1e_potential(use_spinorbs=use_spinorbs,
+                                     recompute=recompute)
+        h = t + v
+        if electric_field is not None:
+            d = self.get_ao_1e_dipole(use_spinorbs=use_spinorbs,
+                                      recompute=recompute)
+            h += -np.tensordot(d, electric_field, axes=(0, 0))
+        return h
 
     @abc.abstractmethod
     def get_ao_1e_overlap(self, use_spinorbs=False, recompute=False):

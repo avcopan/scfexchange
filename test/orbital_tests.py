@@ -108,21 +108,17 @@ def check_mo_slicing(orbitals_instance, mo_type, core_offset, occ_offset):
 
 
 def check_core_energy(orbitals_instance):
-    h = (
-        +
-        orbitals_instance.get_mo_1e_kinetic(mo_type='spinorb', mo_block='o,o')
-        +
-        orbitals_instance.get_mo_1e_potential(mo_type='spinorb', mo_block='o,o')
-    )
-    v = orbitals_instance.get_mo_1e_core_field(mo_type='spinorb',
-                                               mo_block='o,o')
+    h = orbitals_instance.get_mo_1e_core_hamiltonian(mo_type='spinorb',
+                                                     mo_block='o,o',
+                                                     add_core_repulsion=True)
     g = orbitals_instance.get_mo_2e_repulsion(mo_type='spinorb',
                                               mo_block='o,o,o,o',
                                               antisymmetrize=True)
+    # Core energy
     e_c = orbitals_instance.get_core_energy()
+    # Valence energy
     e_v = np.trace(h) + 1. / 2 * np.einsum("ijij", g)
-    e_cv = np.trace(v)
-    assert(np.isclose(e_c + e_v + e_cv, orbitals_instance.hf_energy))
+    assert(np.isclose(e_c + e_v, orbitals_instance.hf_energy))
 
 
 def check_mp2_energy(orbitals_instance, correlation_energy):
@@ -356,6 +352,53 @@ def run_mo_1e_dipole_check(integrals_class, orbitals_class):
         orbitals = orbitals_class(integrals, charge, multp,
                                   restrict_spin=restr, n_frozen_orbitals=nfrz)
         s = orbitals.get_mo_1e_dipole(mo_type, 'o,o')
+        assert(s.shape == next(shapes))
+        assert(np.isclose(np.linalg.norm(s), next(norms)))
+
+
+def run_mo_1e_core_hamiltonian_check(integrals_class, orbitals_class):
+    labels = ("O", "H", "H")
+    coordinates = np.array([[0.0000000000,  0.0000000000, -0.1247219248],
+                            [0.0000000000, -1.4343021349,  0.9864370414],
+                            [0.0000000000,  1.4343021349,  0.9864370414]])
+    nuclei = NuclearFramework(labels, coordinates)
+    # Build integrals
+    integrals = integrals_class(nuclei, "sto-3g")
+    # Test the integrals interface
+    shapes = iter([
+        (5, 5), (5, 5), (10, 10), (4, 4), (4, 4), (8, 8), (5, 5), (5, 5),
+        (10, 10), (4, 4), (4, 4), (8, 8), (5, 5), (4, 4), (9, 9), (4, 4),
+        (3, 3), (7, 7), (5, 5), (4, 4), (9, 9), (4, 4), (3, 3), (7, 7)
+    ])
+    if hasattr(integrals, '_pyscf_molecule'):
+        norms = iter([
+            35.78911766373313, 35.789117663733109, 50.613455585417874,
+            10.3484664103489, 10.34846641034895, 14.634941547277791,
+            35.789117663733727, 35.789117663733741, 50.613455585418741,
+            10.34846641035031, 10.348466410350357, 14.634941547279832,
+            35.969825789334337, 35.16210448581905, 50.301112902069207,
+            10.652105138961197, 9.1964730482843606, 14.072755963893655,
+            36.005611854288176, 35.124156383542307, 50.300203246691161,
+            10.70834107804119, 9.1280459103038165, 14.070884506088074
+        ])
+    elif hasattr(integrals, '_psi4_molecule'):
+        norms = iter([
+            35.788492509187442, 35.788492509187435, 50.612571483380741,
+            10.347740855143851, 10.347740855143838, 14.633915457266605,
+            35.788492509187414, 35.788492509187385, 50.612571483380769,
+            10.347740855143847, 10.347740855143845, 14.633915457266589,
+            35.969193357604652, 35.16153657709723, 50.300263669878433,
+            10.651376411711716, 9.1958433113394609, 14.071792837825456,
+            36.004978088129249, 35.123589972785446, 50.299354068447229,
+            10.707611901771482, 9.1274167489492939, 14.069921433610016
+        ])
+    ls = ([(0, 1), (1, 2)], [True, False], [0, 1], ['alpha', 'beta', 'spinorb'])
+    for (charge, multp), restr, nfrz, mo_type in it.product(*ls):
+        orbitals = orbitals_class(integrals, charge, multp,
+                                  restrict_spin=restr, n_frozen_orbitals=nfrz)
+        s = orbitals.get_mo_1e_core_hamiltonian(mo_type, 'o,o',
+                                                electric_field=[0, 0, 1],
+                                                add_core_repulsion=True)
         assert(s.shape == next(shapes))
         assert(np.isclose(np.linalg.norm(s), next(norms)))
 
