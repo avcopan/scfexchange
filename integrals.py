@@ -17,72 +17,41 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
         nbf (int): The number of basis functions.
     """
 
-    def _compute_ao_1e(self, name, integrate, use_spinorbs=False,
-                       recompute=False, ncomp=None):
-        """Compute one-electron integrals in the atomic orbital basis.
-        
-        These are matrices of the form <mu(1)|O_1|nu(1)> where O_1 is a one-
-        electron operator.
+    def _get_ints(self, name, integrate, use_spinorbs=False, recompute=False,
+                  ncomp=None):
+        """Retrieve an integral array, computing them only when necessary.
         
         Args:
-            name (str): Unique name for the type of integral, i.e. 'kinetic'.
-            integrate: A callable object that computes integrals in the spatial
-                AO basis when called.
-            use_spinorbs (bool): Return the integrals in the spin-orbital basis?
+            name (str): A unique name for the type of integral, such as
+                '1e_kinetic' or '2e_repulsion'.
+            integrate: A callable object that computes spatial electronic 
+                integrals.  Only gets called if `recompute` is True or if we
+                haven't previously computed integrals under this value of
+                `name`.
+            use_spinorbs (bool): Expand integrals in the spin-orbital basis?
             recompute (bool): Recompute the integrals, if we already have them?
             ncomp (int): For multi-component integrals, this specifies the 
-                number of components.  For example, dipole integrals have three
-                components -- x, y, and z.
+                number of components.  For example, dipole integrals have three 
+                components, x, y, and z.
 
         Returns:
             np.ndarray: The integrals.
         """
-        if use_spinorbs and hasattr(self, "_aso_1e_" + name) and not recompute:
-            return getattr(self, "_aso_1e_" + name)
-        elif hasattr(self, "_ao_1e_" + name) and not recompute:
-            integrals = getattr(self, "_ao_1e_" + name)
+        if use_spinorbs and hasattr(self, "_aso_" + name) and not recompute:
+            return getattr(self, "_aso_" + name)
+        elif hasattr(self, "_ao_" + name) and not recompute:
+            integrals = getattr(self, "_ao_" + name)
         else:
             integrals = integrate()
-            setattr(self, "_ao_1e_" + name, integrals)
-        # If requested, transform the integrals to the spin-orbital basis and
-        # store them as an attribute.
+            setattr(self, "_ao_" + name, integrals)
+        # If requested, transform the integrals to the spin-orbital basis.
         if use_spinorbs:
             if ncomp is None:
                 integrals = tu.construct_spinorb_integrals(integrals)
             else:
                 integrals = np.array([tu.construct_spinorb_integrals(comp)
                                       for comp in integrals])
-            setattr(self, "_aso_1e_" + name, integrals)
-        return integrals
-
-    def _compute_ao_2e(self, name, integrate, use_spinorbs=False,
-                       recompute=False):
-        """Compute two-electron integrals in the atomic orbital basis.
-        
-        Assumes chemist's notation, (mu(1) rh(1)| O_12 |nu(2) si(2)).
-        
-        Args:
-            name (str): Unique name for the type of integral, i.e. 'kinetic'.
-            integrate: A callable object that computes integrals in the spatial
-                AO basis when called.
-            use_spinorbs (bool): Return the integrals in the spin-orbital basis?
-            recompute (bool): Recompute the integrals, if we already have them?
-
-        Returns:
-            np.ndarray: The integrals.
-        """
-        if use_spinorbs and hasattr(self, "_aso_2e_" + name) and not recompute:
-            return getattr(self, "_aso_2e_" + name)
-        elif hasattr(self, "_ao_2e_" + name) and not recompute:
-            integrals = getattr(self, "_ao_2e_" + name)
-        else:
-            integrals = integrate()
-            setattr(self, "_ao_2e_" + name, integrals)
-        # If requested, transform the integrals to the spin-orbital basis and
-        # store them as an attribute.
-        if use_spinorbs:
-            integrals = tu.construct_spinorb_integrals(integrals)
-            setattr(self, "_aso_2e_" + name, integrals)
+            setattr(self, "_aso_" + name, integrals)
         return integrals
 
     @abc.abstractmethod
