@@ -5,9 +5,6 @@ from scfexchange.molecule import NuclearFramework
 
 
 def check_interface(integrals_instance):
-    # Check class documentation
-    integrals_class = type(integrals_instance)
-    assert(integrals_class.__doc__ == IntegralsInterface.__doc__)
     # Check attributes
     assert(hasattr(integrals_instance, 'nuclei'))
     assert(hasattr(integrals_instance, 'basis_label'))
@@ -23,26 +20,8 @@ def check_interface(integrals_instance):
     assert(hasattr(integrals_instance, 'get_ao_1e_kinetic'))
     assert(hasattr(integrals_instance, 'get_ao_1e_dipole'))
     assert(hasattr(integrals_instance, 'get_ao_2e_repulsion'))
-    # Check method documentation
-    assert(integrals_class.__init__.__doc__
-           == """Initialize Integrals object.
-    
-        Args:
-            nuclei (:obj:`scfexchange.nuclei.NuclearFramework`): Specifies the
-                positions of the atomic centers.
-            basis_label (str): What basis set to use.
-        """)
-    assert(integrals_instance.get_ao_1e_overlap.__doc__
-           == IntegralsInterface.get_ao_1e_overlap.__doc__)
-    assert(integrals_instance.get_ao_1e_kinetic.__doc__
-           == IntegralsInterface.get_ao_1e_kinetic.__doc__)
-    assert(integrals_instance.get_ao_1e_potential.__doc__
-           == IntegralsInterface.get_ao_1e_potential.__doc__)
-    assert(integrals_instance.get_ao_1e_dipole.__doc__
-           == IntegralsInterface.get_ao_1e_dipole.__doc__)
-    assert(integrals_instance.get_ao_2e_repulsion.__doc__
-           == IntegralsInterface.get_ao_2e_repulsion.__doc__)
     # Check method signature
+    integrals_class = type(integrals_instance)
     kind = inspect.Parameter.POSITIONAL_OR_KEYWORD
     assert(inspect.signature(integrals_class.__init__) ==
            inspect.Signature(
