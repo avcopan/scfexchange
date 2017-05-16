@@ -47,7 +47,7 @@ class Integrals(IntegralsInterface):
             np.ndarray: The integrals.
         """
         def integrate(): return self._pyscf_molecule.intor('cint1e_ovlp_sph')
-        s = self._compute_ao_1e('overlap', integrate, use_spinorbs, recompute)
+        s = self._get_ints('1e_overlap', integrate, use_spinorbs, recompute)
         return s
 
     def get_ao_1e_kinetic(self, use_spinorbs=False, recompute=False):
@@ -64,7 +64,7 @@ class Integrals(IntegralsInterface):
             np.ndarray: The integrals.
         """
         def integrate(): return self._pyscf_molecule.intor('cint1e_kin_sph')
-        t = self._compute_ao_1e('kinetic', integrate, use_spinorbs, recompute)
+        t = self._get_ints('1e_kinetic', integrate, use_spinorbs, recompute)
         return t
 
     def get_ao_1e_potential(self, use_spinorbs=False, recompute=False):
@@ -81,7 +81,7 @@ class Integrals(IntegralsInterface):
             np.ndarray: The integrals.
         """
         def integrate(): return self._pyscf_molecule.intor('cint1e_nuc_sph')
-        v = self._compute_ao_1e('potential', integrate, use_spinorbs, recompute)
+        v = self._get_ints('1e_potential', integrate, use_spinorbs, recompute)
         return v
 
     def get_ao_1e_dipole(self, use_spinorbs=False, recompute=False):
@@ -99,8 +99,8 @@ class Integrals(IntegralsInterface):
         """
         def integrate():
             return -self._pyscf_molecule.intor('cint1e_r_sph', comp=3)
-        d = self._compute_ao_1e('dipole', integrate, use_spinorbs, recompute,
-                                ncomp=3)
+        d = self._get_ints('1e_dipole', integrate, use_spinorbs, recompute,
+                           ncomp=3)
         return d
 
     def get_ao_2e_repulsion(self, use_spinorbs=False, recompute=False,
@@ -123,7 +123,7 @@ class Integrals(IntegralsInterface):
             shape = (self.nbf, self.nbf, self.nbf, self.nbf)
             g_chem = self._pyscf_molecule.intor('cint2e_sph').reshape(shape)
             return g_chem.transpose((0, 2, 1, 3))
-        g = self._compute_ao_2e('repulsion', integrate, use_spinorbs, recompute)
+        g = self._get_ints('2e_repulsion', integrate, use_spinorbs, recompute)
         if antisymmetrize:
             g = g - g.transpose((0, 1, 3, 2))
         return g
@@ -209,8 +209,6 @@ class Orbitals(OrbitalsInterface):
         sorting_indices = mso_energies.argsort()
         self._mso_energies = mso_energies[sorting_indices]
         self._mso_coefficients = mso_coefficients[:, sorting_indices]
-        # Get the core field and energy
-        self.core_energy = self._compute_core_energy()
 
 
 if __name__ == "__main__":

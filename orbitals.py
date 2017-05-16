@@ -107,8 +107,8 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
                 'o' (occupied), and 'v' (virtual).  Defaults to 'ov', 
                 which denotes all unfrozen orbitals.
             transformation (np.ndarray): Orbital transformation matrix to be
-                applied to the MO coefficients prior to transformation.  Either
-                a single matrix or a pair of matrices for alpha and beta spins.
+                applied to the MO coefficients.  Either a single matrix or a 
+                pair of matrices for alpha and beta spins.
     
         Returns:
             np.ndarray: The orbital coefficients.
@@ -151,8 +151,8 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
                 is specified as a contiguous combination of 'c' (core),
                 'o' (occupied), and 'v' (virtual).
             transformation (np.ndarray): Orbital transformation matrix to be
-                applied to the MO coefficients prior to transformation.  Either
-                a single matrix or a pair of matrices for alpha and beta spins.
+                applied to the MO coefficients.  Either a single matrix or a 
+                pair of matrices for alpha and beta spins.
 
         Returns:
             np.ndarray: The integrals.
@@ -162,13 +162,8 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
                                       transformation=transformation)
         c2 = self.get_mo_coefficients(mo_type=mo_type, mo_space=mo_spaces[1],
                                       transformation=transformation)
-        va, vb = self._compute_ao_1e_core_field()
-        if mo_type is 'alpha':
-            v = va
-        elif mo_type is 'beta':
-            v = vb
-        elif mo_type is 'spinorb':
-            v = spla.block_diag(va, vb)
+        v = self.get_ao_1e_core_field(mo_type=mo_type,
+                                      transformation=transformation)
         return c1.T.dot(v.dot(c2))
 
     def get_mo_1e_kinetic(self, mo_type='alpha', mo_block='ov,ov',
@@ -184,8 +179,8 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
                 is specified as a contiguous combination of 'c' (core),
                 'o' (occupied), and 'v' (virtual).
             transformation (np.ndarray): Orbital transformation matrix to be
-                applied to the MO coefficients prior to transformation.  Either
-                a single matrix or a pair of matrices for alpha and beta spins.
+                applied to the MO coefficients.  Either a single matrix or a 
+                pair of matrices for alpha and beta spins.
     
         Returns:
             np.ndarray: The integrals.
@@ -213,8 +208,8 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
                 'o' (occupied), and 'v' (virtual).  Defaults to 'ov', 
                 which denotes all unfrozen orbitals.
             transformation (np.ndarray): Orbital transformation matrix to be
-                applied to the MO coefficients prior to transformation.  Either
-                a single matrix or a pair of matrices for alpha and beta spins.
+                applied to the MO coefficients.  Either a single matrix or a 
+                pair of matrices for alpha and beta spins.
     
         Returns:
             np.ndarray: The integrals.
@@ -242,8 +237,8 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
                 'o' (occupied), and 'v' (virtual).  Defaults to 'ov', 
                 which denotes all unfrozen orbitals.
             transformation (np.ndarray): Orbital transformation matrix to be
-                applied to the MO coefficients prior to transformation.  Either
-                a single matrix or a pair of matrices for alpha and beta spins.
+                applied to the MO coefficients.  Either a single matrix or a 
+                pair of matrices for alpha and beta spins.
     
         Returns:
             np.ndarray: The integrals.
@@ -272,8 +267,8 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
                 'o' (occupied), and 'v' (virtual).  Defaults to 'ov', 
                 which denotes all unfrozen orbitals.
             transformation (np.ndarray): Orbital transformation matrix to be
-                applied to the MO coefficients prior to transformation.  Either
-                a single matrix or a pair of matrices for alpha and beta spins.
+                applied to the MO coefficients.  Either a single matrix or a 
+                pair of matrices for alpha and beta spins.
             antisymmetrize (bool): Antisymmetrize the integral tensor?
     
         Returns:
@@ -311,8 +306,8 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
                                           transformation=transformation)
         return tu.einsum("mntu,mp,nq,tr,us->pqrs", g, c1, c2, c3, c4)
 
-    def _get_ao_1e_hf_density(self, mo_type='alpha', mo_space='ov',
-                              transformation=None):
+    def get_ao_1e_hf_density(self, mo_type='alpha', mo_space='ov',
+                             transformation=None):
         """Get the Hartree-Fock density.
         
         Returns the Hartree-Fock density, D_mu,nu = sum_i C_mu,i C_nu,i^*, 
@@ -326,8 +321,8 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
                 'o' (occupied), and 'v' (virtual).  Defaults to 'ov', 
                 which denotes all unfrozen orbitals.
             transformation (np.ndarray): Orbital transformation matrix to be
-                applied to the MO coefficients prior to transformation.  Either
-                a single matrix or a pair of matrices for alpha and beta spins.
+                applied to the MO coefficients.  Either a single matrix or a 
+                pair of matrices for alpha and beta spins.
     
         Returns:
             np.ndarray: The matrix.
@@ -337,29 +332,61 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         d = c.dot(c.T)
         return d
 
-    def _compute_ao_1e_core_field(self):
+    def get_ao_1e_core_field(self, mo_type='alpha', transformation=None):
         """Get the core field integrals.
         
         Returns the representation of the mean field of the core electrons in
-        the atomic-orbital basis, <p(1)|J_c(1) + K_c(1)|q(1)>.
-        
-        Returns:
-            np.ndarray: The integrals.
-        """
-        da = self._get_ao_1e_hf_density('alpha', mo_space='c')
-        db = self._get_ao_1e_hf_density('beta', mo_space='c')
-        g = self.integrals.get_ao_2e_repulsion(use_spinorbs=False)
-        j = np.tensordot(g, da + db, axes=[(1, 3), (1, 0)])
-        va = j - np.tensordot(g, da, axes=[(1, 2), (1, 0)])
-        vb = j - np.tensordot(g, db, axes=[(1, 2), (1, 0)])
-        return np.array([va, vb])
+        the atomic-orbital basis, <mu(1)*spin|J_c(1) - K_c(1)|nu(1)*spin>.
 
-    def _compute_core_energy(self):
-        da = self._get_ao_1e_hf_density('alpha', mo_space='c')
-        db = self._get_ao_1e_hf_density('beta', mo_space='c')
-        va, vb = self._compute_ao_1e_core_field()
-        h = (self.integrals.get_ao_1e_kinetic(use_spinorbs=False)
-             + self.integrals.get_ao_1e_potential(use_spinorbs=False))
-        core_energy = np.sum((h + va / 2) * da + (h + vb / 2) * db)
+        Args:
+            mo_type (str): Orbital type, 'alpha', 'beta', or 'spinorb'.
+            transformation (np.ndarray): Orbital transformation matrix to be
+                applied to the MO coefficients.  Either a single matrix or a 
+                pair of matrices for alpha and beta spins.
+
+        Returns:
+            np.ndarray: The integrals
+        """
+        da = self.get_ao_1e_hf_density('alpha', mo_space='c',
+                                       transformation=transformation)
+        db = self.get_ao_1e_hf_density('beta', mo_space='c',
+                                       transformation=transformation)
+        g = self.integrals.get_ao_2e_repulsion(use_spinorbs=False)
+        # Compute the Coulomb and exchange matrices.
+        j = np.tensordot(g, da + db, axes=[(1, 3), (1, 0)])
+        ka = np.tensordot(g, da, axes=[(1, 2), (1, 0)])
+        kb = np.tensordot(g, db, axes=[(1, 2), (1, 0)])
+        # Return the result.
+        if mo_type is 'alpha':
+            return j - ka
+        elif mo_type is 'beta':
+            return j - kb
+        elif mo_type is 'spinorb':
+            return spla.block_diag(j - ka, j - kb)
+
+    def get_core_energy(self, transformation=None):
+        """Get the total mean-field energy of the core electrons.
+        
+        Includes the nuclear repulsion energy.
+        
+        Args:
+            transformation (np.ndarray): Orbital transformation matrix to be
+                applied to the MO coefficients.  Either a single matrix or a 
+                pair of matrices for alpha and beta spins.
+
+        Returns:
+            float: The core energy.
+        """
+        da = self.get_ao_1e_hf_density('alpha', mo_space='c',
+                                       transformation=transformation)
+        db = self.get_ao_1e_hf_density('beta', mo_space='c',
+                                       transformation=transformation)
+        va = self.get_ao_1e_core_field('alpha', transformation=transformation)
+        vb = self.get_ao_1e_core_field('beta', transformation=transformation)
+        t = self.integrals.get_ao_1e_kinetic(use_spinorbs=False)
+        v = self.integrals.get_ao_1e_potential(use_spinorbs=False)
+        h = t + v
+        e_elec = np.sum((h + va / 2) * da + (h + vb / 2) * db)
         e_nuc = self.molecule.nuclei.get_nuclear_repulsion_energy()
-        return core_energy + e_nuc
+        return e_elec + e_nuc
+
