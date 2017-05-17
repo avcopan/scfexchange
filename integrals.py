@@ -8,7 +8,10 @@ import tensorutils as tu
 
 
 class IntegralsInterface(with_metaclass(abc.ABCMeta)):
-    """Molecular integrals.
+    """Molecular integrals base class.
+    
+    Subclasses should override the methods for returning integrals as numpy 
+    arrays (such as `get_ao_1e_kinetic`).
     
     Attributes:
         nuclei (:obj:`scfexchange.nuclei.NuclearFramework`): Specifies the
@@ -40,7 +43,7 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
                 components, x, y, and z.
 
         Returns:
-            np.ndarray: The integrals.
+            numpy.ndarray: The integrals.
         """
         # If spinorb integrals are requested and we have them, return them.
         if use_spinorbs and hasattr(self, "_aso_" + name) and not recompute:
@@ -72,13 +75,13 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
         Args:
             use_spinorbs (bool): Return the integrals in the spin-orbital basis?
             recompute (bool): Recompute the integrals, if we already have them?
-            electric_field (np.ndarray): A three-component vector specifying 
+            electric_field (numpy.ndarray): A three-component vector specifying 
                 the magnitude of an external static electric field.  Its 
                 negative dot product with the dipole integrals will be added 
                 to the core Hamiltonian.
 
         Returns:
-            np.ndarray: The integrals.
+            numpy.ndarray: The integrals.
         """
         t = self.get_ao_1e_kinetic(use_spinorbs=use_spinorbs,
                                    recompute=recompute)
@@ -102,7 +105,7 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
             recompute (bool): Recompute the integrals, if we already have them?
     
         Returns:
-            np.ndarray: The integrals.
+            numpy.ndarray: The integrals.
         """
         return
 
@@ -118,7 +121,7 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
             recompute (bool): Recompute the integrals, if we already have them?
     
         Returns:
-            np.ndarray: The integrals.
+            numpy.ndarray: The integrals.
         """
         return
 
@@ -134,7 +137,7 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
             recompute (bool): Recompute the integrals, if we already have them?
     
         Returns:
-            np.ndarray: The integrals.
+            numpy.ndarray: The integrals.
         """
         return
 
@@ -150,7 +153,7 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
             recompute (bool): Recompute the integrals, if we already have them?
     
         Returns:
-            np.ndarray: The integrals.
+            numpy.ndarray: The integrals.
         """
         pass
 
@@ -169,6 +172,6 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
             antisymmetrize (bool): Antisymmetrize the integral tensor?
     
         Returns:
-            np.ndarray: The integrals.
+            numpy.ndarray: The integrals.
         """
         return
