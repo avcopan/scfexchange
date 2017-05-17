@@ -9,7 +9,7 @@ from . import constants
 
 
 class Integrals(IntegralsInterface):
-    """Molecular integrals.
+    """Molecular integrals (Psi4).
     
     Attributes:
         nuclei (:obj:`scfexchange.nuclei.NuclearFramework`): Specifies the
@@ -50,7 +50,7 @@ class Integrals(IntegralsInterface):
             recompute (bool): Recompute the integrals, if we already have them?
     
         Returns:
-            np.ndarray: The integrals.
+            numpy.ndarray: The integrals.
         """
         def integrate(): return np.array(self._mints_helper.ao_overlap())
         s = self._get_ints('1e_overlap', integrate, use_spinorbs, recompute)
@@ -67,7 +67,7 @@ class Integrals(IntegralsInterface):
             recompute (bool): Recompute the integrals, if we already have them?
     
         Returns:
-            np.ndarray: The integrals.
+            numpy.ndarray: The integrals.
         """
         def integrate(): return np.array(self._mints_helper.ao_kinetic())
         t = self._get_ints('1e_kinetic', integrate, use_spinorbs, recompute)
@@ -84,7 +84,7 @@ class Integrals(IntegralsInterface):
             recompute (bool): Recompute the integrals, if we already have them?
     
         Returns:
-            np.ndarray: The integrals.
+            numpy.ndarray: The integrals.
         """
         def integrate(): return np.array(self._mints_helper.ao_potential())
         v = self._get_ints('1e_potential', integrate, use_spinorbs, recompute)
@@ -101,7 +101,7 @@ class Integrals(IntegralsInterface):
             recompute (bool): Recompute the integrals, if we already have them?
     
         Returns:
-            np.ndarray: The integrals.
+            numpy.ndarray: The integrals.
         """
         def integrate():
             comps = self._mints_helper.ao_dipole()
@@ -124,7 +124,7 @@ class Integrals(IntegralsInterface):
             antisymmetrize (bool): Antisymmetrize the integral tensor?
     
         Returns:
-            np.ndarray: The integrals.
+            numpy.ndarray: The integrals.
         """
         def integrate():
             g_chem = np.array(self._mints_helper.ao_eri())
@@ -136,87 +136,86 @@ class Integrals(IntegralsInterface):
 
 
 class Orbitals(OrbitalsInterface):
-    """Molecular orbitals.
+    """Molecular orbitals (Psi4).
     
     Attributes:
-        integrals (:obj:`scfexchange.integrals.Integrals`): Contributions to the
-            Hamiltonian operator, in the molecular orbital basis.
-        molecule (:obj:`scfexchange.nuclei.Molecule`): A Molecule object
-            specifying the molecular charge and multiplicity
-        options (dict): A dictionary of options, by keyword argument.
-        nfrz (int): The number of frozen (spatial) orbitals.  This can be set
-            with the option 'n_frozen_orbitals'.  Alternatively, if
-            'freeze_core' is True and the number of frozen orbitals is not set,
-            this defaults to the number of core orbitals, as determined by the
-            nuclei object.
-        norb (int): The total number of non-frozen (spatial) orbitals.  That is,
-            the number of basis functions minus the number of frozen orbitals.
-        naocc (int): The number of occupied non-frozen alpha orbitals.
-        nbocc (int): The number of occupied non-frozen beta orbitals.
-        core_energy (float): Hartree-Fock energy of the frozen core, including
-            nuclear repulsion energy.
-        hf_energy (float): The total Hartree-Fock energy.
+        integrals (:obj:`scfexchange.Integrals`): The integrals object.
+        molecule (:obj:`scfexchange.Molecule`): A Molecule object specifying
+            the total molecular charge and spin multiplicity of the system.
+        mo_coefficients (numpy.ndarray): The orbital expansion coefficients.
+        spin_is_restricted (bool): Are the orbital spin-restricted?
+        ncore (int): The number of low-energy orbitals assigned to the core
+            orbital space.
     """
 
-    def __init__(self, integrals, charge=0, multiplicity=1, restrict_spin=True,
-                 n_iterations=40, e_threshold=1e-12, d_threshold=1e-6,
-                 n_frozen_orbitals=0):
-        """Initialize Orbitals object.
-        
+    def solve(self, niter=40, e_threshold=1e-12, d_threshold=1e-6,
+              guess="auto"):
+        """Solve for Hartree-Fock orbitals with Psi4.
+
+        The orbitals are stored in `self.mo_coefficients`.
+
         Args:
-            integrals (:obj:`scfexchange.integrals.IntegralsInterface`): The
-                atomic-orbital integrals object.
-            charge (int): Total molecular charge.
-            multiplicity (int): Spin multiplicity.
-            restrict_spin (bool): Spin-restrict the orbitals?
-            n_iterations (int): Maximum number of Hartree-Fock iterations 
-                allowed before the orbitals are considered unconverged.
+            niter (int): Maximum number of iterations allowed.
             e_threshold (float): Energy convergence threshold.
-            d_threshold (float): Density convergence threshold, based on the 
-                norm of the orbital gradient
-            n_frozen_orbitals (int): How many core orbitals should be set to 
-                `frozen`.
+            d_threshold (float): Density convergence threshold.
+            guess (str): The starting guess to be used by Psi4.  Possible 
+                values include 'auto', 'core', 'gwh', 'sad', and 'read'.
         """
-        if not isinstance(integrals, Integrals):
-            raise ValueError(
-                "Please use an integrals object from this interface.")
-        self.integrals = integrals
-        self.options = {
-            'restrict_spin': restrict_spin,
-            'n_iterations': n_iterations,
-            'e_threshold': e_threshold,
-            'd_threshold': d_threshold,
-        }
-        self.molecule = Molecule(self.integrals.nuclei, charge, multiplicity)
-        self.n_frozen_orbitals = n_frozen_orbitals
-        # Build Psi4 HF object and compute the energy.
+        if not isinstance(self.integrals, Integrals):
+            raise ValueError("Requires integrals object from the Psi4 "
+                             "interface.")
+        charge = self.molecule.charge
+        multp = self.molecule.multiplicity
         self.integrals._psi4_molecule.set_molecular_charge(charge)
-        self.integrals._psi4_molecule.set_multiplicity(multiplicity)
-        wfn = psi4.core.Wavefunction.build(integrals._psi4_molecule,
-                                           integrals.basis_label)
+        self.integrals._psi4_molecule.set_multiplicity(multp)
+        wfn = psi4.core.Wavefunction.build(self.integrals._psi4_molecule,
+                                           self.integrals.basis_label)
         sf, _ = psi4.driver.dft_functional.build_superfunctional("HF")
-        psi4.core.set_global_option("guess", "gwh")
-        psi4.core.set_global_option("e_convergence",
-                                    self.options['e_threshold'])
-        psi4.core.set_global_option("d_convergence",
-                                    self.options['d_threshold'])
-        psi4.core.set_global_option("maxiter", self.options['n_iterations'])
-        if self.options['restrict_spin']:
-            if multiplicity is 1:
+        psi4.core.set_global_option("guess", guess)
+        psi4.core.set_global_option("e_convergence", e_threshold)
+        psi4.core.set_global_option("d_convergence", d_threshold)
+        psi4.core.set_global_option("maxiter", niter)
+        if self.spin_is_restricted:
+            if multp is 1:
                 psi4.core.set_global_option("reference", "RHF")
-                self._psi4_hf = psi4.core.RHF(wfn, sf)
+                psi4_hf = psi4.core.RHF(wfn, sf)
             else:
                 psi4.core.set_global_option("reference", "ROHF")
-                self._psi4_hf = psi4.core.ROHF(wfn, sf)
+                psi4_hf = psi4.core.ROHF(wfn, sf)
         else:
             psi4.core.set_global_option("reference", "UHF")
-            self._psi4_hf = psi4.core.UHF(wfn, sf)
-        self.hf_energy = self._psi4_hf.compute_energy()
-        # Get MO energies and coefficients and put them in the right format
-        mo_alpha_energies = self._psi4_hf.epsilon_a().to_array()
-        mo_beta_energies = self._psi4_hf.epsilon_b().to_array()
-        mo_alpha_coeffs = np.array(self._psi4_hf.Ca())
-        mo_beta_coeffs = np.array(self._psi4_hf.Cb())
+            psi4_hf = psi4.core.UHF(wfn, sf)
+        psi4_hf.compute_energy()
+        mo_alpha_energies = psi4_hf.epsilon_a().to_array()
+        mo_beta_energies = psi4_hf.epsilon_b().to_array()
+        mo_alpha_coeffs = np.array(psi4_hf.Ca())
+        mo_beta_coeffs = np.array(psi4_hf.Cb())
         self.mo_energies = np.array([mo_alpha_energies, mo_beta_energies])
         self.mo_coefficients = np.array([mo_alpha_coeffs, mo_beta_coeffs])
 
+
+if __name__ == "__main__":
+    import itertools as it
+    from .molecule import NuclearFramework
+    labels = ("O", "H", "H")
+    coordinates = np.array([[0.0000000000,  0.0000000000, -0.1247219248],
+                            [0.0000000000, -1.4343021349,  0.9864370414],
+                            [0.0000000000,  1.4343021349,  0.9864370414]])
+    nuclei = NuclearFramework(labels, coordinates)
+    # Build integrals
+    integrals = Integrals(nuclei, "sto-3g")
+    # Test the integrals interface
+    iterables1 = ([(0, 1), (1, 2)], [True, False])
+    iterables2 = ([0, 1], ['alpha', 'beta', 'spinorb'])
+    norms = []
+    shapes = []
+    for (charge, multp), restr in it.product(*iterables1):
+        orbitals = Orbitals(integrals, charge, multp, restrict_spin=restr)
+        orbitals.solve()
+        for ncore, mo_type in it.product(*iterables2):
+            orbitals.ncore = ncore
+            s = orbitals.get_mo_1e_kinetic(mo_type, 'o,o')
+            norms.append(np.linalg.norm(s))
+            shapes.append(s.shape)
+    print(shapes)
+    print(norms)

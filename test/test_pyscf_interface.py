@@ -44,12 +44,16 @@ def test__orbital_mo_slicing():
     orbital_tests.run_mo_slicing_check(Integrals, Orbitals)
 
 
+def test__orbital_mo_energies():
+    orbital_tests.run_mo_energies_check(Integrals, Orbitals)
+
+
+def test__orbital_mo_fock_diagonal():
+    orbital_tests.run_mo_fock_diagonal_check(Integrals, Orbitals)
+
+
 def test__orbital_mo_coefficients():
-    orbital_tests.run_mo_coefficient_check(Integrals, Orbitals)
-
-
-def test__orbital_mo_1e_core_field():
-    orbital_tests.run_mo_1e_core_field_check(Integrals, Orbitals)
+    orbital_tests.run_mo_coefficients_check(Integrals, Orbitals)
 
 
 def test__orbital_mo_1e_kinetic():
@@ -64,17 +68,38 @@ def test__orbital_mo_1e_dipole():
     orbital_tests.run_mo_1e_dipole_check(Integrals, Orbitals)
 
 
+def test__orbital_mo_1e_fock():
+    orbital_tests.run_mo_1e_fock_check(Integrals, Orbitals)
+
+
+def test__orbital_mo_1e_core_hamiltonian():
+    orbital_tests.run_mo_1e_core_hamiltonian_check(Integrals, Orbitals)
+
+
+def test__orbital_mo_1e_core_field():
+    orbital_tests.run_mo_1e_core_field_check(Integrals, Orbitals)
+
+
 def test__orbital_mo_2e_repulsion():
     orbital_tests.run_mo_2e_repulsion_check(Integrals, Orbitals)
+
+
+def test__orbital_ao_1e_density():
+    orbital_tests.run_ao_1e_density_check(Integrals, Orbitals)
+
+
+def test__orbital_ao_1e_mean_field():
+    orbital_tests.run_ao_1e_mean_field_check(Integrals, Orbitals)
+
+
+def test__orbital_ao_1e_fock():
+    orbital_tests.run_ao_1e_fock_check(Integrals, Orbitals)
+
+
+def test__orbital_hf_energy():
+    orbital_tests.run_hf_energy_check(Integrals, Orbitals)
 
 
 def test__orbital_core_energy():
     orbital_tests.run_core_energy_check(Integrals, Orbitals)
 
-
-def test__orbital_mp2_energy():
-    orbital_tests.run_mp2_energy_check(Integrals, Orbitals)
-
-
-def test__orbital_dipole_moment():
-    orbital_tests.run_dipole_moment_check(Integrals, Orbitals)

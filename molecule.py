@@ -11,7 +11,7 @@ class NuclearFramework(object):
         labels (`tuple`): Atomic symbols.
         charges (`tuple`): Atomic charges.
         masses (`tuple`): Atomic masses.
-        coordinates (`np.ndarray`): Atomic coordinates in Bohr.
+        coordinates (`numpy.ndarray`): Atomic coordinates in Bohr.
     """
 
     def __init__(self, labels, coordinates):
@@ -19,7 +19,7 @@ class NuclearFramework(object):
         
         Args:
             labels (`tuple`): Atomic symbols.
-            coordinates (`np.ndarray`): Atomic coordinates in Bohr.
+            coordinates (`numpy.ndarray`): Atomic coordinates in Bohr.
         """
         self.natoms = len(labels)
         self.labels = tuple(labels)
@@ -34,7 +34,7 @@ class NuclearFramework(object):
             convert_to_angstroms (bool): Return the coordinates in Angstroms?
 
         Returns:
-            np.ndarray: The coordinates.
+            numpy.ndarray: The coordinates.
         """
         if not convert_to_angstroms:
             return self.coordinates
@@ -59,7 +59,7 @@ class NuclearFramework(object):
         """Get the nuclear center of mass.
         
         Returns:
-            np.ndarray: The center of mass.
+            numpy.ndarray: The center of mass.
         """
         m_tot = sum(self.masses)
         r_m = sum(m * r for m, r in zip(self.masses, self.coordinates)) / m_tot
@@ -69,7 +69,7 @@ class NuclearFramework(object):
         """Get the nuclear center of charge.
         
         Returns:
-            np.ndarray: The center of charge.
+            numpy.ndarray: The center of charge.
         """
         q_tot = sum(self.charges)
         r_c = sum(q * r for q, r in zip(self.charges, self.coordinates)) / q_tot
@@ -79,7 +79,7 @@ class NuclearFramework(object):
         """Get the nuclear dipole moment.
         
         Returns:
-            np.ndarray: The dipole moment.
+            numpy.ndarray: The dipole moment.
         """
         mu = sum(q * r for q, r in zip(self.charges, self.coordinates))
         return mu
