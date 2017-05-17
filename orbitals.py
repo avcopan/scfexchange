@@ -5,30 +5,71 @@ import scipy.linalg as spla
 
 from six import with_metaclass
 from .integrals import IntegralsInterface
+from .molecule import Molecule
 
 
 class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
-    """Molecular orbitals.
+    """Molecular orbitals base class.
+    
+    Subclasses should override the `solve` method, which sets the value 
+    of `mo_coefficients`.
     
     Attributes:
-        integrals (:obj:`scfexchange.integrals.Integrals`): Contributions to the
-            Hamiltonian operator, in the molecular orbital basis.
-        molecule (:obj:`scfexchange.nuclei.Molecule`): A Molecule object
-            specifying the molecular charge and multiplicity
-        options (dict): A dictionary of options, by keyword argument.
-        nfrz (int): The number of frozen (spatial) orbitals.  This can be set
-            with the option 'n_frozen_orbitals'.  Alternatively, if
-            'freeze_core' is True and the number of frozen orbitals is not set,
-            this defaults to the number of core orbitals, as determined by the
-            nuclei object.
-        norb (int): The total number of non-frozen (spatial) orbitals.  That is,
-            the number of basis functions minus the number of frozen orbitals.
-        naocc (int): The number of occupied non-frozen alpha orbitals.
-        nbocc (int): The number of occupied non-frozen beta orbitals.
-        core_energy (float): Hartree-Fock energy of the frozen core, including
-            nuclear repulsion energy.
-        hf_energy (float): The total Hartree-Fock energy.
+        integrals (:obj:`scfexchange.Integrals`): The integrals object.
+        molecule (:obj:`scfexchange.Molecule`): A Molecule object specifying
+            the total molecular charge and spin multiplicity of the system.
+        mo_coefficients (numpy.ndarray): The orbital expansion coefficients.
+        mo_energies (numpy.ndarray): The orbital energies.
+        spin_is_restricted (bool): Are the orbital spin-restricted?
+        ncore (int): The number of low-energy orbitals assigned to the core
+            orbital space.
     """
+
+    def __init__(self, integrals, charge=0, multiplicity=1, restrict_spin=False,
+                 mo_coefficients=None, mo_energies=None, ncore=0):
+        """Initialize an instance of the OrbitalsInterface.
+        
+        Args:
+            integrals (:obj:`scfexchange.Integrals`): The integrals object.
+            charge (int): Total molecular charge.
+            multiplicity (int): Spin multiplicity.
+            restrict_spin (bool): Spin-restrict the orbitals?
+            mo_coefficients (numpy.ndarray): The orbital expansion coefficients.
+            mo_energies (numpy.ndarray): The orbital energies.
+            ncore (int): The number of low-energy orbitals to be assigned to the 
+                core orbital space.
+        """
+        self.integrals = integrals
+        self.molecule = Molecule(integrals.nuclei, charge, multiplicity)
+        self.mo_coefficients = mo_coefficients
+        self.mo_energies = mo_energies
+        self.spin_is_restricted = restrict_spin
+        self.ncore = ncore
+        if not isinstance(integrals, IntegralsInterface):
+            raise ValueError("Invalid 'integrals' argument.")
+        nbf = integrals.nbf
+        if self.mo_energies is None:
+            self.mo_energies = np.zeros((2, nbf))
+        elif not (isinstance(self.mo_energies, np.ndarray)
+                  and self.mo_energies.shape == (2, nbf)):
+            raise ValueError("Invalid 'mo_energies' argument.")
+        if self.mo_coefficients is None:
+            self.mo_coefficients = np.zeros((2, nbf, nbf))
+        elif not (isinstance(self.mo_coefficients, np.ndarray)
+                  and self.mo_coefficients.shape == (2, nbf, nbf)):
+            raise ValueError("Invalid 'mo_coefficients' argument.")
+
+    @abc.abstractmethod
+    def solve(self, **options):
+        """Solve for the orbitals.
+
+        Sets `self.mo_coefficients` to a new value.
+        
+        Args:
+            **options: Parameters defining the behavior of the solution 
+                algorithm, such as convergence criteria.
+        """
+        return
 
     def get_mo_count(self, mo_type='alpha', mo_space='ov'):
         """Return the number of orbitals in a given space.
@@ -40,27 +81,27 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
                 which denotes all unfrozen orbitals.
 
         Returns:
-            np.ndarray: The orbital energies.
+            numpy.ndarray: The orbital energies.
         """
         count = 0
         if mo_type in ('alpha', 'spinorb'):
             if 'c' in mo_space:
-                count += self.n_frozen_orbitals
+                count += self.ncore
             if 'o' in mo_space:
-                count += self.molecule.nalpha - self.n_frozen_orbitals
+                count += self.molecule.nalpha - self.ncore
             if 'v' in mo_space:
                 count += self.integrals.nbf - self.molecule.nalpha
         if mo_type in ('beta', 'spinorb'):
             if 'c' in mo_space:
-                count += self.n_frozen_orbitals
+                count += self.ncore
             if 'o' in mo_space:
-                count += self.molecule.nbeta - self.n_frozen_orbitals
+                count += self.molecule.nbeta - self.ncore
             if 'v' in mo_space:
                 count += self.integrals.nbf - self.molecule.nbeta
         return count
 
     def get_mo_slice(self, mo_type='alpha', mo_space='ov'):
-        """Return the slice for a specific subset of molecular orbitals.
+        """Return the slice for a given orbital space.
     
         Args:
             mo_type (str): Orbital type, 'alpha', 'beta', or 'spinorb'.
@@ -86,7 +127,7 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         """Determine indices that would sort the concatenated orbital energies.
         
         Returns:
-            np.ndarray: The sorting indices.
+            numpy.ndarray: The sorting indices.
         """
         spinorb_energies = np.concatenate(self.mo_energies)
         spinorb_order = np.argsort(spinorb_energies)
@@ -102,7 +143,7 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
                 which denotes all unfrozen orbitals.
     
         Returns:
-            np.ndarray: The orbital energies.
+            numpy.ndarray: The orbital energies.
         """
         slc = self.get_mo_slice(mo_type=mo_type, mo_space=mo_space)
         if mo_type is 'alpha':
@@ -123,12 +164,12 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
             mo_space (str): Any contiguous combination of 'c' (core),
                 'o' (occupied), and 'v' (virtual).  Defaults to 'ov', 
                 which denotes all unfrozen orbitals.
-            transformation (np.ndarray): Orbital transformation matrix to be
+            transformation (numpy.ndarray): Orbital transformation matrix to be
                 applied to the MO coefficients.  Either a single matrix or a 
                 pair of matrices for alpha and beta spins.
     
         Returns:
-            np.ndarray: The orbital coefficients.
+            numpy.ndarray: The orbital coefficients.
         """
         slc = self.get_mo_slice(mo_type=mo_type, mo_space=mo_space)
         # Grab the appropriate set of coefficients
@@ -156,35 +197,6 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         c = c.dot(t)
         return c[:, slc]
 
-    def get_mo_1e_core_field(self, mo_type='alpha', mo_block='ov,ov',
-                             transformation=None):
-        """Get the core field integrals.
-        
-        Returns the representation of the mean field of the core electrons in
-        the molecular-orbital basis, <p(1)|J_c(1) + K_c(1)|q(1)>.
-        
-        Args:
-            mo_type (str): Orbital type, 'alpha', 'beta', or 'spinorb'.
-            mo_block (str): A comma-separated pair of MO spaces.  The MO space
-                is specified as a contiguous combination of 'c' (core),
-                'o' (occupied), and 'v' (virtual).
-            transformation (np.ndarray): Orbital transformation matrix to be
-                applied to the MO coefficients.  Either a single matrix or a 
-                pair of matrices for alpha and beta spins.
-
-        Returns:
-            np.ndarray: The integrals.
-        """
-        mo_spaces = mo_block.split(',')
-        c1 = self.get_mo_coefficients(mo_type=mo_type, mo_space=mo_spaces[0],
-                                      transformation=transformation)
-        c2 = self.get_mo_coefficients(mo_type=mo_type, mo_space=mo_spaces[1],
-                                      transformation=transformation)
-        w_ao = self.get_ao_1e_core_field(mo_type=mo_type,
-                                         transformation=transformation)
-        w_mo = c1.T.dot(w_ao.dot(c2))
-        return w_mo
-
     def get_mo_1e_kinetic(self, mo_type='alpha', mo_block='ov,ov',
                           transformation=None):
         """Get the kinetic energy integrals.
@@ -197,12 +209,12 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
             mo_block (str): A comma-separated pair of MO spaces.  The MO space
                 is specified as a contiguous combination of 'c' (core),
                 'o' (occupied), and 'v' (virtual).
-            transformation (np.ndarray): Orbital transformation matrix to be
+            transformation (numpy.ndarray): Orbital transformation matrix to be
                 applied to the MO coefficients.  Either a single matrix or a 
                 pair of matrices for alpha and beta spins.
     
         Returns:
-            np.ndarray: The integrals.
+            numpy.ndarray: The integrals.
         """
         mo_spaces = mo_block.split(',')
         c1 = self.get_mo_coefficients(mo_type=mo_type, mo_space=mo_spaces[0],
@@ -226,12 +238,12 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
             mo_block (str): Any contiguous combination of 'c' (core),
                 'o' (occupied), and 'v' (virtual).  Defaults to 'ov', 
                 which denotes all unfrozen orbitals.
-            transformation (np.ndarray): Orbital transformation matrix to be
+            transformation (numpy.ndarray): Orbital transformation matrix to be
                 applied to the MO coefficients.  Either a single matrix or a 
                 pair of matrices for alpha and beta spins.
     
         Returns:
-            np.ndarray: The integrals.
+            numpy.ndarray: The integrals.
         """
         mo_spaces = mo_block.split(',')
         c1 = self.get_mo_coefficients(mo_type=mo_type, mo_space=mo_spaces[0],
@@ -255,12 +267,12 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
             mo_block (str): Any contiguous combination of 'c' (core),
                 'o' (occupied), and 'v' (virtual).  Defaults to 'ov', 
                 which denotes all unfrozen orbitals.
-            transformation (np.ndarray): Orbital transformation matrix to be
+            transformation (numpy.ndarray): Orbital transformation matrix to be
                 applied to the MO coefficients.  Either a single matrix or a 
                 pair of matrices for alpha and beta spins.
     
         Returns:
-            np.ndarray: The integrals.
+            numpy.ndarray: The integrals.
         """
         mo_spaces = mo_block.split(',')
         c1 = self.get_mo_coefficients(mo_type=mo_type, mo_space=mo_spaces[0],
@@ -268,9 +280,9 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         c2 = self.get_mo_coefficients(mo_type=mo_type, mo_space=mo_spaces[1],
                                       transformation=transformation)
         use_spinorbs = (mo_type is 'spinorb')
-        mu_ao = self.integrals.get_ao_1e_dipole(use_spinorbs)
-        mu_mo = np.array([c1.T.dot(mu_ao_x.dot(c2)) for mu_ao_x in mu_ao])
-        return mu_mo
+        d_ao = self.integrals.get_ao_1e_dipole(use_spinorbs)
+        d_mo = np.array([c1.T.dot(d_ao_x.dot(c2)) for d_ao_x in d_ao])
+        return d_mo
 
     def get_mo_1e_core_hamiltonian(self, mo_type='alpha', mo_block='ov,ov',
                                    transformation=None, electric_field=None,
@@ -287,16 +299,16 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
             mo_block (str): Any contiguous combination of 'c' (core),
                 'o' (occupied), and 'v' (virtual).  Defaults to 'ov', 
                 which denotes all unfrozen orbitals.
-            transformation (np.ndarray): Orbital transformation matrix to be
+            transformation (numpy.ndarray): Orbital transformation matrix to be
                 applied to the MO coefficients.  Either a single matrix or a 
                 pair of matrices for alpha and beta spins.
-            electric_field (np.ndarray): A three-component vector specifying the
+            electric_field (numpy.ndarray): A three-component vector specifying the
                 magnitude of an external static electric field.  Its dot product
                 with the dipole integrals will be added to the core Hamiltonian.
             add_core_repulsion (bool): Add in the core electron mean field?
 
         Returns:
-            np.ndarray: The integrals.
+            numpy.ndarray: The integrals.
         """
         mo_spaces = mo_block.split(',')
         c1 = self.get_mo_coefficients(mo_type=mo_type, mo_space=mo_spaces[0],
@@ -316,6 +328,35 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         h_mo = c1.T.dot(h_ao.dot(c2))
         return h_mo
 
+    def get_mo_1e_core_field(self, mo_type='alpha', mo_block='ov,ov',
+                             transformation=None):
+        """Get the core field integrals.
+        
+        Returns the representation of the mean field of the core electrons in
+        the molecular-orbital basis, <p(1)|J_c(1) + K_c(1)|q(1)>.
+        
+        Args:
+            mo_type (str): Orbital type, 'alpha', 'beta', or 'spinorb'.
+            mo_block (str): A comma-separated pair of MO spaces.  The MO space
+                is specified as a contiguous combination of 'c' (core),
+                'o' (occupied), and 'v' (virtual).
+            transformation (numpy.ndarray): Orbital transformation matrix to be
+                applied to the MO coefficients.  Either a single matrix or a 
+                pair of matrices for alpha and beta spins.
+
+        Returns:
+            numpy.ndarray: The integrals.
+        """
+        mo_spaces = mo_block.split(',')
+        c1 = self.get_mo_coefficients(mo_type=mo_type, mo_space=mo_spaces[0],
+                                      transformation=transformation)
+        c2 = self.get_mo_coefficients(mo_type=mo_type, mo_space=mo_spaces[1],
+                                      transformation=transformation)
+        w_ao = self.get_ao_1e_core_field(mo_type=mo_type,
+                                         transformation=transformation)
+        w_mo = c1.T.dot(w_ao.dot(c2))
+        return w_mo
+
     def get_mo_2e_repulsion(self, mo_type='alpha', mo_block='ov,ov,ov,ov',
                             transformation=None, antisymmetrize=False):
         """Get the electron-repulsion integrals.
@@ -329,13 +370,13 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
             mo_block (str): Any contiguous combination of 'c' (core),
                 'o' (occupied), and 'v' (virtual).  Defaults to 'ov', 
                 which denotes all unfrozen orbitals.
-            transformation (np.ndarray): Orbital transformation matrix to be
+            transformation (numpy.ndarray): Orbital transformation matrix to be
                 applied to the MO coefficients.  Either a single matrix or a 
                 pair of matrices for alpha and beta spins.
             antisymmetrize (bool): Antisymmetrize the integral tensor?
     
         Returns:
-            np.ndarray: The integrals.
+            numpy.ndarray: The integrals.
         """
         mo_spaces = mo_block.split(',')
         use_spinorbs = (mo_type is 'spinorb')
@@ -369,50 +410,56 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
                                           transformation=transformation)
         return tu.einsum("mntu,mp,nq,tr,us->pqrs", g, c1, c2, c3, c4)
 
-    def get_ao_1e_hf_density(self, mo_type='alpha', mo_space='ov',
-                             transformation=None):
-        """Get the Hartree-Fock density.
+    def get_ao_1e_density(self, mo_type='alpha', mo_space='co',
+                          transformation=None):
+        """Get the electronic density matrix.
         
-        Returns the Hartree-Fock density, D_mu,nu = sum_i C_mu,i C_nu,i^*, 
-        in the atomic-orbital basis.  This is not quite equal to the 
-        one-particle density matrix, which is S * D * S with S denoting the
-        atomic-orbital overlap matrix.
+        Returns the SCF density matrix, D_mu,nu = sum_i C_mu,i C_nu,i^*, in the
+        atomic-orbital basis.  This is not quite equal to the one-particle
+        reduced density matrix, which is S * D * S with S denoting the atomic
+        orbital overlap matrix.
     
         Args:
             mo_type (str): Orbital type, 'alpha', 'beta', or 'spinorb'.
             mo_space (str): Any contiguous combination of 'c' (core),
-                'o' (occupied), and 'v' (virtual).  Defaults to 'ov', 
-                which denotes all unfrozen orbitals.
-            transformation (np.ndarray): Orbital transformation matrix to be
+                'o' (occupied), and 'v' (virtual), defining the space of 
+                electrons generating the field.  Defaults to all 'co', 
+                which includes all frozen and unfrozen occupied electrons.
+            transformation (numpy.ndarray): Orbital transformation matrix to be
                 applied to the MO coefficients.  Either a single matrix or a 
                 pair of matrices for alpha and beta spins.
     
         Returns:
-            np.ndarray: The matrix.
+            numpy.ndarray: The matrix.
         """
         c = self.get_mo_coefficients(mo_type=mo_type, mo_space=mo_space,
                                      transformation=transformation)
         d = c.dot(c.T)
         return d
 
-    def get_ao_1e_core_field(self, mo_type='alpha', transformation=None):
-        """Get the core field integrals.
+    def get_ao_1e_mean_field(self, mo_type='alpha', mo_space='co',
+                             transformation=None):
+        """Get the electron mean-field integrals.
         
-        Returns the representation of the mean field of the core electrons in
-        the atomic-orbital basis, <mu(1)*spin|J_c(1) - K_c(1)|nu(1)*spin>.
+        Returns the representation of electronic mean field of a given orbital 
+        space in the atomic-orbital basis, <mu(1)*spin|J(1) - K(1)|nu(1)*spin>.
 
         Args:
             mo_type (str): Orbital type, 'alpha', 'beta', or 'spinorb'.
-            transformation (np.ndarray): Orbital transformation matrix to be
+            mo_space (str): Any contiguous combination of 'c' (core),
+                'o' (occupied), and 'v' (virtual), defining the space of 
+                electrons generating the field.  Defaults to all 'co', 
+                which includes all frozen and unfrozen occupied electrons.
+            transformation (numpy.ndarray): Orbital transformation matrix to be
                 applied to the MO coefficients.  Either a single matrix or a 
                 pair of matrices for alpha and beta spins.
 
         Returns:
-            np.ndarray: The integrals
+            numpy.ndarray: The integrals
         """
-        da = self.get_ao_1e_hf_density('alpha', mo_space='c',
+        da = self.get_ao_1e_hf_density('alpha', mo_space=mo_space,
                                        transformation=transformation)
-        db = self.get_ao_1e_hf_density('beta', mo_space='c',
+        db = self.get_ao_1e_hf_density('beta', mo_space=mo_space,
                                        transformation=transformation)
         g = self.integrals.get_ao_2e_repulsion(use_spinorbs=False)
         # Compute the Coulomb and exchange matrices.
@@ -427,29 +474,88 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         elif mo_type is 'spinorb':
             return spla.block_diag(j - ka, j - kb)
 
-    def get_core_energy(self, transformation=None):
+    def get_ao_1e_fock_operator(self, mo_type='alpha', transformation=None,
+                                electric_field=None):
+        """Get the Fock operator integrals.
+        
+        Returns the core Hamiltonian plus the mean field of the core 
+        and occupied orbitals in the atomic-orbital basis,
+        <mu(1)*spin|h(1) + J(1) - K(1)|nu(1)*spin>.
+        
+        Args:
+            mo_type (str): Orbital type, 'alpha', 'beta', or 'spinorb'.
+            transformation (numpy.ndarray): Orbital transformation matrix to be
+                applied to the MO coefficients.  Either a single matrix or a 
+                pair of matrices for alpha and beta spins.
+            electric_field (numpy.ndarray): A three-component vector specifying the
+                magnitude of an external static electric field.  Its dot product
+                with the dipole integrals will be added to the core Hamiltonian.
+
+        Returns:
+            numpy.ndarray: The integrals.
+        """
+        h = self.integrals.get_ao_1e_core_hamiltonian(
+            use_spinorbs=False, electric_field=electric_field)
+        w = self.get_ao_1e_mean_field(mo_type=mo_type, mo_space='co',
+                                      transformation=transformation)
+        return h + w
+
+    def get_hf_energy(self, transformation=None, electric_field=None):
+        """Get the total mean-field energy of the occupied electrons.
+        
+        Includes the nuclear repulsion energy.
+        
+        Args:
+            transformation (numpy.ndarray): Orbital transformation matrix to be
+                applied to the MO coefficients.  Either a single matrix or a 
+                pair of matrices for alpha and beta spins.
+            electric_field (numpy.ndarray): A three-component vector specifying the
+                magnitude of an external static electric field.  Its dot product
+                with the dipole integrals will be added to the core Hamiltonian.
+
+        Returns:
+            float: The energy.
+        """
+        h = self.integrals.get_ao_1e_core_hamiltonian(
+            use_spinorbs=False, electric_field=electric_field)
+        da = self.get_ao_1e_hf_density('alpha', mo_space='co',
+                                       transformation=transformation)
+        db = self.get_ao_1e_hf_density('beta', mo_space='co',
+                                       transformation=transformation)
+        wa = self.get_ao_1e_mean_field(mo_type='alpha', mo_space='co',
+                                       transformation=transformation)
+        wb = self.get_ao_1e_mean_field(mo_type='beta', mo_space='co',
+                                       transformation=transformation)
+        e_elec = np.sum((h + wa / 2) * da + (h + wb / 2) * db)
+        e_nuc = self.molecule.nuclei.get_nuclear_repulsion_energy()
+        return e_elec + e_nuc
+
+    def get_core_energy(self, transformation=None, electric_field=None):
         """Get the total mean-field energy of the core electrons.
         
         Includes the nuclear repulsion energy.
         
         Args:
-            transformation (np.ndarray): Orbital transformation matrix to be
+            transformation (numpy.ndarray): Orbital transformation matrix to be
                 applied to the MO coefficients.  Either a single matrix or a 
                 pair of matrices for alpha and beta spins.
+            electric_field (numpy.ndarray): A three-component vector specifying the
+                magnitude of an external static electric field.  Its dot product
+                with the dipole integrals will be added to the core Hamiltonian.
 
         Returns:
-            float: The core energy.
+            float: The energy.
         """
+        h = self.integrals.get_ao_1e_core_hamiltonian(
+            use_spinorbs=False, electric_field=electric_field)
         da = self.get_ao_1e_hf_density('alpha', mo_space='c',
                                        transformation=transformation)
         db = self.get_ao_1e_hf_density('beta', mo_space='c',
                                        transformation=transformation)
-        va = self.get_ao_1e_core_field('alpha', transformation=transformation)
-        vb = self.get_ao_1e_core_field('beta', transformation=transformation)
-        t = self.integrals.get_ao_1e_kinetic(use_spinorbs=False)
-        v = self.integrals.get_ao_1e_potential(use_spinorbs=False)
-        h = t + v
-        e_elec = np.sum((h + va / 2) * da + (h + vb / 2) * db)
+        wa = self.get_ao_1e_mean_field(mo_type='alpha', mo_space='c',
+                                       transformation=transformation)
+        wb = self.get_ao_1e_mean_field(mo_type='beta', mo_space='c',
+                                       transformation=transformation)
+        e_elec = np.sum((h + wa / 2) * da + (h + wb / 2) * db)
         e_nuc = self.molecule.nuclei.get_nuclear_repulsion_energy()
         return e_elec + e_nuc
-
