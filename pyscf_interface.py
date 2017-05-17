@@ -184,17 +184,17 @@ if __name__ == "__main__":
     # Build integrals
     integrals = Integrals(nuclei, "sto-3g")
     # Test the integrals interface
-    iterables1 = ([(0, 1), (1, 2)], [True, False])
-    iterables2 = ([0, 1], ['alpha', 'beta', 'spinorb'])
-    norms = []
     shapes = []
+    norms = []
+    iterables1 = ([(0, 1), (1, 2)], [True, False])
     for (charge, multp), restr in it.product(*iterables1):
         orbitals = Orbitals(integrals, charge, multp, restrict_spin=restr)
         orbitals.solve()
-        for ncore, mo_type in it.product(*iterables2):
-            orbitals.ncore = ncore
-            s = orbitals.get_mo_1e_kinetic(mo_type, 'o,o')
-            norms.append(np.linalg.norm(s))
+        for mo_type in ['alpha', 'beta', 'spinorb']:
+            s = orbitals.get_ao_1e_fock(mo_type)
             shapes.append(s.shape)
+            norms.append(np.linalg.norm(s))
     print(shapes)
+    print()
     print(norms)
+    print()

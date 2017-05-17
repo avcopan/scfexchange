@@ -155,6 +155,37 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
             e = np.concatenate(self.mo_energies)[spinorb_order]
         return e[slc]
 
+    def get_mo_fock_diagonal(self, mo_type='alpha', mo_space='ov',
+                             transformation=None, electric_field=None):
+        """Get the Fock operator integrals.
+
+        Returns the diagonal elements of the Fock matrix.  For canonical 
+        Hartree-Fock orbitals, these will be the orbital energies.
+        
+        Args:
+            mo_type (str): Orbital type, 'alpha', 'beta', or 'spinorb'.
+            mo_space (str): Any contiguous combination of 'c' (core),
+                'o' (occupied), and 'v' (virtual).  Defaults to 'ov', 
+                which denotes all unfrozen orbitals.
+            transformation (numpy.ndarray): Orbital transformation matrix to be
+                applied to the MO coefficients.  Either a single matrix or a 
+                pair of matrices for alpha and beta spins.
+            electric_field (numpy.ndarray): A three-component vector specifying
+                the magnitude of an external static electric field.  Its 
+                negative dot product with the dipole integrals will be added to 
+                the core Hamiltonian.
+
+        Returns:
+            numpy.ndarray: The integrals.
+        """
+        c = self.get_mo_coefficients(mo_type=mo_type, mo_space=mo_space,
+                                     transformation=transformation)
+        f_ao = self.get_ao_1e_fock(mo_type=mo_type,
+                                   transformation=transformation,
+                                   electric_field=electric_field)
+        e = tu.einsum('mn,mi,ni->i', f_ao, c, c)
+        return e
+
     def get_mo_coefficients(self, mo_type='alpha', mo_space='ov',
                             transformation=None):
         """Return the molecular orbital coefficients.
@@ -260,7 +291,7 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         """Get the dipole integrals.
 
         Returns the representation of the electric dipole operator in the
-        molecular-orbital basis, <mu(1)| [-x, -y, -z] |nu(1)>.
+        molecular-orbital basis, <p(1)| [-x, -y, -z] |q(1)>.
 
         Args:
             mo_type (str): Orbital type, 'alpha', 'beta', or 'spinorb'.
@@ -284,6 +315,40 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         d_mo = np.array([c1.T.dot(d_ao_x.dot(c2)) for d_ao_x in d_ao])
         return d_mo
 
+    def get_mo_1e_fock(self, mo_type='alpha', mo_block='ov,ov',
+                       transformation=None, electric_field=None):
+        """Get the Fock operator integrals.
+        
+        Returns the core Hamiltonian plus the mean field of the electrons in 
+        the molecular-orbital basis, <p(1)*spin|h(1) + J(1) - K(1)|q(1)*spin>.
+        
+        Args:
+            mo_type (str): Orbital type, 'alpha', 'beta', or 'spinorb'.
+            mo_block (str): Any contiguous combination of 'c' (core),
+                'o' (occupied), and 'v' (virtual).  Defaults to 'ov', 
+                which denotes all unfrozen orbitals.
+            transformation (numpy.ndarray): Orbital transformation matrix to be
+                applied to the MO coefficients.  Either a single matrix or a 
+                pair of matrices for alpha and beta spins.
+            electric_field (numpy.ndarray): A three-component vector specifying
+                the magnitude of an external static electric field.  Its 
+                negative dot product with the dipole integrals will be added to 
+                the core Hamiltonian.
+
+        Returns:
+            numpy.ndarray: The integrals.
+        """
+        mo_spaces = mo_block.split(',')
+        c1 = self.get_mo_coefficients(mo_type=mo_type, mo_space=mo_spaces[0],
+                                      transformation=transformation)
+        c2 = self.get_mo_coefficients(mo_type=mo_type, mo_space=mo_spaces[1],
+                                      transformation=transformation)
+        f_ao = self.get_ao_1e_fock(mo_type=mo_type,
+                                   transformation=transformation,
+                                   electric_field=electric_field)
+        f_mo = c1.T.dot(f_ao.dot(c2))
+        return f_mo
+
     def get_mo_1e_core_hamiltonian(self, mo_type='alpha', mo_block='ov,ov',
                                    transformation=None, electric_field=None,
                                    add_core_repulsion=True):
@@ -302,9 +367,10 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
             transformation (numpy.ndarray): Orbital transformation matrix to be
                 applied to the MO coefficients.  Either a single matrix or a 
                 pair of matrices for alpha and beta spins.
-            electric_field (numpy.ndarray): A three-component vector specifying the
-                magnitude of an external static electric field.  Its dot product
-                with the dipole integrals will be added to the core Hamiltonian.
+            electric_field (numpy.ndarray): A three-component vector specifying
+                the magnitude of an external static electric field.  Its 
+                negative dot product with the dipole integrals will be added to 
+                the core Hamiltonian.
             add_core_repulsion (bool): Add in the core electron mean field?
 
         Returns:
@@ -322,7 +388,7 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
             electric_field=electric_field
         )
         if add_core_repulsion:
-            w_ao = self.get_ao_1e_core_field(mo_type=mo_type,
+            w_ao = self.get_ao_1e_mean_field(mo_type=mo_type, mo_space='c',
                                              transformation=transformation)
             h_ao += w_ao
         h_mo = c1.T.dot(h_ao.dot(c2))
@@ -352,7 +418,7 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
                                       transformation=transformation)
         c2 = self.get_mo_coefficients(mo_type=mo_type, mo_space=mo_spaces[1],
                                       transformation=transformation)
-        w_ao = self.get_ao_1e_core_field(mo_type=mo_type,
+        w_ao = self.get_ao_1e_mean_field(mo_type=mo_type, mo_space='c',
                                          transformation=transformation)
         w_mo = c1.T.dot(w_ao.dot(c2))
         return w_mo
@@ -457,9 +523,9 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         Returns:
             numpy.ndarray: The integrals
         """
-        da = self.get_ao_1e_hf_density('alpha', mo_space=mo_space,
+        da = self.get_ao_1e_density('alpha', mo_space=mo_space,
                                        transformation=transformation)
-        db = self.get_ao_1e_hf_density('beta', mo_space=mo_space,
+        db = self.get_ao_1e_density('beta', mo_space=mo_space,
                                        transformation=transformation)
         g = self.integrals.get_ao_2e_repulsion(use_spinorbs=False)
         # Compute the Coulomb and exchange matrices.
@@ -474,28 +540,29 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         elif mo_type is 'spinorb':
             return spla.block_diag(j - ka, j - kb)
 
-    def get_ao_1e_fock_operator(self, mo_type='alpha', transformation=None,
-                                electric_field=None):
+    def get_ao_1e_fock(self, mo_type='alpha', transformation=None,
+                       electric_field=None):
         """Get the Fock operator integrals.
         
-        Returns the core Hamiltonian plus the mean field of the core 
-        and occupied orbitals in the atomic-orbital basis,
-        <mu(1)*spin|h(1) + J(1) - K(1)|nu(1)*spin>.
+        Returns the core Hamiltonian plus the mean field of the electrons in 
+        the atomic-orbital basis, <mu(1)*spin|h(1) + J(1) - K(1)|nu(1)*spin>.
         
         Args:
             mo_type (str): Orbital type, 'alpha', 'beta', or 'spinorb'.
             transformation (numpy.ndarray): Orbital transformation matrix to be
                 applied to the MO coefficients.  Either a single matrix or a 
                 pair of matrices for alpha and beta spins.
-            electric_field (numpy.ndarray): A three-component vector specifying the
-                magnitude of an external static electric field.  Its dot product
-                with the dipole integrals will be added to the core Hamiltonian.
+            electric_field (numpy.ndarray): A three-component vector specifying
+                the magnitude of an external static electric field.  Its 
+                negative dot product with the dipole integrals will be added to 
+                the core Hamiltonian.
 
         Returns:
             numpy.ndarray: The integrals.
         """
+        use_spinorbs = (mo_type == 'spinorb')
         h = self.integrals.get_ao_1e_core_hamiltonian(
-            use_spinorbs=False, electric_field=electric_field)
+            use_spinorbs=use_spinorbs, electric_field=electric_field)
         w = self.get_ao_1e_mean_field(mo_type=mo_type, mo_space='co',
                                       transformation=transformation)
         return h + w
@@ -509,18 +576,18 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
             transformation (numpy.ndarray): Orbital transformation matrix to be
                 applied to the MO coefficients.  Either a single matrix or a 
                 pair of matrices for alpha and beta spins.
-            electric_field (numpy.ndarray): A three-component vector specifying the
-                magnitude of an external static electric field.  Its dot product
-                with the dipole integrals will be added to the core Hamiltonian.
-
+            electric_field (numpy.ndarray): A three-component vector specifying
+                the magnitude of an external static electric field.  Its 
+                negative dot product with the dipole integrals will be added to 
+                the core Hamiltonian.
         Returns:
             float: The energy.
         """
         h = self.integrals.get_ao_1e_core_hamiltonian(
             use_spinorbs=False, electric_field=electric_field)
-        da = self.get_ao_1e_hf_density('alpha', mo_space='co',
+        da = self.get_ao_1e_density('alpha', mo_space='co',
                                        transformation=transformation)
-        db = self.get_ao_1e_hf_density('beta', mo_space='co',
+        db = self.get_ao_1e_density('beta', mo_space='co',
                                        transformation=transformation)
         wa = self.get_ao_1e_mean_field(mo_type='alpha', mo_space='co',
                                        transformation=transformation)
@@ -539,18 +606,18 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
             transformation (numpy.ndarray): Orbital transformation matrix to be
                 applied to the MO coefficients.  Either a single matrix or a 
                 pair of matrices for alpha and beta spins.
-            electric_field (numpy.ndarray): A three-component vector specifying the
-                magnitude of an external static electric field.  Its dot product
-                with the dipole integrals will be added to the core Hamiltonian.
-
+            electric_field (numpy.ndarray): A three-component vector specifying
+                the magnitude of an external static electric field.  Its 
+                negative dot product with the dipole integrals will be added to 
+                the core Hamiltonian.
         Returns:
             float: The energy.
         """
         h = self.integrals.get_ao_1e_core_hamiltonian(
             use_spinorbs=False, electric_field=electric_field)
-        da = self.get_ao_1e_hf_density('alpha', mo_space='c',
+        da = self.get_ao_1e_density('alpha', mo_space='c',
                                        transformation=transformation)
-        db = self.get_ao_1e_hf_density('beta', mo_space='c',
+        db = self.get_ao_1e_density('beta', mo_space='c',
                                        transformation=transformation)
         wa = self.get_ao_1e_mean_field(mo_type='alpha', mo_space='c',
                                        transformation=transformation)
