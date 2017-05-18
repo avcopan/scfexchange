@@ -586,9 +586,9 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         h = self.integrals.get_ao_1e_core_hamiltonian(
             use_spinorbs=False, electric_field=electric_field)
         da = self.get_ao_1e_density('alpha', mo_space='co',
-                                       transformation=transformation)
+                                    transformation=transformation)
         db = self.get_ao_1e_density('beta', mo_space='co',
-                                       transformation=transformation)
+                                    transformation=transformation)
         wa = self.get_ao_1e_mean_field(mo_type='alpha', mo_space='co',
                                        transformation=transformation)
         wb = self.get_ao_1e_mean_field(mo_type='beta', mo_space='co',
