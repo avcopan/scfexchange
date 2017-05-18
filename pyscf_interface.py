@@ -181,9 +181,8 @@ if __name__ == "__main__":
                             [0.0000000000, -1.4343021349,  0.9864370414],
                             [0.0000000000,  1.4343021349,  0.9864370414]])
     nuclei = NuclearFramework(labels, coordinates)
-    # Build integrals
     integrals = Integrals(nuclei, "sto-3g")
-    # Test the integrals interface
+
     shapes = []
     norms = []
     iterables1 = ([(0, 1), (1, 2)], [True, False])
