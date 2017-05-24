@@ -36,8 +36,8 @@ class Integrals(IntegralsInterface):
         self.nbf = int(self._mints_helper.nbf())
 
     def _get_mints_helper(self):
-        basis = psi4.core.BasisSet.build(self._psi4_molecule, "BASIS",
-                                         self.basis_label)
+        basis, _ = psi4.core.BasisSet.build(self._psi4_molecule, "BASIS",
+                                            self.basis_label)
         return psi4.core.MintsHelper(basis)
 
     def get_ao_1e_overlap(self, use_spinorbs=False, recompute=False):
@@ -170,7 +170,7 @@ class Orbitals(OrbitalsInterface):
         self.integrals._psi4_molecule.set_multiplicity(multp)
         wfn = psi4.core.Wavefunction.build(self.integrals._psi4_molecule,
                                            self.integrals.basis_label)
-        sf, _ = psi4.driver.dft_functional.build_superfunctional("HF")
+        sf, _ = psi4.driver.dft_funcs.build_superfunctional("HF", False)
         psi4.core.set_global_option("guess", guess)
         psi4.core.set_global_option("e_convergence", e_threshold)
         psi4.core.set_global_option("d_convergence", d_threshold)
