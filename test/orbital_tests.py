@@ -38,8 +38,8 @@ def run_interface_check(integrals_class, orbitals_class):
     # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
     # Build orbitals
-    vars = ([(0, 1), (1, 2)], [True, False], [0, 1])
-    for (charge, multp), restr, ncore in it.product(*vars):
+    iterables = ([(0, 1), (1, 2)], [True, False], [0, 1])
+    for (charge, multp), restr, ncore in it.product(*iterables):
         orbitals = orbitals_class(integrals, charge, multp,
                                   restrict_spin=restr, ncore=ncore)
         check_interface(orbitals)
@@ -356,7 +356,7 @@ def run_mo_coefficients_check(integrals_class, orbitals_class):
     t = 2 * np.identity(integrals.nbf)
     iterables1 = ([(0, 1), (1, 2)], [True, False])
     iterables2 = ([0, 1], ['alpha', 'beta', 'spinorb'],
-                 ['c', 'o', 'v', 'co', 'ov', 'cov'])
+                  ['c', 'o', 'v', 'co', 'ov', 'cov'])
     for (charge, multp), restr in it.product(*iterables1):
         orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
         orbitals.solve()

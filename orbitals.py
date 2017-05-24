@@ -524,9 +524,9 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
             numpy.ndarray: The integrals
         """
         da = self.get_ao_1e_density('alpha', mo_space=mo_space,
-                                       transformation=transformation)
+                                    transformation=transformation)
         db = self.get_ao_1e_density('beta', mo_space=mo_space,
-                                       transformation=transformation)
+                                    transformation=transformation)
         g = self.integrals.get_ao_2e_repulsion(use_spinorbs=False)
         # Compute the Coulomb and exchange matrices.
         j = np.tensordot(g, da + db, axes=[(1, 3), (1, 0)])
@@ -616,9 +616,9 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         h = self.integrals.get_ao_1e_core_hamiltonian(
             use_spinorbs=False, electric_field=electric_field)
         da = self.get_ao_1e_density('alpha', mo_space='c',
-                                       transformation=transformation)
+                                    transformation=transformation)
         db = self.get_ao_1e_density('beta', mo_space='c',
-                                       transformation=transformation)
+                                    transformation=transformation)
         wa = self.get_ao_1e_mean_field(mo_type='alpha', mo_space='c',
                                        transformation=transformation)
         wb = self.get_ao_1e_mean_field(mo_type='beta', mo_space='c',
