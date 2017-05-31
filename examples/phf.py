@@ -1,13 +1,11 @@
 import warnings
 
-import scipy.linalg as spla
 import numpy as np
-
+import scipy.linalg as spla
 from scfexchange.orbitals import OrbitalsInterface
 
 
 class PerturbedHartreeFock(OrbitalsInterface):
-
     def solve(self, niter=40, e_threshold=1e-12, d_threshold=1e-8,
               electric_field=None):
         """
@@ -63,9 +61,9 @@ if __name__ == "__main__":
     from scfexchange.molecule import NuclearFramework
 
     labels = ("O", "H", "H")
-    coordinates = np.array([[0.0000000000,  0.0000000000, -0.1247219248],
-                            [0.0000000000, -1.4343021349,  0.9864370414],
-                            [0.0000000000,  1.4343021349,  0.9864370414]])
+    coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
+                            [0.0000000000, -1.4343021349, 0.9864370414],
+                            [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = NuclearFramework(labels, coordinates)
     # Build integrals
     integrals = Integrals(nuclei, "sto-3g")
@@ -77,12 +75,14 @@ if __name__ == "__main__":
 
     import scipy.misc
 
+
     def energy(field_value=0., field_component=0):
         e_field = np.zeros((3,))
         e_field[field_component] = field_value
         orbitals.solve(niter=100, e_threshold=1e-15,
                        d_threshold=1e-13, electric_field=e_field)
         return -orbitals.get_hf_energy(electric_field=e_field)
+
 
     comp = 2
     dedx = scipy.misc.derivative(energy, 0., dx=0.005, n=1, args=(comp,),

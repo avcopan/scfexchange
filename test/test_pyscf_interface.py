@@ -1,7 +1,6 @@
-import scfexchange
+from scfexchange.pyscf_interface import Integrals, Orbitals
 from scfexchange.test import integral_tests
 from scfexchange.test import orbital_tests
-from scfexchange.pyscf_interface import Integrals, Orbitals
 
 
 def test__integral_interface():
@@ -102,4 +101,3 @@ def test__orbital_hf_energy():
 
 def test__orbital_core_energy():
     orbital_tests.run_core_energy_check(Integrals, Orbitals)
-

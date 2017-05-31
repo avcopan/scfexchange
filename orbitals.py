@@ -1,9 +1,10 @@
 import abc
-import numpy as np
-import tensorutils as tu
-import scipy.linalg as spla
 
+import numpy as np
+import scipy.linalg as spla
+import tensorutils as tu
 from six import with_metaclass
+
 from .integrals import IntegralsInterface
 from .molecule import Molecule
 

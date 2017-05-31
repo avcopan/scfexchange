@@ -145,9 +145,9 @@ class Molecule(object):
 
 if __name__ == "__main__":
     labels = ("O", "H", "H")
-    coordinates = np.array([[0.0000000000,  0.0000000000, -0.1247219248],
-                            [0.0000000000, -1.4343021349,  0.9864370414],
-                            [0.0000000000,  1.4343021349,  0.9864370414]])
+    coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
+                            [0.0000000000, -1.4343021349, 0.9864370414],
+                            [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = NuclearFramework(labels, coordinates)
     print(nuclei)
     print(nuclei.get_nuclear_repulsion_energy())

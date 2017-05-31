@@ -1,11 +1,8 @@
-import psi4.core
-import scipy.linalg as spla
 import numpy as np
+import psi4.core
 
 from .integrals import IntegralsInterface
 from .orbitals import OrbitalsInterface
-from .molecule import Molecule
-from . import constants
 
 
 class Integrals(IntegralsInterface):
@@ -52,7 +49,9 @@ class Integrals(IntegralsInterface):
         Returns:
             numpy.ndarray: The integrals.
         """
+
         def integrate(): return np.array(self._mints_helper.ao_overlap())
+
         s = self._get_ints('1e_overlap', integrate, use_spinorbs, recompute)
         return s
 
@@ -69,7 +68,9 @@ class Integrals(IntegralsInterface):
         Returns:
             numpy.ndarray: The integrals.
         """
+
         def integrate(): return np.array(self._mints_helper.ao_kinetic())
+
         t = self._get_ints('1e_kinetic', integrate, use_spinorbs, recompute)
         return t
 
@@ -86,7 +87,9 @@ class Integrals(IntegralsInterface):
         Returns:
             numpy.ndarray: The integrals.
         """
+
         def integrate(): return np.array(self._mints_helper.ao_potential())
+
         v = self._get_ints('1e_potential', integrate, use_spinorbs, recompute)
         return v
 
@@ -103,9 +106,11 @@ class Integrals(IntegralsInterface):
         Returns:
             numpy.ndarray: The integrals.
         """
+
         def integrate():
             comps = self._mints_helper.ao_dipole()
             return np.array([np.array(comp) for comp in comps])
+
         d = self._get_ints('1e_dipole', integrate, use_spinorbs, recompute,
                            ncomp=3)
         return d
@@ -126,9 +131,11 @@ class Integrals(IntegralsInterface):
         Returns:
             numpy.ndarray: The integrals.
         """
+
         def integrate():
             g_chem = np.array(self._mints_helper.ao_eri())
             return g_chem.transpose((0, 2, 1, 3))
+
         g = self._get_ints('2e_repulsion', integrate, use_spinorbs, recompute)
         if antisymmetrize:
             g = g - g.transpose((0, 1, 3, 2))
@@ -197,10 +204,11 @@ class Orbitals(OrbitalsInterface):
 if __name__ == "__main__":
     import itertools as it
     from .molecule import NuclearFramework
+
     labels = ("O", "H", "H")
-    coordinates = np.array([[0.0000000000,  0.0000000000, -0.1247219248],
-                            [0.0000000000, -1.4343021349,  0.9864370414],
-                            [0.0000000000,  1.4343021349,  0.9864370414]])
+    coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
+                            [0.0000000000, -1.4343021349, 0.9864370414],
+                            [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = NuclearFramework(labels, coordinates)
     integrals = Integrals(nuclei, "sto-3g")
 

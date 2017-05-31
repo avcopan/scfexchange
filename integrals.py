@@ -1,10 +1,8 @@
 import abc
 
 import numpy as np
-import scipy.linalg as spla
-from six import with_metaclass
-
 import tensorutils as tu
+from six import with_metaclass
 
 
 class IntegralsInterface(with_metaclass(abc.ABCMeta)):

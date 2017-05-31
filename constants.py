@@ -66,7 +66,6 @@ def get_core_electron_count(isotope_label):
 # Conversion factors.
 BOHR_TO_ANGSTROM = 0.52917720859
 
-
 # Atomic data.
 ELEMENT_LABELS = [
     "X", "H", "HE", "LI", "BE", "B", "C", "N", "O", "F", "NE", "NA", "MG", "AL",
