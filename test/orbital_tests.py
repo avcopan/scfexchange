@@ -1,7 +1,6 @@
 import itertools as it
 
 import numpy as np
-import scipy.linalg as spla
 from scfexchange.integrals import IntegralsInterface
 from scfexchange.molecule import NuclearFramework, Molecule
 
@@ -281,12 +280,6 @@ def run_mo_coefficients_check(integrals_class, orbitals_class):
             assert (c.shape == next(shapes))
             norm_ref = next(norms)
             assert (np.isclose(np.linalg.norm(c), norm_ref))
-            if mo_type is 'spinorb':
-                transformation = spla.block_diag(t, t)
-            else:
-                transformation = t
-            c = orbitals.get_mo_coefficients(mo_type, mo_space, transformation)
-            assert (np.isclose(np.linalg.norm(c), 2 * norm_ref))
 
 
 def run_mo_1e_kinetic_check(integrals_class, orbitals_class):

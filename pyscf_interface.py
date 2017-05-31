@@ -183,6 +183,7 @@ class Orbitals(OrbitalsInterface):
 
 
 if __name__ == "__main__":
+    import scipy.linalg as spla
     from .molecule import NuclearFramework
 
     labels = ("O", "H", "H")
@@ -194,4 +195,8 @@ if __name__ == "__main__":
     orbitals = Orbitals(integrals, charge=1, multiplicity=2,
                         restrict_spin=False)
     orbitals.solve()
-    print(orbitals.get_spinorb_order())
+    spinorb_order = orbitals.get_spinorb_order()
+    print(spinorb_order)
+    c = spla.block_diag(*orbitals.mo_coefficients)
+    print(c.round(1))
+    print(c[:, spinorb_order].round(1))
