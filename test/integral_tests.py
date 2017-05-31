@@ -1,11 +1,9 @@
-import inspect
-
-import numpy as np
-from scfexchange.integrals import IntegralsInterface
-from scfexchange.molecule import NuclearFramework
-
-
 def check_interface(integrals_instance):
+    import inspect
+    import numpy
+    from scfexchange.integrals import IntegralsInterface
+    from scfexchange.molecule import NuclearFramework
+
     # Check attributes
     assert (hasattr(integrals_instance, 'nuclei'))
     assert (hasattr(integrals_instance, 'basis_label'))
@@ -43,11 +41,11 @@ def check_interface(integrals_instance):
     assert (inspect.signature(integrals_class.get_ao_2e_repulsion) ==
             inspect.signature(IntegralsInterface.get_ao_2e_repulsion))
     # Check method output
-    assert (isinstance(integrals_instance.get_ao_1e_overlap(), np.ndarray))
-    assert (isinstance(integrals_instance.get_ao_1e_kinetic(), np.ndarray))
-    assert (isinstance(integrals_instance.get_ao_1e_potential(), np.ndarray))
-    assert (isinstance(integrals_instance.get_ao_1e_dipole(), np.ndarray))
-    assert (isinstance(integrals_instance.get_ao_2e_repulsion(), np.ndarray))
+    assert (isinstance(integrals_instance.get_ao_1e_overlap(), numpy.ndarray))
+    assert (isinstance(integrals_instance.get_ao_1e_kinetic(), numpy.ndarray))
+    assert (isinstance(integrals_instance.get_ao_1e_potential(), numpy.ndarray))
+    assert (isinstance(integrals_instance.get_ao_1e_dipole(), numpy.ndarray))
+    assert (isinstance(integrals_instance.get_ao_2e_repulsion(), numpy.ndarray))
     nbf = integrals_instance.nbf
     assert (integrals_instance.get_ao_1e_overlap().shape
             == (nbf, nbf))
@@ -62,10 +60,12 @@ def check_interface(integrals_instance):
 
 
 def run_interface_check(integrals_class):
+    import numpy
+    from scfexchange.molecule import NuclearFramework
     labels = ("O", "H", "H")
-    coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
-                            [0.0000000000, -1.4343021349, 0.9864370414],
-                            [0.0000000000, 1.4343021349, 0.9864370414]])
+    coordinates = numpy.array([[0.0000000000, 0.0000000000, -0.1247219248],
+                               [0.0000000000, -1.4343021349, 0.9864370414],
+                               [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = NuclearFramework(labels, coordinates)
     # Build integrals
     integrals = integrals_class(nuclei, "cc-pvdz")
@@ -74,70 +74,82 @@ def run_interface_check(integrals_class):
 
 
 def run_ao_1e_overlap_check(integrals_class):
+    import numpy
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
-    coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
-                            [0.0000000000, -1.4343021349, 0.9864370414],
-                            [0.0000000000, 1.4343021349, 0.9864370414]])
+    coordinates = numpy.array([[0.0000000000, 0.0000000000, -0.1247219248],
+                               [0.0000000000, -1.4343021349, 0.9864370414],
+                               [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = NuclearFramework(labels, coordinates)
     # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
     # Test the integrals interface
     s = integrals.get_ao_1e_overlap()
     assert (s.shape == (7, 7))
-    assert (np.isclose(np.linalg.norm(s), 2.95961615642))
+    assert (numpy.isclose(numpy.linalg.norm(s), 2.95961615642))
     assert (hasattr(integrals, '_ao_1e_overlap'))
-    integrals._ao_1e_overlap[:, :] = np.zeros(s.shape)
+    integrals._ao_1e_overlap[:, :] = numpy.zeros(s.shape)
     s = integrals.get_ao_1e_overlap()
-    assert (np.linalg.norm(s) == 0.0)
+    assert (numpy.linalg.norm(s) == 0.0)
     s = integrals.get_ao_1e_overlap(recompute=True)
-    assert (np.isclose(np.linalg.norm(s), 2.95961615642))
+    assert (numpy.isclose(numpy.linalg.norm(s), 2.95961615642))
 
 
 def run_ao_1e_kinetic_check(integrals_class):
+    import numpy
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
-    coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
-                            [0.0000000000, -1.4343021349, 0.9864370414],
-                            [0.0000000000, 1.4343021349, 0.9864370414]])
+    coordinates = numpy.array([[0.0000000000, 0.0000000000, -0.1247219248],
+                               [0.0000000000, -1.4343021349, 0.9864370414],
+                               [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = NuclearFramework(labels, coordinates)
     # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
     # Test the integrals interface
     s = integrals.get_ao_1e_kinetic()
     assert (s.shape == (7, 7))
-    assert (np.isclose(np.linalg.norm(s), 29.3703412473))
+    assert (numpy.isclose(numpy.linalg.norm(s), 29.3703412473))
     assert (hasattr(integrals, '_ao_1e_kinetic'))
-    integrals._ao_1e_kinetic[:, :] = np.zeros(s.shape)
+    integrals._ao_1e_kinetic[:, :] = numpy.zeros(s.shape)
     s = integrals.get_ao_1e_kinetic()
-    assert (np.linalg.norm(s) == 0.0)
+    assert (numpy.linalg.norm(s) == 0.0)
     s = integrals.get_ao_1e_kinetic(recompute=True)
-    assert (np.isclose(np.linalg.norm(s), 29.3703412473))
+    assert (numpy.isclose(numpy.linalg.norm(s), 29.3703412473))
 
 
 def run_ao_1e_potential_check(integrals_class):
+    import numpy
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
-    coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
-                            [0.0000000000, -1.4343021349, 0.9864370414],
-                            [0.0000000000, 1.4343021349, 0.9864370414]])
+    coordinates = numpy.array([[0.0000000000, 0.0000000000, -0.1247219248],
+                               [0.0000000000, -1.4343021349, 0.9864370414],
+                               [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = NuclearFramework(labels, coordinates)
     # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
     # Test the integrals interface
     s = integrals.get_ao_1e_potential()
     assert (s.shape == (7, 7))
-    assert (np.isclose(np.linalg.norm(s), 67.1181391119))
+    assert (numpy.isclose(numpy.linalg.norm(s), 67.1181391119))
     assert (hasattr(integrals, '_ao_1e_potential'))
-    integrals._ao_1e_potential[:, :] = np.zeros(s.shape)
+    integrals._ao_1e_potential[:, :] = numpy.zeros(s.shape)
     s = integrals.get_ao_1e_potential()
-    assert (np.linalg.norm(s) == 0.0)
+    assert (numpy.linalg.norm(s) == 0.0)
     s = integrals.get_ao_1e_potential(recompute=True)
-    assert (np.isclose(np.linalg.norm(s), 67.1181391119))
+    assert (numpy.isclose(numpy.linalg.norm(s), 67.1181391119))
 
 
 def run_ao_1e_dipole_check(integrals_class):
+    import numpy
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
-    coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
-                            [0.0000000000, -1.4343021349, 0.9864370414],
-                            [0.0000000000, 1.4343021349, 0.9864370414]])
+    coordinates = numpy.array([[0.0000000000, 0.0000000000, -0.1247219248],
+                               [0.0000000000, -1.4343021349, 0.9864370414],
+                               [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = NuclearFramework(labels, coordinates)
     # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
@@ -148,20 +160,23 @@ def run_ao_1e_dipole_check(integrals_class):
         norm = 3.36241054669
     s = integrals.get_ao_1e_dipole()
     assert (s.shape == (3, 7, 7))
-    assert (np.isclose(np.linalg.norm(s), norm))
+    assert (numpy.isclose(numpy.linalg.norm(s), norm))
     assert (hasattr(integrals, '_ao_1e_dipole'))
-    integrals._ao_1e_dipole[:, :, :] = np.zeros(s.shape)
+    integrals._ao_1e_dipole[:, :, :] = numpy.zeros(s.shape)
     s = integrals.get_ao_1e_dipole()
-    assert (np.linalg.norm(s) == 0.0)
+    assert (numpy.linalg.norm(s) == 0.0)
     s = integrals.get_ao_1e_dipole(recompute=True)
-    assert (np.isclose(np.linalg.norm(s), norm))
+    assert (numpy.isclose(numpy.linalg.norm(s), norm))
 
 
 def run_ao_1e_core_hamiltonian_check(integrals_class):
+    import numpy
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
-    coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
-                            [0.0000000000, -1.4343021349, 0.9864370414],
-                            [0.0000000000, 1.4343021349, 0.9864370414]])
+    coordinates = numpy.array([[0.0000000000, 0.0000000000, -0.1247219248],
+                               [0.0000000000, -1.4343021349, 0.9864370414],
+                               [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = NuclearFramework(labels, coordinates)
     # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
@@ -172,24 +187,27 @@ def run_ao_1e_core_hamiltonian_check(integrals_class):
         norm = 39.7722869121
     elif hasattr(integrals, '_psi4_molecule'):
         norm = 39.771471762
-    assert (np.isclose(np.linalg.norm(s), norm))
+    assert (numpy.isclose(numpy.linalg.norm(s), norm))
 
 
 def run_ao_2e_repulsion_check(integrals_class):
+    import numpy
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
-    coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
-                            [0.0000000000, -1.4343021349, 0.9864370414],
-                            [0.0000000000, 1.4343021349, 0.9864370414]])
+    coordinates = numpy.array([[0.0000000000, 0.0000000000, -0.1247219248],
+                               [0.0000000000, -1.4343021349, 0.9864370414],
+                               [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = NuclearFramework(labels, coordinates)
     # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
     # Test the integrals interface
     s = integrals.get_ao_2e_repulsion()
     assert (s.shape == (7, 7, 7, 7))
-    assert (np.isclose(np.linalg.norm(s), 8.15009229415))
+    assert (numpy.isclose(numpy.linalg.norm(s), 8.15009229415))
     assert (hasattr(integrals, '_ao_2e_repulsion'))
-    integrals._ao_2e_repulsion[:, :, :, :] = np.zeros(s.shape)
+    integrals._ao_2e_repulsion[:, :, :, :] = numpy.zeros(s.shape)
     s = integrals.get_ao_2e_repulsion()
-    assert (np.linalg.norm(s) == 0.0)
+    assert (numpy.linalg.norm(s) == 0.0)
     s = integrals.get_ao_2e_repulsion(recompute=True)
-    assert (np.isclose(np.linalg.norm(s), 8.15009229415))
+    assert (numpy.isclose(numpy.linalg.norm(s), 8.15009229415))

@@ -4,6 +4,7 @@ import more_itertools as mit
 import numpy as np
 import scipy.linalg as spla
 import tensorutils as tu
+import permutils as pu
 from six import with_metaclass
 
 from .integrals import IntegralsInterface
@@ -65,8 +66,11 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         """
         return
 
-    def get_spinorb_order(self):
+    def get_spinorb_order(self, invert=False):
         """Get the spin-orbital sort order.
+
+        Args:
+            invert (bool): Return the inverse of the sorting permutation?
 
         Returns:
             tuple: The sorting indices.
@@ -78,7 +82,12 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
                                                    range(nbf, blumo_idx)))
         vir_indices = tuple(mit.interleave_longest(range(alumo_idx, nbf),
                                                    range(blumo_idx, 2 * nbf)))
-        return occ_indices + vir_indices
+        spinorb_order = occ_indices + vir_indices
+
+        # If requested, return the inverse of the sorting permutation.
+        perm_helper = pu.PermutationHelper(range(2 * nbf))
+        spinorb_inv_order = perm_helper.get_inverse(spinorb_order)
+        return spinorb_order if not invert else spinorb_inv_order
 
     def get_mo_count(self, mo_type='alpha', mo_space='ov'):
         """Return the number of orbitals in a given space.
@@ -154,6 +163,38 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
             spinorb_order = self.get_spinorb_order()
             c = spla.block_diag(*self.mo_coefficients)[:, spinorb_order]
         return c[:, slc]
+
+    def rotate(self, rotation_matrix):
+        """Rotate the orbitals with a unitary transformation.
+
+        Args:
+            rotation_matrix (numpy.ndarray): Orbital rotation matrix. This can
+                be a single square matrix of dimension `norb`, a pair of such
+                matrices for alpha and beta spins, or a square matrix of
+                dimension `2 * norb`, where `norb` is the total number of
+                spatial orbitals.  The final case corresponds to a rotation
+                in the spin-orbital basis, but note that it must not combine
+                alpha and beta spins.
+        """
+        norb = self.get_mo_count(mo_space='cov')
+        rot_mat = np.array(rotation_matrix)
+        if rot_mat.shape == (norb, norb):
+            arot_mat = brot_mat = rot_mat
+        elif rot_mat.shape == (2, norb, norb):
+            arot_mat, brot_mat = rot_mat
+        elif rot_mat.shape == (2 * norb, 2 * norb):
+            spinorb_inv_order = self.get_spinorb_order(invert=True)
+            blocked_rot_mat = rot_mat[spinorb_inv_order, :]
+            arot_mat = blocked_rot_mat[:norb, :norb]
+            brot_mat = blocked_rot_mat[norb:, norb:]
+            print(blocked_rot_mat[:norb, norb:])
+            if not (np.allclose(blocked_rot_mat[:norb, norb:], 0.) and
+                    np.allclose(blocked_rot_mat[norb:, :norb], 0.)):
+                raise ValueError("Spin-orbital rotation matrix mixes spins.")
+        else:
+            raise ValueError("Invalid 'rotation_matrix' argument.")
+        ac, bc = self.mo_coefficients
+        self.mo_coefficients = np.array([ac.dot(arot_mat), bc.dot(brot_mat)])
 
     def get_mo_fock_diagonal(self, mo_type='alpha', mo_space='ov',
                              electric_field=None):

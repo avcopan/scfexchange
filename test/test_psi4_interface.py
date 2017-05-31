@@ -51,6 +51,10 @@ def test__orbital_mo_coefficients():
     orbital_tests.run_mo_coefficients_check(Integrals, Orbitals)
 
 
+def test__orbital_mo_rotation():
+    orbital_tests.run_mo_rotation_check(Integrals, Orbitals)
+
+
 def test__orbital_mo_1e_kinetic():
     orbital_tests.run_mo_1e_kinetic_check(Integrals, Orbitals)
 
@@ -97,3 +101,4 @@ def test__orbital_hf_energy():
 
 def test__orbital_core_energy():
     orbital_tests.run_core_energy_check(Integrals, Orbitals)
+

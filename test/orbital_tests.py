@@ -1,11 +1,8 @@
-import itertools as it
-
-import numpy as np
-from scfexchange.integrals import IntegralsInterface
-from scfexchange.molecule import NuclearFramework, Molecule
-
-
 def check_interface(orbitals_instance):
+    import numpy as np
+    from scfexchange.integrals import IntegralsInterface
+    from scfexchange.molecule import Molecule
+
     # Check attributes
     assert (hasattr(orbitals_instance, 'integrals'))
     assert (hasattr(orbitals_instance, 'molecule'))
@@ -27,6 +24,10 @@ def check_interface(orbitals_instance):
 
 
 def run_interface_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
@@ -43,6 +44,10 @@ def run_interface_check(integrals_class, orbitals_class):
 
 
 def run_mo_counting_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
@@ -67,6 +72,10 @@ def run_mo_counting_check(integrals_class, orbitals_class):
 
 
 def run_mo_slicing_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
@@ -111,6 +120,10 @@ def run_mo_slicing_check(integrals_class, orbitals_class):
 
 
 def run_mo_fock_diagonal_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
@@ -194,6 +207,10 @@ def run_mo_fock_diagonal_check(integrals_class, orbitals_class):
 
 
 def run_mo_coefficients_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
@@ -267,7 +284,6 @@ def run_mo_coefficients_check(integrals_class, orbitals_class):
         1.4067831734636771, 2.5105264601734119, 3.3068339380419109,
         2.8778085419936077, 4.1518542605704036, 4.3837122052157058
     ])
-    t = 2 * np.identity(integrals.nbf)
     iterables1 = ([(0, 1), (1, 2)], [True, False])
     iterables2 = ([0, 1], ['alpha', 'beta', 'spinorb'],
                   ['c', 'o', 'v', 'co', 'ov', 'cov'])
@@ -282,7 +298,40 @@ def run_mo_coefficients_check(integrals_class, orbitals_class):
             assert (np.isclose(np.linalg.norm(c), norm_ref))
 
 
+def run_mo_rotation_check(integrals_class, orbitals_class):
+    import pytest as pt
+    import numpy as np
+    import scipy.linalg as spla
+    from scfexchange.molecule import NuclearFramework
+
+    labels = ("O", "H", "H")
+    coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
+                            [0.0000000000, -1.4343021349, 0.9864370414],
+                            [0.0000000000, 1.4343021349, 0.9864370414]])
+    nuclei = NuclearFramework(labels, coordinates)
+    # Build integrals
+    integrals = integrals_class(nuclei, "sto-3g")
+    orbitals = orbitals_class(integrals)
+    two = 2 * np.identity(integrals.nbf)
+    sp_order = orbitals.get_spinorb_order()
+    sp_two = spla.block_diag(two, two)[sp_order, :]
+    iterables = (two, [two, two], sp_two)
+    for rotation_matrix in iterables:
+        orbitals.solve()
+        norm = spla.norm(orbitals.mo_coefficients)
+        orbitals.rotate(rotation_matrix)
+        new_norm = spla.norm(orbitals.mo_coefficients)
+        assert new_norm == 2 * norm
+    with pt.raises(ValueError):
+        rotation_matrix = np.ones(sp_two.shape)
+        orbitals.rotate(rotation_matrix)
+
+
 def run_mo_1e_kinetic_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
@@ -318,6 +367,10 @@ def run_mo_1e_kinetic_check(integrals_class, orbitals_class):
 
 
 def run_mo_1e_potential_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
@@ -354,6 +407,10 @@ def run_mo_1e_potential_check(integrals_class, orbitals_class):
 
 
 def run_mo_1e_dipole_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
@@ -403,6 +460,10 @@ def run_mo_1e_dipole_check(integrals_class, orbitals_class):
 
 
 def run_mo_1e_fock_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
@@ -439,6 +500,10 @@ def run_mo_1e_fock_check(integrals_class, orbitals_class):
 
 
 def run_mo_1e_core_hamiltonian_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
@@ -489,6 +554,10 @@ def run_mo_1e_core_hamiltonian_check(integrals_class, orbitals_class):
 
 
 def run_mo_1e_core_field_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
@@ -522,6 +591,10 @@ def run_mo_1e_core_field_check(integrals_class, orbitals_class):
 
 
 def run_mo_2e_repulsion_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
@@ -561,6 +634,10 @@ def run_mo_2e_repulsion_check(integrals_class, orbitals_class):
 
 
 def run_ao_1e_density_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
@@ -650,6 +727,10 @@ def run_ao_1e_density_check(integrals_class, orbitals_class):
 
 
 def run_ao_1e_mean_field_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
@@ -739,6 +820,10 @@ def run_ao_1e_mean_field_check(integrals_class, orbitals_class):
 
 
 def run_ao_1e_fock_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
@@ -768,6 +853,10 @@ def run_ao_1e_fock_check(integrals_class, orbitals_class):
 
 
 def run_hf_energy_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
@@ -789,6 +878,10 @@ def run_hf_energy_check(integrals_class, orbitals_class):
 
 
 def run_core_energy_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
