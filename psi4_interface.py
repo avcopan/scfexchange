@@ -193,11 +193,8 @@ class Orbitals(OrbitalsInterface):
             psi4.core.set_global_option("reference", "UHF")
             psi4_hf = psi4.core.UHF(wfn, sf)
         psi4_hf.compute_energy()
-        mo_alpha_energies = psi4_hf.epsilon_a().to_array()
-        mo_beta_energies = psi4_hf.epsilon_b().to_array()
         mo_alpha_coeffs = np.array(psi4_hf.Ca())
         mo_beta_coeffs = np.array(psi4_hf.Cb())
-        self.mo_energies = np.array([mo_alpha_energies, mo_beta_energies])
         self.mo_coefficients = np.array([mo_alpha_coeffs, mo_beta_coeffs])
 
 

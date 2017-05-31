@@ -1,8 +1,9 @@
-import numpy as np
 from scfexchange.molecule import NuclearFramework
 
 
 def test__nuclear_framework():
+    import numpy as np
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],

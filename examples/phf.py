@@ -32,7 +32,6 @@ class PerturbedHartreeFock(OrbitalsInterface):
             be, tbc = spla.eigh(tbf)
             ac = x.dot(tac)
             bc = x.dot(tbc)
-            self.mo_energies = np.array([ae, be])
             self.mo_coefficients = np.array([ac, bc])
             # Check convergence
             # 1. Determine the energy difference

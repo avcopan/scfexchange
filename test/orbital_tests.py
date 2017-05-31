@@ -1,17 +1,12 @@
-import itertools as it
-
-import numpy as np
-import scipy.linalg as spla
-from scfexchange.integrals import IntegralsInterface
-from scfexchange.molecule import NuclearFramework, Molecule
-
-
 def check_interface(orbitals_instance):
+    import numpy as np
+    from scfexchange.integrals import IntegralsInterface
+    from scfexchange.molecule import Molecule
+
     # Check attributes
     assert (hasattr(orbitals_instance, 'integrals'))
     assert (hasattr(orbitals_instance, 'molecule'))
     assert (hasattr(orbitals_instance, 'mo_coefficients'))
-    assert (hasattr(orbitals_instance, 'mo_energies'))
     assert (hasattr(orbitals_instance, 'spin_is_restricted'))
     assert (hasattr(orbitals_instance, 'ncore'))
     # Check attribute types
@@ -19,16 +14,20 @@ def check_interface(orbitals_instance):
                        IntegralsInterface))
     assert (isinstance(orbitals_instance.molecule, Molecule))
     assert (isinstance(orbitals_instance.mo_coefficients, np.ndarray))
-    assert (isinstance(orbitals_instance.mo_energies, np.ndarray))
     assert (isinstance(orbitals_instance.spin_is_restricted, bool))
     assert (isinstance(orbitals_instance.ncore, int))
+    # Check array data types
+    assert (orbitals_instance.mo_coefficients.dtype == np.float64)
     # Check array shapes
     norb = orbitals_instance.get_mo_count(mo_space='cov')
-    assert (orbitals_instance.mo_energies.shape == (2, norb))
     assert (orbitals_instance.mo_coefficients.shape == (2, norb, norb))
 
 
 def run_interface_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
@@ -45,6 +44,10 @@ def run_interface_check(integrals_class, orbitals_class):
 
 
 def run_mo_counting_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
@@ -69,6 +72,10 @@ def run_mo_counting_check(integrals_class, orbitals_class):
 
 
 def run_mo_slicing_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
@@ -112,90 +119,11 @@ def run_mo_slicing_check(integrals_class, orbitals_class):
             assert (slc == next(slices))
 
 
-def run_mo_energies_check(integrals_class, orbitals_class):
-    labels = ("O", "H", "H")
-    coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
-                            [0.0000000000, -1.4343021349, 0.9864370414],
-                            [0.0000000000, 1.4343021349, 0.9864370414]])
-    nuclei = NuclearFramework(labels, coordinates)
-    # Build integrals
-    integrals = integrals_class(nuclei, "sto-3g")
-    shapes = iter([
-        (0,), (5,), (2,), (5,), (7,), (7,), (0,), (5,), (2,), (5,), (7,), (7,),
-        (0,), (10,), (4,), (10,), (14,), (14,), (1,), (4,), (2,), (5,), (6,),
-        (7,), (1,), (4,), (2,), (5,), (6,), (7,), (2,), (8,), (4,), (10,),
-        (12,), (14,), (0,), (5,), (2,), (5,), (7,), (7,), (0,), (5,), (2,),
-        (5,), (7,), (7,), (0,), (10,), (4,), (10,), (14,), (14,), (1,), (4,),
-        (2,), (5,), (6,), (7,), (1,), (4,), (2,), (5,), (6,), (7,), (2,), (8,),
-        (4,), (10,), (12,), (14,), (0,), (5,), (2,), (5,), (7,), (7,), (0,),
-        (4,), (3,), (4,), (7,), (7,), (0,), (9,), (5,), (9,), (14,), (14,),
-        (1,), (4,), (2,), (5,), (6,), (7,), (1,), (3,), (3,), (4,), (6,), (7,),
-        (2,), (7,), (5,), (9,), (12,), (14,), (0,), (5,), (2,), (5,), (7,),
-        (7,), (0,), (4,), (3,), (4,), (7,), (7,), (0,), (9,), (5,), (9,), (14,),
-        (14,), (1,), (4,), (2,), (5,), (6,), (7,), (1,), (3,), (3,), (4,), (6,),
-        (7,), (2,), (7,), (5,), (9,), (12,), (14,)
-    ])
-    norms = iter([
-        0.0, 20.299946921318529, 0.95354453838112552, 20.299946921318529,
-        20.322329890911281, 20.322329890911281, 0.0, 20.299946921318529,
-        0.95354453838112552, 20.299946921318529, 20.322329890911281,
-        20.322329890911281, 0.0, 28.708460251582622, 1.3485156185053799,
-        28.708460251582622, 28.740114550746881, 28.740114550746881,
-        20.242154894100047, 1.5306894693605018, 0.95354453838112552,
-        20.299946921318529, 1.8034016297784607, 20.322329890911281,
-        20.242154894100047, 1.5306894693605018, 0.95354453838112552,
-        20.299946921318529, 1.8034016297784607, 20.322329890911281,
-        28.62672998289321, 2.1647218073512975, 1.3485156185053799,
-        28.708460251582622, 2.5503950432384421, 28.740114550746881, 0.0,
-        20.299946921313953, 0.95354453838321951, 20.299946921313953,
-        20.322329890906808, 20.322329890906808, 0.0, 20.299946921313957,
-        0.95354453838322017, 20.299946921313957, 20.322329890906811,
-        20.322329890906811, 0.0, 28.708460251576152, 1.3485156185083418,
-        28.708460251576152, 28.740114550740557, 28.740114550740557,
-        20.242154894095716, 1.5306894693571156, 0.95354453838321951,
-        20.299946921313953, 1.8034016297766939, 20.322329890906808,
-        20.242154894095719, 1.5306894693571156, 0.95354453838322017,
-        20.299946921313957, 1.8034016297766942, 20.322329890906811,
-        28.626729982887088, 2.1647218073465089, 1.3485156185083418,
-        28.708460251576152, 2.5503950432359441, 28.740114550740557, 0.0,
-        21.165298295742236, 0.22931160658053296, 21.165298295742236,
-        21.16654047690982, 21.16654047690982, 0.0, 21.154707856200964,
-        0.70765194795956021, 21.154707856200964, 21.16654047690982,
-        21.16654047690982, 0.0, 29.924764266890389, 0.74387841235211638,
-        29.924764266890389, 29.934008610964945, 29.934008610964945,
-        21.016129496777911, 2.5084164172662069, 0.22931160658053296,
-        21.165298295742236, 2.5188760857420474, 21.16654047690982,
-        21.016129496777911, 2.4174295141476656, 0.70765194795956021,
-        21.154707856200964, 2.5188760857420474, 21.16654047690982,
-        29.721295362932569, 3.4836932095525937, 0.74387841235211638,
-        29.924764266890389, 3.5622287223936593, 29.934008610964945, 0.0,
-        21.21097596242144, 0.21400591011452874, 21.21097596242144,
-        21.212055530004257, 21.212055530004257, 0.0, 21.130898192836515,
-        0.33420393334533038, 21.130898192836515, 21.133540893685684,
-        21.133540893685684, 0.0, 29.9402798870425, 0.39685110385059758,
-        29.9402798870425, 29.942909853804608, 29.942909853804608,
-        21.032772719351804, 2.7437151846557808, 0.21400591011452874,
-        21.21097596242144, 2.7520486085959046, 21.212055530004257,
-        21.001871290383392, 2.3315790225062845, 0.33420393334533038,
-        21.130898192836515, 2.3554093077965987, 21.133540893685684,
-        29.722989855694863, 3.6005879731929986, 0.39685110385059758,
-        29.9402798870425, 3.6223921034765834, 29.942909853804608
-    ])
-    iterables1 = ([(0, 1), (1, 2)], [True, False])
-    iterables2 = ([0, 1], ['alpha', 'beta', 'spinorb'],
-                  ['c', 'o', 'v', 'co', 'ov', 'cov'])
-    for (charge, multp), restr in it.product(*iterables1):
-        orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
-        orbitals.solve()
-        for ncore, mo_type, mo_space in it.product(*iterables2):
-            orbitals.ncore = ncore
-            e = orbitals.get_mo_energies(mo_type, mo_space)
-            assert (e.shape == next(shapes))
-            norm_ref = next(norms)
-            assert (np.isclose(np.linalg.norm(e), norm_ref))
-
-
 def run_mo_fock_diagonal_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
@@ -279,6 +207,10 @@ def run_mo_fock_diagonal_check(integrals_class, orbitals_class):
 
 
 def run_mo_coefficients_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
@@ -352,7 +284,6 @@ def run_mo_coefficients_check(integrals_class, orbitals_class):
         1.4067831734636771, 2.5105264601734119, 3.3068339380419109,
         2.8778085419936077, 4.1518542605704036, 4.3837122052157058
     ])
-    t = 2 * np.identity(integrals.nbf)
     iterables1 = ([(0, 1), (1, 2)], [True, False])
     iterables2 = ([0, 1], ['alpha', 'beta', 'spinorb'],
                   ['c', 'o', 'v', 'co', 'ov', 'cov'])
@@ -365,15 +296,42 @@ def run_mo_coefficients_check(integrals_class, orbitals_class):
             assert (c.shape == next(shapes))
             norm_ref = next(norms)
             assert (np.isclose(np.linalg.norm(c), norm_ref))
-            if mo_type is 'spinorb':
-                transformation = spla.block_diag(t, t)
-            else:
-                transformation = t
-            c = orbitals.get_mo_coefficients(mo_type, mo_space, transformation)
-            assert (np.isclose(np.linalg.norm(c), 2 * norm_ref))
+
+
+def run_mo_rotation_check(integrals_class, orbitals_class):
+    import pytest as pt
+    import numpy as np
+    import scipy.linalg as spla
+    from scfexchange.molecule import NuclearFramework
+
+    labels = ("O", "H", "H")
+    coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
+                            [0.0000000000, -1.4343021349, 0.9864370414],
+                            [0.0000000000, 1.4343021349, 0.9864370414]])
+    nuclei = NuclearFramework(labels, coordinates)
+    # Build integrals
+    integrals = integrals_class(nuclei, "sto-3g")
+    orbitals = orbitals_class(integrals)
+    two = 2 * np.identity(integrals.nbf)
+    sp_order = orbitals.get_spinorb_order()
+    sp_two = spla.block_diag(two, two)[sp_order, :]
+    iterables = (two, [two, two], sp_two)
+    for rotation_matrix in iterables:
+        orbitals.solve()
+        norm = spla.norm(orbitals.mo_coefficients)
+        orbitals.rotate(rotation_matrix)
+        new_norm = spla.norm(orbitals.mo_coefficients)
+        assert new_norm == 2 * norm
+    with pt.raises(ValueError):
+        rotation_matrix = np.ones(sp_two.shape)
+        orbitals.rotate(rotation_matrix)
 
 
 def run_mo_1e_kinetic_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
@@ -409,6 +367,10 @@ def run_mo_1e_kinetic_check(integrals_class, orbitals_class):
 
 
 def run_mo_1e_potential_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
@@ -445,6 +407,10 @@ def run_mo_1e_potential_check(integrals_class, orbitals_class):
 
 
 def run_mo_1e_dipole_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
@@ -494,6 +460,10 @@ def run_mo_1e_dipole_check(integrals_class, orbitals_class):
 
 
 def run_mo_1e_fock_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
@@ -530,6 +500,10 @@ def run_mo_1e_fock_check(integrals_class, orbitals_class):
 
 
 def run_mo_1e_core_hamiltonian_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
@@ -580,6 +554,10 @@ def run_mo_1e_core_hamiltonian_check(integrals_class, orbitals_class):
 
 
 def run_mo_1e_core_field_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
@@ -613,6 +591,10 @@ def run_mo_1e_core_field_check(integrals_class, orbitals_class):
 
 
 def run_mo_2e_repulsion_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
@@ -652,6 +634,10 @@ def run_mo_2e_repulsion_check(integrals_class, orbitals_class):
 
 
 def run_ao_1e_density_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
@@ -741,6 +727,10 @@ def run_ao_1e_density_check(integrals_class, orbitals_class):
 
 
 def run_ao_1e_mean_field_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
@@ -830,6 +820,10 @@ def run_ao_1e_mean_field_check(integrals_class, orbitals_class):
 
 
 def run_ao_1e_fock_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
@@ -859,6 +853,10 @@ def run_ao_1e_fock_check(integrals_class, orbitals_class):
 
 
 def run_hf_energy_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
@@ -880,6 +878,10 @@ def run_hf_energy_check(integrals_class, orbitals_class):
 
 
 def run_core_energy_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange.molecule import NuclearFramework
+
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
