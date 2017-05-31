@@ -43,10 +43,6 @@ def test__orbital_mo_slicing():
     orbital_tests.run_mo_slicing_check(Integrals, Orbitals)
 
 
-def test__orbital_mo_energies():
-    orbital_tests.run_mo_energies_check(Integrals, Orbitals)
-
-
 def test__orbital_mo_fock_diagonal():
     orbital_tests.run_mo_fock_diagonal_check(Integrals, Orbitals)
 

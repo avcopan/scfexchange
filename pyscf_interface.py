@@ -174,11 +174,12 @@ class Orbitals(OrbitalsInterface):
         pyscf_hf.conv_tol_grad = d_threshold
         pyscf_hf.max_cycle = niter
         pyscf_hf.kernel()
-        self.mo_energies = pyscf_hf.mo_energy
+        mo_energies = pyscf_hf.mo_energy
         self.mo_coefficients = pyscf_hf.mo_coeff
         if self.spin_is_restricted:
-            self.mo_energies = np.array([self.mo_energies] * 2)
+            mo_energies = np.array([mo_energies] * 2)
             self.mo_coefficients = np.array([self.mo_coefficients] * 2)
+        self.spinorb_order = np.argsort(np.concatenate(mo_energies))
 
 
 if __name__ == "__main__":
@@ -194,5 +195,3 @@ if __name__ == "__main__":
                         restrict_spin=False)
     orbitals.solve()
     print(orbitals.get_spinorb_order())
-    print(orbitals.get_mo_energies(mo_type='spinorb', mo_space='o'))
-    print(orbitals.get_mo_energies(mo_type='spinorb', mo_space='v'))
