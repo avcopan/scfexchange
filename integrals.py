@@ -12,8 +12,8 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
     arrays (such as `get_ao_1e_kinetic`).
     
     Attributes:
-        nuclei (:obj:`scfexchange.NuclearFramework`): Specifies the positions
-            of the atomic centers.
+        nuclei (:obj:`scfexchange.Nuclei`): The nuclei on which the basis
+            functions are centered
         basis_label (str): The basis set label (e.g. 'sto-3g').
         nbf (int): The number of basis functions.
     """

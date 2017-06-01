@@ -1,14 +1,14 @@
 def check_interface(integrals_instance):
     import inspect
     import numpy
-    from scfexchange import NuclearFramework, IntegralsInterface
+    from scfexchange import Nuclei, IntegralsInterface
 
     # Check attributes
     assert (hasattr(integrals_instance, 'nuclei'))
     assert (hasattr(integrals_instance, 'basis_label'))
     assert (hasattr(integrals_instance, 'nbf'))
     # Check attribute types
-    assert (isinstance(getattr(integrals_instance, 'nuclei'), NuclearFramework))
+    assert (isinstance(getattr(integrals_instance, 'nuclei'), Nuclei))
     assert (isinstance(getattr(integrals_instance, 'basis_label'), str))
     assert (isinstance(getattr(integrals_instance, 'nbf'), int))
     # Check methods
@@ -60,12 +60,12 @@ def check_interface(integrals_instance):
 
 def run_interface_check(integrals_class):
     import numpy
-    from scfexchange import NuclearFramework
+    from scfexchange import Nuclei
     labels = ("O", "H", "H")
     coordinates = numpy.array([[0.0000000000, 0.0000000000, -0.1247219248],
                                [0.0000000000, -1.4343021349, 0.9864370414],
                                [0.0000000000, 1.4343021349, 0.9864370414]])
-    nuclei = NuclearFramework(labels, coordinates)
+    nuclei = Nuclei(labels, coordinates)
     # Build integrals
     integrals = integrals_class(nuclei, "cc-pvdz")
     # Test the integrals interface
@@ -74,13 +74,13 @@ def run_interface_check(integrals_class):
 
 def run_ao_1e_overlap_check(integrals_class):
     import numpy
-    from scfexchange import NuclearFramework
+    from scfexchange import Nuclei
 
     labels = ("O", "H", "H")
     coordinates = numpy.array([[0.0000000000, 0.0000000000, -0.1247219248],
                                [0.0000000000, -1.4343021349, 0.9864370414],
                                [0.0000000000, 1.4343021349, 0.9864370414]])
-    nuclei = NuclearFramework(labels, coordinates)
+    nuclei = Nuclei(labels, coordinates)
     # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
     # Test the integrals interface
@@ -97,13 +97,13 @@ def run_ao_1e_overlap_check(integrals_class):
 
 def run_ao_1e_kinetic_check(integrals_class):
     import numpy
-    from scfexchange import NuclearFramework
+    from scfexchange import Nuclei
 
     labels = ("O", "H", "H")
     coordinates = numpy.array([[0.0000000000, 0.0000000000, -0.1247219248],
                                [0.0000000000, -1.4343021349, 0.9864370414],
                                [0.0000000000, 1.4343021349, 0.9864370414]])
-    nuclei = NuclearFramework(labels, coordinates)
+    nuclei = Nuclei(labels, coordinates)
     # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
     # Test the integrals interface
@@ -120,13 +120,13 @@ def run_ao_1e_kinetic_check(integrals_class):
 
 def run_ao_1e_potential_check(integrals_class):
     import numpy
-    from scfexchange import NuclearFramework
+    from scfexchange import Nuclei
 
     labels = ("O", "H", "H")
     coordinates = numpy.array([[0.0000000000, 0.0000000000, -0.1247219248],
                                [0.0000000000, -1.4343021349, 0.9864370414],
                                [0.0000000000, 1.4343021349, 0.9864370414]])
-    nuclei = NuclearFramework(labels, coordinates)
+    nuclei = Nuclei(labels, coordinates)
     # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
     # Test the integrals interface
@@ -143,13 +143,13 @@ def run_ao_1e_potential_check(integrals_class):
 
 def run_ao_1e_dipole_check(integrals_class):
     import numpy
-    from scfexchange import NuclearFramework
+    from scfexchange import Nuclei
 
     labels = ("O", "H", "H")
     coordinates = numpy.array([[0.0000000000, 0.0000000000, -0.1247219248],
                                [0.0000000000, -1.4343021349, 0.9864370414],
                                [0.0000000000, 1.4343021349, 0.9864370414]])
-    nuclei = NuclearFramework(labels, coordinates)
+    nuclei = Nuclei(labels, coordinates)
     # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
     # Test the integrals interface
@@ -170,13 +170,13 @@ def run_ao_1e_dipole_check(integrals_class):
 
 def run_ao_1e_core_hamiltonian_check(integrals_class):
     import numpy
-    from scfexchange import NuclearFramework
+    from scfexchange import Nuclei
 
     labels = ("O", "H", "H")
     coordinates = numpy.array([[0.0000000000, 0.0000000000, -0.1247219248],
                                [0.0000000000, -1.4343021349, 0.9864370414],
                                [0.0000000000, 1.4343021349, 0.9864370414]])
-    nuclei = NuclearFramework(labels, coordinates)
+    nuclei = Nuclei(labels, coordinates)
     # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
     # Test the integrals interface
@@ -191,13 +191,13 @@ def run_ao_1e_core_hamiltonian_check(integrals_class):
 
 def run_ao_2e_repulsion_check(integrals_class):
     import numpy
-    from scfexchange import NuclearFramework
+    from scfexchange import Nuclei
 
     labels = ("O", "H", "H")
     coordinates = numpy.array([[0.0000000000, 0.0000000000, -0.1247219248],
                                [0.0000000000, -1.4343021349, 0.9864370414],
                                [0.0000000000, 1.4343021349, 0.9864370414]])
-    nuclei = NuclearFramework(labels, coordinates)
+    nuclei = Nuclei(labels, coordinates)
     # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
     # Test the integrals interface

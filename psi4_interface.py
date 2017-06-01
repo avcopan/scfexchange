@@ -9,8 +9,8 @@ class Integrals(IntegralsInterface):
     """Molecular integrals (Psi4).
     
     Attributes:
-        nuclei (:obj:`scfexchange.NuclearFramework`): Specifies the positions
-            of the atomic centers.
+        nuclei (:obj:`scfexchange.Nuclei`): The nuclei on which the basis
+            functions are centered
         basis_label (str): The basis set label (e.g. 'sto-3g').
         nbf (int): The number of basis functions.
     """
@@ -19,8 +19,8 @@ class Integrals(IntegralsInterface):
         """Initialize Integrals object.
     
         Args:
-            nuclei (:obj:`scfexchange.NuclearFramework`): Specifies the
-                positions of the atomic centers.
+            nuclei (:obj:`scfexchange.Nuclei`): The nuclei on which the basis
+                functions are centered
             basis_label (str): What basis set to use.
         """
         self.nuclei = nuclei
@@ -200,13 +200,13 @@ class Orbitals(OrbitalsInterface):
 
 if __name__ == "__main__":
     import itertools as it
-    from .molecule import NuclearFramework
+    from .molecule import Nuclei
 
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
-    nuclei = NuclearFramework(labels, coordinates)
+    nuclei = Nuclei(labels, coordinates)
     integrals = Integrals(nuclei, "sto-3g")
 
     iterables1 = ([(0, 1), (1, 2)], [True, False])

@@ -3,8 +3,8 @@ import numpy as np
 from . import constants
 
 
-class NuclearFramework(object):
-    """A class to store information about the nuclei in a nuclei.
+class Nuclei(object):
+    """A class to store information about the nuclei in a chemical system.
     
     Attributes:
         natoms (int): The number of atoms.
@@ -15,7 +15,7 @@ class NuclearFramework(object):
     """
 
     def __init__(self, labels, coordinates):
-        """Initialize this NuclearFramework object.
+        """Initialize this Nuclei object.
         
         Args:
             labels (`tuple`): Atomic symbols.
@@ -85,7 +85,8 @@ class NuclearFramework(object):
         return mu
 
     def __str__(self):
-        """Display the nuclear framework as a string."""
+        """Display the nuclear positions as a string.
+        """
         geom_line_template = "{:2s} {: >15.10f} {: >15.10f} {: >15.10f}\n"
         ret = ""
         for label, coordinate in zip(self.labels, self.coordinates):
@@ -93,15 +94,14 @@ class NuclearFramework(object):
         return ret
 
     def __repr__(self):
-        return self.__str__()
+        return "Nuclei(\n{:s})".format(self.__str__())
 
 
 class Molecule(object):
     """A class to store information about a chemical system.
   
     Attributes:
-        nuclei (:obj:`scfexchange.NuclearFramework`): The nuclear framework
-            of this molecule.
+        nuclei (:obj:`scfexchange.Nuclei`): The nuclei of this molecule.
         charge (int): Total molecular charge.
         multiplicity (int): `2*S+1` where `S` is the spin-magnitude quantum
             number.
@@ -114,8 +114,7 @@ class Molecule(object):
         """Initialize this nuclei.
         
         Args:
-            nuclei (:obj:`scfexchange.NuclearFramework`): The nuclear framework
-                of this molecule.
+            nuclei (:obj:`scfexchange.Nuclei`): The nuclei of this molecule.
             charge (int): Total molecular charge.
             multiplicity (int): `2*S+1` where `S` is the spin-magnitude quantum
                 number.
@@ -137,10 +136,14 @@ class Molecule(object):
         self.nbeta = npaired
 
     def __str__(self):
-        """Display the nuclei as a string."""
+        """Display the molecule as a string.
+        """
         charge_str = 'charge {:d}'.format(self.charge)
         multp_str = 'multiplicity {:d}'.format(self.multiplicity)
-        return '\n'.join((charge_str, multp_str, str(self.nuclei)))
+        return ', '.join((charge_str, multp_str, repr(self.nuclei)))
+
+    def __repr__(self):
+        return "Molecule({:s})".format(self.__str__())
 
 
 if __name__ == "__main__":
@@ -148,10 +151,13 @@ if __name__ == "__main__":
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
-    nuclei = NuclearFramework(labels, coordinates)
-    print(nuclei)
+    nuclei = Nuclei(labels, coordinates)
     print(nuclei.get_nuclear_repulsion_energy())
     print(repr(nuclei.get_center_of_charge()))
     print(repr(nuclei.get_center_of_mass()))
     print(repr(nuclei.get_dipole_moment()))
     mol = Molecule(nuclei, charge=+1, multiplicity=2)
+    print(nuclei)
+    print(repr(nuclei))
+    print(mol)
+    print(repr(mol))

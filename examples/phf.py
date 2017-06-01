@@ -57,13 +57,13 @@ class PerturbedHartreeFock(OrbitalsInterface):
 
 if __name__ == "__main__":
     from scfexchange.pyscf_interface import Integrals
-    from scfexchange.molecule import NuclearFramework
+    from scfexchange.molecule import Nuclei
 
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
-    nuclei = NuclearFramework(labels, coordinates)
+    nuclei = Nuclei(labels, coordinates)
     # Build integrals
     integrals = Integrals(nuclei, "sto-3g")
     orbitals = PerturbedHartreeFock(integrals, charge=1, multiplicity=2,
