@@ -187,7 +187,6 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
             blocked_rot_mat = rot_mat[spinorb_inv_order, :]
             arot_mat = blocked_rot_mat[:norb, :norb]
             brot_mat = blocked_rot_mat[norb:, norb:]
-            print(blocked_rot_mat[:norb, norb:])
             if not (np.allclose(blocked_rot_mat[:norb, norb:], 0.) and
                     np.allclose(blocked_rot_mat[norb:, :norb], 0.)):
                 raise ValueError("Spin-orbital rotation matrix mixes spins.")
