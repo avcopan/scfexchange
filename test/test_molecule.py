@@ -1,4 +1,4 @@
-from scfexchange.molecule import NuclearFramework
+from scfexchange import NuclearFramework
 
 
 def test__nuclear_framework():

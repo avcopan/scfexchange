@@ -1,8 +1,7 @@
 def check_interface(integrals_instance):
     import inspect
     import numpy
-    from scfexchange.integrals import IntegralsInterface
-    from scfexchange.molecule import NuclearFramework
+    from scfexchange import NuclearFramework, IntegralsInterface
 
     # Check attributes
     assert (hasattr(integrals_instance, 'nuclei'))
@@ -61,7 +60,7 @@ def check_interface(integrals_instance):
 
 def run_interface_check(integrals_class):
     import numpy
-    from scfexchange.molecule import NuclearFramework
+    from scfexchange import NuclearFramework
     labels = ("O", "H", "H")
     coordinates = numpy.array([[0.0000000000, 0.0000000000, -0.1247219248],
                                [0.0000000000, -1.4343021349, 0.9864370414],
@@ -75,7 +74,7 @@ def run_interface_check(integrals_class):
 
 def run_ao_1e_overlap_check(integrals_class):
     import numpy
-    from scfexchange.molecule import NuclearFramework
+    from scfexchange import NuclearFramework
 
     labels = ("O", "H", "H")
     coordinates = numpy.array([[0.0000000000, 0.0000000000, -0.1247219248],
@@ -98,7 +97,7 @@ def run_ao_1e_overlap_check(integrals_class):
 
 def run_ao_1e_kinetic_check(integrals_class):
     import numpy
-    from scfexchange.molecule import NuclearFramework
+    from scfexchange import NuclearFramework
 
     labels = ("O", "H", "H")
     coordinates = numpy.array([[0.0000000000, 0.0000000000, -0.1247219248],
@@ -121,7 +120,7 @@ def run_ao_1e_kinetic_check(integrals_class):
 
 def run_ao_1e_potential_check(integrals_class):
     import numpy
-    from scfexchange.molecule import NuclearFramework
+    from scfexchange import NuclearFramework
 
     labels = ("O", "H", "H")
     coordinates = numpy.array([[0.0000000000, 0.0000000000, -0.1247219248],
@@ -144,7 +143,7 @@ def run_ao_1e_potential_check(integrals_class):
 
 def run_ao_1e_dipole_check(integrals_class):
     import numpy
-    from scfexchange.molecule import NuclearFramework
+    from scfexchange import NuclearFramework
 
     labels = ("O", "H", "H")
     coordinates = numpy.array([[0.0000000000, 0.0000000000, -0.1247219248],
@@ -171,7 +170,7 @@ def run_ao_1e_dipole_check(integrals_class):
 
 def run_ao_1e_core_hamiltonian_check(integrals_class):
     import numpy
-    from scfexchange.molecule import NuclearFramework
+    from scfexchange import NuclearFramework
 
     labels = ("O", "H", "H")
     coordinates = numpy.array([[0.0000000000, 0.0000000000, -0.1247219248],
@@ -192,7 +191,7 @@ def run_ao_1e_core_hamiltonian_check(integrals_class):
 
 def run_ao_2e_repulsion_check(integrals_class):
     import numpy
-    from scfexchange.molecule import NuclearFramework
+    from scfexchange import NuclearFramework
 
     labels = ("O", "H", "H")
     coordinates = numpy.array([[0.0000000000, 0.0000000000, -0.1247219248],

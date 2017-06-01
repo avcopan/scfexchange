@@ -2,7 +2,7 @@ import warnings
 
 import numpy as np
 import scipy.linalg as spla
-from scfexchange.orbitals import OrbitalsInterface
+from scfexchange import OrbitalsInterface
 
 
 class PerturbedHartreeFock(OrbitalsInterface):
