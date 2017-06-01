@@ -9,8 +9,8 @@ class Integrals(IntegralsInterface):
     """Molecular integrals (Psi4).
     
     Attributes:
-        nuclei (:obj:`scfexchange.nuclei.NuclearFramework`): Specifies the
-            positions of the atomic centers.
+        nuclei (:obj:`scfexchange.NuclearFramework`): Specifies the positions
+            of the atomic centers.
         basis_label (str): The basis set label (e.g. 'sto-3g').
         nbf (int): The number of basis functions.
     """
@@ -19,7 +19,7 @@ class Integrals(IntegralsInterface):
         """Initialize Integrals object.
     
         Args:
-            nuclei (:obj:`scfexchange.nuclei.NuclearFramework`): Specifies the
+            nuclei (:obj:`scfexchange.NuclearFramework`): Specifies the
                 positions of the atomic centers.
             basis_label (str): What basis set to use.
         """
@@ -146,7 +146,7 @@ class Orbitals(OrbitalsInterface):
     """Molecular orbitals (Psi4).
     
     Attributes:
-        integrals (:obj:`scfexchange.Integrals`): The integrals object.
+        integrals (:obj:`scfexchange.IntegralsInterface`): The integrals.
         molecule (:obj:`scfexchange.Molecule`): A Molecule object specifying
             the total molecular charge and spin multiplicity of the system.
         mo_coefficients (numpy.ndarray): The orbital expansion coefficients.

@@ -100,8 +100,8 @@ class Molecule(object):
     """A class to store information about a chemical system.
   
     Attributes:
-        nuclei (:obj:`scfexchange.nuclei.NuclearFramework`): The nuclear 
-            framework of this nuclei.
+        nuclei (:obj:`scfexchange.NuclearFramework`): The nuclear framework
+            of this molecule.
         charge (int): Total molecular charge.
         multiplicity (int): `2*S+1` where `S` is the spin-magnitude quantum
             number.
@@ -114,8 +114,8 @@ class Molecule(object):
         """Initialize this nuclei.
         
         Args:
-            nuclei (:obj:`scfexchange.nuclei.NuclearFramework`): The nuclear 
-                framework of this nuclei.
+            nuclei (:obj:`scfexchange.NuclearFramework`): The nuclear framework
+                of this molecule.
             charge (int): Total molecular charge.
             multiplicity (int): `2*S+1` where `S` is the spin-magnitude quantum
                 number.

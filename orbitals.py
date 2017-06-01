@@ -18,7 +18,7 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
     of `mo_coefficients`.
     
     Attributes:
-        integrals (:obj:`scfexchange.Integrals`): The integrals object.
+        integrals (:obj:`scfexchange.IntegralsInterface`): The integrals.
         molecule (:obj:`scfexchange.Molecule`): A Molecule object specifying
             the total molecular charge and spin multiplicity of the system.
         mo_coefficients (numpy.ndarray): The orbital expansion coefficients.
@@ -32,7 +32,7 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         """Initialize an instance of the OrbitalsInterface.
         
         Args:
-            integrals (:obj:`scfexchange.Integrals`): The integrals object.
+            integrals (:obj:`scfexchange.IntegralsInterface`): The integrals.
             charge (int): Total molecular charge.
             multiplicity (int): Spin multiplicity.
             restrict_spin (bool): Spin-restrict the orbitals?
