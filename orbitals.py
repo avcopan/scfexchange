@@ -3,9 +3,10 @@ import abc
 import more_itertools as mit
 import numpy as np
 import scipy.linalg as spla
+from six import with_metaclass
+
 import tensorutils as tu
 import permutils as pu
-from six import with_metaclass
 
 from .integrals import IntegralsInterface
 from .molecule import Molecule
@@ -421,7 +422,7 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
                                           mo_space=mo_spaces[3])
         return tu.einsum("mntu,mp,nq,tr,us->pqrs", g, c1, c2, c3, c4)
 
-    def get_ao_1e_density(self, mo_type='alpha', mo_space='co'):
+    def get_ao_1e_hf_density(self, mo_type='alpha', mo_space='co'):
         """Get the electronic density matrix.
         
         Returns the SCF density matrix, D_mu,nu = sum_i C_mu,i C_nu,i^*, in the
@@ -459,8 +460,8 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         Returns:
             numpy.ndarray: The integrals
         """
-        da = self.get_ao_1e_density('alpha', mo_space=mo_space)
-        db = self.get_ao_1e_density('beta', mo_space=mo_space)
+        da = self.get_ao_1e_hf_density('alpha', mo_space=mo_space)
+        db = self.get_ao_1e_hf_density('beta', mo_space=mo_space)
         g = self.integrals.get_ao_2e_repulsion(use_spinorbs=False)
         # Compute the Coulomb and exchange matrices.
         j = np.tensordot(g, da + db, axes=[(1, 3), (1, 0)])
@@ -511,8 +512,8 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         """
         h = self.integrals.get_ao_1e_core_hamiltonian(
             use_spinorbs=False, electric_field=electric_field)
-        da = self.get_ao_1e_density('alpha', mo_space='co')
-        db = self.get_ao_1e_density('beta', mo_space='co')
+        da = self.get_ao_1e_hf_density('alpha', mo_space='co')
+        db = self.get_ao_1e_hf_density('beta', mo_space='co')
         wa = self.get_ao_1e_mean_field(mo_type='alpha', mo_space='co')
         wb = self.get_ao_1e_mean_field(mo_type='beta', mo_space='co')
         e_elec = np.sum((h + wa / 2) * da + (h + wb / 2) * db)
@@ -535,10 +536,68 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         """
         h = self.integrals.get_ao_1e_core_hamiltonian(
             use_spinorbs=False, electric_field=electric_field)
-        da = self.get_ao_1e_density('alpha', mo_space='c')
-        db = self.get_ao_1e_density('beta', mo_space='c')
+        da = self.get_ao_1e_hf_density('alpha', mo_space='c')
+        db = self.get_ao_1e_hf_density('beta', mo_space='c')
         wa = self.get_ao_1e_mean_field(mo_type='alpha', mo_space='c')
         wb = self.get_ao_1e_mean_field(mo_type='beta', mo_space='c')
         e_elec = np.sum((h + wa / 2) * da + (h + wb / 2) * db)
         e_nuc = self.molecule.nuclei.get_nuclear_repulsion_energy()
         return e_elec + e_nuc
+
+    def get_mo_1e_determinant_density(self, mo_type='alpha', mo_block='ov,ov'):
+        """Get the one-particle reduced density matrix of a determinant.
+
+        Args:
+            mo_type (str): Orbital type, 'alpha', 'beta', or 'spinorb'.
+            mo_block (str): A comma-separated pair of MO spaces.  Each MO space
+                is specified as a contiguous combination of 'c' (core),
+                'o' (occupied), and 'v' (virtual).
+
+        Returns:
+            numpy.ndarray: The density matrix.
+        """
+        norb = self.get_mo_count(mo_type=mo_type, mo_space='cov')
+        gamma1 = np.zeros((norb, norb))
+
+        # The OPDM is zero everywhere but the 'co,co' block, where it has ones
+        # on the diagonal.
+        o = self.get_mo_slice(mo_type=mo_type, mo_space='co')
+        nocc = self.get_mo_count(mo_type=mo_type, mo_space='co')
+        gamma1[o, o] = np.identity(nocc)
+
+        # Slice the result
+        slices = tuple(self.get_mo_slice(mo_type=mo_type, mo_space=mo_space)
+                       for mo_space in mo_block.split(','))
+        return gamma1[slices]
+
+    def get_mo_2e_determinant_density(self, mo_type='alpha', mo_block='ov,ov'):
+        """Get the two-particle reduced density matrix of a determinant.
+
+        Args:
+            mo_type (str): Orbital type, 'alpha', 'beta', 'mixed', or 'spinorb'.
+            mo_block (str): A comma-separated list of four MO spaces.  Each MO
+                space is specified as a contiguous combination of 'c' (core),
+                'o' (occupied), and 'v' (virtual).
+            antisymmetrize (bool): Antisymmetrize the integral tensor?
+
+        Returns:
+            numpy.ndarray: The density matrix.
+        """
+        if mo_type is 'mixed':
+            lgamma1 = self.get_mo_1e_determinant_density(mo_type='alpha',
+                                                         mo_block='cov,cov')
+            rgamma1 = self.get_mo_1e_determinant_density(mo_type='beta',
+                                                         mo_block='cov,cov')
+        else:
+            lgamma1 = rgamma1 = self.get_mo_1e_determinant_density(
+                mo_type=mo_type, mo_block='cov,cov')
+
+        # The TPDM is an antisymmetrized tensor product of OPDMs
+        gamma2 = tu.Antisymmetrizer((2, 3)) * tu.einsum("pr,qs->pqrs",
+                                                        lgamma1, rgamma1)
+
+        # Slice the result
+        slices = tuple(self.get_mo_slice(mo_type=mo_type, mo_space=mo_space)
+                       for mo_space in mo_block.split(','))
+        return gamma2[slices]
+

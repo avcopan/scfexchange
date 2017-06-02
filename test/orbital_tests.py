@@ -720,7 +720,7 @@ def run_ao_1e_density_check(integrals_class, orbitals_class):
         orbitals.solve()
         for ncore, mo_type, mo_space in it.product(*iterables2):
             orbitals.ncore = ncore
-            s = orbitals.get_ao_1e_density(mo_type, mo_space)
+            s = orbitals.get_ao_1e_hf_density(mo_type, mo_space)
             assert (s.shape == next(shapes))
             assert (np.isclose(np.linalg.norm(s), next(norms)))
 
@@ -902,3 +902,40 @@ def run_core_energy_check(integrals_class, orbitals_class):
             orbitals.ncore = ncore
             energy = orbitals.get_core_energy()
             assert (np.isclose(energy, next(energies)))
+
+
+def run_determinant_density_check(integrals_class, orbitals_class):
+    import numpy as np
+    import itertools as it
+    from scfexchange import Nuclei
+
+    labels = ("O", "H", "H")
+    coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
+                            [0.0000000000, -1.4343021349, 0.9864370414],
+                            [0.0000000000, 1.4343021349, 0.9864370414]])
+    nuclei = Nuclei(labels, coordinates)
+    # Build integrals
+    integrals = integrals_class(nuclei, "sto-3g")
+    # Test the integrals interface
+    energies = iter([
+        -74.963343795087525, -74.963343795087511, -74.654712456959146,
+        -74.656730208992286
+    ])
+    iterables1 = ([(0, 1), (1, 2)], [True, False])
+    for (charge, multp), restr in it.product(*iterables1):
+        orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
+        orbitals.solve()
+        gamma1 = orbitals.get_mo_1e_determinant_density(mo_type='spinorb',
+                                                        mo_block='cov,cov')
+        gamma2 = orbitals.get_mo_2e_determinant_density(mo_type='spinorb',
+                                                        mo_block='cov,cov,'
+                                                                 'cov,cov')
+        h = orbitals.get_mo_1e_core_hamiltonian(mo_type='spinorb',
+                                                mo_block='cov,cov')
+        g = orbitals.get_mo_2e_repulsion(mo_type='spinorb',
+                                         mo_block='cov,cov,cov,cov',
+                                         antisymmetrize=True)
+        energy = orbitals.molecule.nuclei.get_nuclear_repulsion_energy()
+        energy += np.einsum('pq,pq->', h, gamma1)
+        energy += 1. / 4 * np.einsum('pqrs,pqrs->', g, gamma2)
+        assert (np.isclose(energy, next(energies)))
