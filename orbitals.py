@@ -62,8 +62,7 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         Sets `self.mo_coefficients` to a new value.
         
         Args:
-            **options: Parameters defining the behavior of the solution 
-                algorithm, such as convergence criteria.
+            **options: Convergence thresholds, etc.
         """
         return
 
@@ -205,9 +204,9 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
 
         Args:
             mo_type (str): Orbital type, 'alpha', 'beta', or 'spinorb'.
-            mo_block (str): A comma-separated pair of MO spaces.  Each MO space
-                is specified as a contiguous combination of 'c' (core),
-                'o' (occupied), and 'v' (virtual).
+            mo_space (str): Any contiguous combination of 'c' (core),
+                'o' (occupied), and 'v' (virtual).  Defaults to 'ov',
+                which denotes all unfrozen orbitals.
             electric_field (numpy.ndarray): A three-component vector specifying
                 the magnitude of an external static electric field.  Its
                 negative dot product with the dipole integrals will be added to
