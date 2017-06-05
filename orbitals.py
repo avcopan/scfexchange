@@ -87,9 +87,14 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
             numpy.array: The integrals.
         """
         mo_spaces = mo_block.split(',')
+        ne = len(mo_spaces) // 2
         spins = (spin_block.split(',') if spin_block is not None
-                 else (None,) * len(mo_spaces))
-        assert(len(mo_spaces) == len(spins))
+                 else (None, None) * ne)
+        assert(len(spins) == 2 * ne)
+        # If the spins in the bra and ket don't match, throw an exception.
+        if not tuple(spins[:ne]) == tuple(spins[ne:]):
+            raise NotImplementedError("Off-diagonal spin block.")
+
         cs = (self.get_mo_coefficients(mo_space, spin)
               for mo_space, spin in zip(mo_spaces, spins))
 
@@ -198,10 +203,10 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
             raise ValueError("Invalid 'mo_type' argument.")
         if mo_space not in ('c', 'o', 'v', 'co', 'ov', 'cov'):
             raise ValueError("Invalid 'mo_space' argument.")
-        str_start = 'cov'[:'cov'.index(mo_space[0])]
-        str_end = 'cov'[:'cov'.index(mo_space[-1]) + 1]
-        start = self.get_mo_count(str_start, spin)
-        end = self.get_mo_count(str_end, spin)
+        start_str = 'cov'[:'cov'.index(mo_space[0])]
+        end_str = 'cov'[:'cov'.index(mo_space[-1]) + 1]
+        start = self.get_mo_count(start_str, spin)
+        end = self.get_mo_count(end_str, spin)
         return slice(start, end)
 
     def get_mo_coefficients(self, mo_space='ov', spin=None):

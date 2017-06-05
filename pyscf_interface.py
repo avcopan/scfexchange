@@ -189,18 +189,8 @@ if __name__ == "__main__":
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
     integrals = Integrals(nuclei, "sto-3g")
-    shapes = []
-    norms = []
-    iterables1 = ([(0, 1), (1, 2)], [True, False])
-    iterables2 = ([0, 1], ['a,a,a,a', 'b,b,b,b', None])
-    for (charge, multp), restr in it.product(*iterables1):
-        orbitals = Orbitals(integrals, charge, multp, restrict_spin=restr)
-        orbitals.solve()
-        for ncore, spin_block in it.product(*iterables2):
-            orbitals.ncore = ncore
-            s = orbitals.get_mo_2e_repulsion(mo_block='o,o,o,o',
-                                             spin_block=spin_block)
-            shapes.append(s.shape)
-            norms.append(np.linalg.norm(s))
-    print(shapes)
-    print(norms)
+    orbitals = Orbitals(integrals, charge=1, multiplicity=2)
+    orbitals.solve()
+    t_mo = orbitals.get_mo_1e_kinetic(mo_block='o,o', spin_block='a,b')
+    print(np.linalg.norm(t_mo))
+    print((t_mo.shape))
