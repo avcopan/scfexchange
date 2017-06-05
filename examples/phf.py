@@ -19,13 +19,17 @@ class PerturbedHartreeFock(OrbitalsInterface):
                 negative dot product with the dipole integrals will be added 
                 to the core Hamiltonian.
         """
+        if self.molecule.multiplicity is not 0 and self.spin_is_restricted:
+            raise NotImplementedError("Perturbed ROHF is not implemented.")
         s = self.integrals.get_ao_1e_overlap()
         x = spla.inv(spla.sqrtm(s))
         energy = 0.0
         converged = False
         for iteration in range(niter):
-            af = self.get_ao_1e_fock('alpha', electric_field=electric_field)
-            bf = self.get_ao_1e_fock('beta', electric_field=electric_field)
+            af = self.get_ao_1e_fock(mo_space='co', spin='a',
+                                     electric_field=electric_field)
+            bf = self.get_ao_1e_fock(mo_space='co', spin='b',
+                                     electric_field=electric_field)
             taf = x.dot(af.dot(x))
             tbf = x.dot(bf.dot(x))
             ae, tac = spla.eigh(taf)
@@ -36,10 +40,10 @@ class PerturbedHartreeFock(OrbitalsInterface):
             # Check convergence
             # 1. Determine the energy difference
             previous_energy = energy
-            energy = self.get_hf_energy(electric_field=electric_field)
+            energy = self.get_energy(electric_field=electric_field)
             energy_change = np.fabs(energy - previous_energy)
             # 2. Determine the orbital gradient
-            w = self.get_mo_1e_fock(mo_type='spinorb', mo_block='o,v',
+            w = self.get_mo_1e_fock(mo_block='o,v', spin_block=None,
                                     electric_field=electric_field)
             orb_grad_norm = np.linalg.norm(w)
             # 3. Quit if converged
@@ -69,7 +73,7 @@ if __name__ == "__main__":
     orbitals = PerturbedHartreeFock(integrals, charge=1, multiplicity=2,
                                     restrict_spin=False)
     orbitals.solve(niter=100, e_threshold=1e-14, d_threshold=1e-12)
-    d_occ = orbitals.get_mo_1e_dipole(mo_type='spinorb', mo_block='o,o')
+    d_occ = orbitals.get_mo_1e_dipole(mo_block='o,o', spin_block=None)
     mu = [np.trace(d_occ_x) for d_occ_x in d_occ]
 
     import scipy.misc
@@ -80,7 +84,7 @@ if __name__ == "__main__":
         e_field[field_component] = field_value
         orbitals.solve(niter=100, e_threshold=1e-15,
                        d_threshold=1e-13, electric_field=e_field)
-        return -orbitals.get_hf_energy(electric_field=e_field)
+        return -orbitals.get_energy(electric_field=e_field)
 
 
     comp = 2
