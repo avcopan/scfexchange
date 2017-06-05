@@ -48,19 +48,19 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
             return getattr(self, "_aso_" + name)
         # Otherwise, compute or retrieve the spatial integrals.
         if hasattr(self, "_ao_" + name) and not recompute:
-            integrals = getattr(self, "_ao_" + name)
+            ints = getattr(self, "_ao_" + name)
         else:
-            integrals = integrate()
-        setattr(self, "_ao_" + name, integrals)
+            ints = integrate()
+        setattr(self, "_ao_" + name, ints)
         # If requested, construct spin-orbital integrals from the spatial ones.
         if use_spinorbs:
             if ncomp is None:
-                integrals = tu.construct_spinorb_integrals(integrals)
+                ints = tu.construct_spinorb_integrals(ints)
             else:
-                integrals = np.array([tu.construct_spinorb_integrals(comp)
-                                      for comp in integrals])
-            setattr(self, "_aso_" + name, integrals)
-        return integrals
+                ints = np.array([tu.construct_spinorb_integrals(ints_x)
+                                 for ints_x in ints])
+            setattr(self, "_aso_" + name, ints)
+        return ints
 
     def get_ao_1e_core_hamiltonian(self, use_spinorbs=False, recompute=False,
                                    electric_field=None):
