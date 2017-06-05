@@ -174,16 +174,13 @@ class Orbitals(OrbitalsInterface):
         pyscf_hf.conv_tol_grad = d_threshold
         pyscf_hf.max_cycle = niter
         pyscf_hf.kernel()
-        mo_energies = pyscf_hf.mo_energy
         self.mo_coefficients = pyscf_hf.mo_coeff
         if self.spin_is_restricted:
-            mo_energies = np.array([mo_energies] * 2)
             self.mo_coefficients = np.array([self.mo_coefficients] * 2)
-        self.spinorb_order = np.argsort(np.concatenate(mo_energies))
 
 
 if __name__ == "__main__":
-    import scipy.linalg as spla
+    import itertools as it
     from .molecule import Nuclei
 
     labels = ("O", "H", "H")
@@ -192,11 +189,18 @@ if __name__ == "__main__":
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
     integrals = Integrals(nuclei, "sto-3g")
-    orbitals = Orbitals(integrals, charge=1, multiplicity=2,
-                        restrict_spin=False)
-    orbitals.solve()
-    spinorb_order = orbitals.get_spinorb_order()
-    print(spinorb_order)
-    c = spla.block_diag(*orbitals.mo_coefficients)
-    print(c.round(1))
-    print(c[:, spinorb_order].round(1))
+    shapes = []
+    norms = []
+    iterables1 = ([(0, 1), (1, 2)], [True, False])
+    iterables2 = ([0, 1], ['a,a,a,a', 'b,b,b,b', None])
+    for (charge, multp), restr in it.product(*iterables1):
+        orbitals = Orbitals(integrals, charge, multp, restrict_spin=restr)
+        orbitals.solve()
+        for ncore, spin_block in it.product(*iterables2):
+            orbitals.ncore = ncore
+            s = orbitals.get_mo_2e_repulsion(mo_block='o,o,o,o',
+                                             spin_block=spin_block)
+            shapes.append(s.shape)
+            norms.append(np.linalg.norm(s))
+    print(shapes)
+    print(norms)

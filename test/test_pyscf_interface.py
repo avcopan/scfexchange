@@ -102,6 +102,3 @@ def test__orbital_hf_energy():
 def test__orbital_core_energy():
     orbital_tests.run_core_energy_check(Integrals, Orbitals)
 
-
-def test__orbital_determinant_density():
-    orbital_tests.run_determinant_density_check(Integrals, Orbitals)

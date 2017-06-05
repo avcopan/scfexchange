@@ -218,7 +218,7 @@ if __name__ == "__main__":
         orbitals.solve()
         for ncore, mo_type in it.product(*iterables2):
             orbitals.ncore = ncore
-            s = orbitals.get_mo_1e_kinetic(mo_type, 'o,o')
+            s = orbitals.get_mo_1e_kinetic('o,o', mo_type)
             norms.append(np.linalg.norm(s))
             shapes.append(s.shape)
     print(shapes)
