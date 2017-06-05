@@ -248,7 +248,7 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
             numpy.ndarray: The integrals.
         """
         c = self.get_mo_coefficients(mo_space=mo_space, spin=spin)
-        f_ao = self.get_ao_1e_fock('co', spin=spin,
+        f_ao = self.get_ao_1e_fock(mo_space='co', spin=spin,
                                    electric_field=electric_field)
         e = tu.einsum('mn,mi,ni->i', f_ao, c, c)
         return e
