@@ -16,7 +16,7 @@ def test__hellmann_feynman_theorem():
     orbitals = PerturbedHartreeFock(integrals, charge=1, multiplicity=2,
                                     restrict_spin=False)
     orbitals.solve(niter=100, e_threshold=1e-14, d_threshold=1e-12)
-    d_occ = orbitals.get_mo_1e_dipole(mo_block='o,o', spin_block=None)
+    d_occ = orbitals.get_mo_1e_dipole(mo_block='o,o', spin_sector='s')
     mu = [np.trace(d_occ_x) for d_occ_x in d_occ]
 
     import scipy.misc
