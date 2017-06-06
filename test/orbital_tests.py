@@ -32,9 +32,7 @@ def run_interface_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
-    # Build orbitals
     iterables = ([(0, 1), (1, 2)], [True, False], [0, 1])
     for (charge, multp), restr, ncore in it.product(*iterables):
         orbitals = orbitals_class(integrals, charge, multp,
@@ -52,7 +50,6 @@ def run_mo_counting_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
     counts = iter([
         0, 5, 2, 5, 7, 7, 0, 5, 2, 5, 7, 7, 0, 10, 4, 10, 14, 14, 1, 4, 2, 5, 6,
@@ -80,7 +77,6 @@ def run_mo_slicing_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
     slices = iter([
         slice(0, 0, None), slice(0, 5, None), slice(5, 7, None),
@@ -128,7 +124,6 @@ def run_mo_fock_diagonal_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
     shapes = iter([
         (0,), (5,), (2,), (5,), (7,), (7,), (0,), (5,), (2,), (5,), (7,), (7,),
@@ -215,7 +210,6 @@ def run_mo_coefficients_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
     shapes = iter([
         (7, 0), (7, 5), (7, 2), (7, 5), (7, 7), (7, 7), (7, 0), (7, 5), (7, 2),
@@ -308,7 +302,6 @@ def run_mo_rotation_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
     orbitals = orbitals_class(integrals)
     two = 2 * np.identity(integrals.nbf)
@@ -336,7 +329,6 @@ def run_mo_1e_kinetic_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
     shapes = iter([
         (5, 5), (5, 5), (10, 10), (4, 4), (4, 4), (8, 8), (5, 5), (5, 5),
@@ -376,9 +368,7 @@ def run_mo_1e_potential_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
-    # Test the integrals interface
     shapes = iter([
         (5, 5), (5, 5), (10, 10), (4, 4), (4, 4), (8, 8), (5, 5), (5, 5),
         (10, 10), (4, 4), (4, 4), (8, 8), (5, 5), (4, 4), (9, 9), (4, 4),
@@ -417,9 +407,7 @@ def run_mo_1e_dipole_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
-    # Test the integrals interface
     shapes = iter([
         (3, 5, 5), (3, 5, 5), (3, 10, 10), (3, 4, 4), (3, 4, 4), (3, 8, 8),
         (3, 5, 5), (3, 5, 5), (3, 10, 10), (3, 4, 4), (3, 4, 4), (3, 8, 8),
@@ -471,9 +459,7 @@ def run_mo_1e_fock_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
-    # Test the integrals interface
     shapes = iter([
         (5, 5), (5, 5), (10, 10), (4, 4), (4, 4), (8, 8), (5, 5), (5, 5),
         (10, 10), (4, 4), (4, 4), (8, 8), (5, 5), (4, 4), (9, 9), (4, 4),
@@ -511,9 +497,7 @@ def run_mo_1e_core_hamiltonian_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
-    # Test the integrals interface
     shapes = iter([
         (5, 5), (5, 5), (10, 10), (4, 4), (4, 4), (8, 8), (5, 5), (5, 5),
         (10, 10), (4, 4), (4, 4), (8, 8), (5, 5), (4, 4), (9, 9), (4, 4),
@@ -564,9 +548,7 @@ def run_mo_1e_core_field_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
-    # Test the integrals interface
     shapes = iter([
         (5, 5), (5, 5), (10, 10), (4, 4), (4, 4), (8, 8), (5, 5), (5, 5),
         (10, 10), (4, 4), (4, 4), (8, 8), (5, 5), (4, 4), (9, 9), (4, 4),
@@ -603,9 +585,7 @@ def run_mo_2e_repulsion_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
-    # Test the integrals interface
     shapes = iter([
         (5, 5, 5, 5), (5, 5, 5, 5), (10, 10, 10, 10), (4, 4, 4, 4),
         (4, 4, 4, 4), (8, 8, 8, 8), (5, 5, 5, 5), (5, 5, 5, 5),
@@ -647,9 +627,7 @@ def run_ao_1e_density_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
-    # Test the integrals interface
     shapes = iter([
         (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
         (7, 7), (7, 7), (7, 7), (14, 14), (14, 14), (14, 14), (14, 14),
@@ -740,9 +718,7 @@ def run_ao_1e_mean_field_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
-    # Test the integrals interface
     shapes = iter([
         (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
         (7, 7), (7, 7), (7, 7), (14, 14), (14, 14), (14, 14), (14, 14),
@@ -833,9 +809,7 @@ def run_ao_1e_fock_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
-    # Test the integrals interface
     shapes = iter([
         (7, 7), (7, 7), (14, 14), (7, 7), (7, 7), (14, 14), (7, 7), (7, 7),
         (14, 14), (7, 7), (7, 7), (14, 14)
@@ -866,9 +840,7 @@ def run_hf_energy_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
-    # Test the integrals interface
     energies = iter([
         -74.963343795087525, -74.963343795087511, -74.654712456959146,
         -74.656730208992286
@@ -891,9 +863,7 @@ def run_core_energy_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
-    # Test the integrals interface
     energies = iter([
         9.1671453128090299, -51.488166696349197, 9.1671453128090299,
         -51.488166696349211, 9.1671453128090299, -51.48869849456608,

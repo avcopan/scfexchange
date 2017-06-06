@@ -68,13 +68,13 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         return
 
     def get_block_keys(self, mo_block, spin_sector):
-        spins = spin_sector.split(',') * 2
-        mo_spaces = mo_block.split(',')
-        if len(mo_spaces) is not len(spins):
+        spin_keys = spin_sector.split(',') * 2
+        space_keys = mo_block.split(',')
+        if len(space_keys) is not len(spin_keys):
             raise ValueError("Invalid 'mo_block'/'spin_sector' combination.")
-        if 's' in spins and not all(spin is 's' for spin in spins):
+        if 's' in spin_keys and not all(spin is 's' for spin in spin_keys):
             raise NotImplementedError("Mixed spatial/spin-orbital block.")
-        return mo_spaces, spins
+        return space_keys, spin_keys
 
     def _transform_ints(self, ao_ints, mo_block, spin_sector, ndim=0):
         """Transform atomic-orbital integrals to the molecular-orbital basis.
@@ -94,9 +94,9 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         Returns:
             numpy.array: The integrals.
         """
-        mo_spaces, spins = self.get_block_keys(mo_block, spin_sector)
+        space_keys, spin_keys = self.get_block_keys(mo_block, spin_sector)
         cs = tuple(self.get_mo_coefficients(mo_space, spin)
-                   for mo_space, spin in zip(mo_spaces, spins))
+                   for mo_space, spin in zip(space_keys, spin_keys))
 
         # Before transforming, move the component axes to the end.
         ao_ints = np.moveaxis(ao_ints, range(0, ndim), range(-ndim, 0))
@@ -415,8 +415,12 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
             numpy.ndarray: The integrals.
         """
         g_ao = self.integrals.get_ao_2e_repulsion(
-            use_spinorbs=(spin_sector == 's,s'), antisymmetrize=antisymmetrize)
-        return self._transform_ints(g_ao, mo_block, spin_sector)
+            use_spinorbs=(spin_sector == 's,s'))
+        g_mo = self._transform_ints(g_ao, mo_block, spin_sector)
+        s0, s1 = spin_sector.split(',')
+        if antisymmetrize and s0 == s1:
+            g_mo = g_mo - g_mo.transpose((0, 1, 3, 2))
+        return g_mo
 
     def get_ao_1e_hf_density(self, mo_space='co', spin_sector='s'):
         """Get the electronic density matrix.
@@ -507,6 +511,7 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
                 the magnitude of an external static electric field.  Its 
                 negative dot product with the dipole integrals will be added to 
                 the core Hamiltonian.
+
         Returns:
             float: The energy.
         """
