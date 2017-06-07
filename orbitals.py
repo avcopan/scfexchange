@@ -72,7 +72,7 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         space_keys = mo_block.split(',')
         if len(space_keys) is not len(spin_keys):
             raise ValueError("Invalid 'mo_block'/'spin_sector' combination.")
-        if 's' in spin_keys and not all(spin is 's' for spin in spin_keys):
+        if 's' in spin_keys and not all(spin == 's' for spin in spin_keys):
             raise NotImplementedError("Mixed spatial/spin-orbital block.")
         return space_keys, spin_keys
 
@@ -202,8 +202,10 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         # Check the arguments to make sure all is kosher
         if spin not in ('a', 'b', 's'):
             raise ValueError("Invalid 'mo_type' argument.")
-        if mo_space not in ('c', 'o', 'v', 'co', 'ov', 'cov'):
+        if mo_space not in ('', 'c', 'o', 'v', 'co', 'ov', 'cov'):
             raise ValueError("Invalid 'mo_space' argument.")
+        if mo_space == '':
+            return slice(0)
         start_str = 'cov'[:'cov'.index(mo_space[0])]
         end_str = 'cov'[:'cov'.index(mo_space[-1]) + 1]
         start = self.get_mo_count(mo_space=start_str, spin=spin)
@@ -224,11 +226,11 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         """
         slc = self.get_mo_slice(mo_space=mo_space, spin=spin)
         # Grab the appropriate set of coefficients
-        if spin is 'a':
+        if spin == 'a':
             c = self.mo_coefficients[0]
-        elif spin is 'b':
+        elif spin == 'b':
             c = self.mo_coefficients[1]
-        elif spin is 's':
+        elif spin == 's':
             spinorb_order = self.get_spinorb_order()
             c = spla.block_diag(*self.mo_coefficients)[:, spinorb_order]
         else:
