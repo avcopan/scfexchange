@@ -419,7 +419,7 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         s0, s1 = spin_sector.split(',')
         g_ao = self.integrals.get_ao_2e_repulsion(
             use_spinorbs=(spin_sector == 's,s'),
-            antisymmetrize=(s0 == s1))
+            antisymmetrize=(antisymmetrize and s0 == s1))
         return self._transform_ints(g_ao, mo_block, spin_sector)
 
     def get_ao_1e_hf_density(self, mo_space='co', spin_sector='s'):
