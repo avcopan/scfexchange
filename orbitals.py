@@ -416,13 +416,11 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         Returns:
             numpy.ndarray: The integrals.
         """
-        g_ao = self.integrals.get_ao_2e_repulsion(
-            use_spinorbs=(spin_sector == 's,s'))
-        g_mo = self._transform_ints(g_ao, mo_block, spin_sector)
         s0, s1 = spin_sector.split(',')
-        if antisymmetrize and s0 == s1:
-            g_mo = g_mo - g_mo.transpose((0, 1, 3, 2))
-        return g_mo
+        g_ao = self.integrals.get_ao_2e_repulsion(
+            use_spinorbs=(spin_sector == 's,s'),
+            antisymmetrize=(s0 == s1))
+        return self._transform_ints(g_ao, mo_block, spin_sector)
 
     def get_ao_1e_hf_density(self, mo_space='co', spin_sector='s'):
         """Get the electronic density matrix.

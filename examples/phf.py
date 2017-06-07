@@ -6,6 +6,7 @@ from scfexchange import OrbitalsInterface
 
 
 class PerturbedHartreeFock(OrbitalsInterface):
+
     def solve(self, niter=40, e_threshold=1e-12, d_threshold=1e-8,
               electric_field=None):
         """
@@ -52,9 +53,7 @@ class PerturbedHartreeFock(OrbitalsInterface):
             if converged:
                 print("@UHF converged energy = {:20.15f}".format(energy))
                 break
-            # Print step info
-            print('@UHF {:-3d} {:20.15f} {:20.15f} {:20.15f}'
-                  .format(iteration, energy, energy_change, orb_grad_norm))
+
         if not converged:
             warnings.warn("UHF algorithm did not converge!")
 
@@ -78,7 +77,6 @@ if __name__ == "__main__":
 
     import scipy.misc
 
-
     def energy(field_value=0., field_component=0):
         e_field = np.zeros((3,))
         e_field[field_component] = field_value
@@ -86,9 +84,7 @@ if __name__ == "__main__":
                        d_threshold=1e-13, electric_field=e_field)
         return -orbitals.get_energy(electric_field=e_field)
 
-
-    comp = 2
-    dedx = scipy.misc.derivative(energy, 0., dx=0.005, n=1, args=(comp,),
+    dedz = scipy.misc.derivative(energy, 0., dx=0.005, n=1, args=(2,),
                                  order=7)
-    print(dedx)
-    print(mu[comp])
+    print(dedz)
+    print(mu[2])
