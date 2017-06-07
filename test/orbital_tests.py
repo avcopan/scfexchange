@@ -32,9 +32,7 @@ def run_interface_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
-    # Build orbitals
     iterables = ([(0, 1), (1, 2)], [True, False], [0, 1])
     for (charge, multp), restr, ncore in it.product(*iterables):
         orbitals = orbitals_class(integrals, charge, multp,
@@ -52,7 +50,6 @@ def run_mo_counting_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
     counts = iter([
         0, 5, 2, 5, 7, 7, 0, 5, 2, 5, 7, 7, 0, 10, 4, 10, 14, 14, 1, 4, 2, 5, 6,
@@ -60,13 +57,13 @@ def run_mo_counting_check(integrals_class, orbitals_class):
         7, 7, 0, 9, 5, 9, 14, 14, 1, 4, 2, 5, 6, 7, 1, 3, 3, 4, 6, 7, 2, 7, 5,
         9, 12, 14
     ])
-    iterables = ([0, 1], ['a', 'b', None],
+    iterables = ([0, 1], ['a', 'b', 's'],
                  ['c', 'o', 'v', 'co', 'ov', 'cov'])
     for charge, multp in [(0, 1), (1, 2)]:
         orbitals = orbitals_class(integrals, charge, multp)
-        for ncore, mo_type, mo_space in it.product(*iterables):
+        for ncore, spin, mo_space in it.product(*iterables):
             orbitals.ncore = ncore
-            count = orbitals.get_mo_count(mo_space, mo_type)
+            count = orbitals.get_mo_count(mo_space, spin)
             assert (count == next(counts))
 
 
@@ -80,7 +77,6 @@ def run_mo_slicing_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
     slices = iter([
         slice(0, 0, None), slice(0, 5, None), slice(5, 7, None),
@@ -108,13 +104,13 @@ def run_mo_slicing_check(integrals_class, orbitals_class):
         slice(0, 2, None), slice(2, 9, None), slice(9, 14, None),
         slice(0, 9, None), slice(2, 14, None), slice(0, 14, None)
     ])
-    iterables = ([0, 1], ['a', 'b', None],
+    iterables = ([0, 1], ['a', 'b', 's'],
                  ['c', 'o', 'v', 'co', 'ov', 'cov'])
     for charge, multp in [(0, 1), (1, 2)]:
         orbitals = orbitals_class(integrals, charge, multp)
-        for ncore, mo_type, mo_space in it.product(*iterables):
+        for ncore, spin, mo_space in it.product(*iterables):
             orbitals.ncore = ncore
-            slc = orbitals.get_mo_slice(mo_space, mo_type)
+            slc = orbitals.get_mo_slice(mo_space, spin)
             assert (slc == next(slices))
 
 
@@ -128,7 +124,6 @@ def run_mo_fock_diagonal_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
     shapes = iter([
         (0,), (5,), (2,), (5,), (7,), (7,), (0,), (5,), (2,), (5,), (7,), (7,),
@@ -192,14 +187,14 @@ def run_mo_fock_diagonal_check(integrals_class, orbitals_class):
         29.940279886444603, 3.6223921031264448, 29.942909853206462
     ])
     iterables1 = ([(0, 1), (1, 2)], [True, False])
-    iterables2 = ([0, 1], ['a', 'b', None],
+    iterables2 = ([0, 1], ['a', 'b', 's'],
                   ['c', 'o', 'v', 'co', 'ov', 'cov'])
     for (charge, multp), restr in it.product(*iterables1):
         orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
         orbitals.solve()
-        for ncore, mo_type, mo_space in it.product(*iterables2):
+        for ncore, spin, mo_space in it.product(*iterables2):
             orbitals.ncore = ncore
-            e = orbitals.get_mo_fock_diagonal(mo_space, mo_type)
+            e = orbitals.get_mo_fock_diagonal(mo_space, spin)
             assert (e.shape == next(shapes))
             norm_ref = next(norms)
             assert (np.isclose(np.linalg.norm(e), norm_ref))
@@ -215,7 +210,6 @@ def run_mo_coefficients_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
     shapes = iter([
         (7, 0), (7, 5), (7, 2), (7, 5), (7, 7), (7, 7), (7, 0), (7, 5), (7, 2),
@@ -284,14 +278,14 @@ def run_mo_coefficients_check(integrals_class, orbitals_class):
         2.8778085419936077, 4.1518542605704036, 4.3837122052157058
     ])
     iterables1 = ([(0, 1), (1, 2)], [True, False])
-    iterables2 = ([0, 1], ['a', 'b', None],
+    iterables2 = ([0, 1], ['a', 'b', 's'],
                   ['c', 'o', 'v', 'co', 'ov', 'cov'])
     for (charge, multp), restr in it.product(*iterables1):
         orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
         orbitals.solve()
-        for ncore, mo_type, mo_space in it.product(*iterables2):
+        for ncore, spin, mo_space in it.product(*iterables2):
             orbitals.ncore = ncore
-            c = orbitals.get_mo_coefficients(mo_space, mo_type)
+            c = orbitals.get_mo_coefficients(mo_space, spin)
             assert (c.shape == next(shapes))
             norm_ref = next(norms)
             assert (np.isclose(np.linalg.norm(c), norm_ref))
@@ -308,7 +302,6 @@ def run_mo_rotation_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
     orbitals = orbitals_class(integrals)
     two = 2 * np.identity(integrals.nbf)
@@ -336,7 +329,6 @@ def run_mo_1e_kinetic_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
     shapes = iter([
         (5, 5), (5, 5), (10, 10), (4, 4), (4, 4), (8, 8), (5, 5), (5, 5),
@@ -354,14 +346,14 @@ def run_mo_1e_kinetic_check(integrals_class, orbitals_class):
         4.7321884887434562, 3.8361091324132044, 6.0917436886848897
     ])
     iterables1 = ([(0, 1), (1, 2)], [True, False])
-    iterables2 = ([0, 1], ['a,a', 'b,b', None])
+    iterables2 = ([0, 1], ['a', 'b', 's'])
     for (charge, multp), restr in it.product(*iterables1):
         orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
         orbitals.solve()
-        for ncore, spin_block in it.product(*iterables2):
+        for ncore, spin_sector in it.product(*iterables2):
             orbitals.ncore = ncore
             s = orbitals.get_mo_1e_kinetic(mo_block='o,o',
-                                           spin_block=spin_block)
+                                           spin_sector=spin_sector)
             assert (s.shape == next(shapes))
             assert (np.isclose(np.linalg.norm(s), next(norms)))
 
@@ -376,9 +368,7 @@ def run_mo_1e_potential_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
-    # Test the integrals interface
     shapes = iter([
         (5, 5), (5, 5), (10, 10), (4, 4), (4, 4), (8, 8), (5, 5), (5, 5),
         (10, 10), (4, 4), (4, 4), (8, 8), (5, 5), (4, 4), (9, 9), (4, 4),
@@ -395,14 +385,14 @@ def run_mo_1e_potential_check(integrals_class, orbitals_class):
         19.398723766126142, 16.285996600827634, 25.328722214907962
     ])
     iterables1 = ([(0, 1), (1, 2)], [True, False])
-    iterables2 = ([0, 1], ['a,a', 'b,b', None])
+    iterables2 = ([0, 1], ['a', 'b', 's'])
     for (charge, multp), restr in it.product(*iterables1):
         orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
         orbitals.solve()
-        for ncore, spin_block in it.product(*iterables2):
+        for ncore, spin_sector in it.product(*iterables2):
             orbitals.ncore = ncore
             s = orbitals.get_mo_1e_potential(mo_block='o,o',
-                                             spin_block=spin_block)
+                                             spin_sector=spin_sector)
             assert (s.shape == next(shapes))
             assert (np.isclose(np.linalg.norm(s), next(norms)))
 
@@ -417,9 +407,7 @@ def run_mo_1e_dipole_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
-    # Test the integrals interface
     shapes = iter([
         (3, 5, 5), (3, 5, 5), (3, 10, 10), (3, 4, 4), (3, 4, 4), (3, 8, 8),
         (3, 5, 5), (3, 5, 5), (3, 10, 10), (3, 4, 4), (3, 4, 4), (3, 8, 8),
@@ -449,14 +437,14 @@ def run_mo_1e_dipole_check(integrals_class, orbitals_class):
             1.7308541651322562, 1.5497093220734159, 2.3232423730375018
         ])
     iterables1 = ([(0, 1), (1, 2)], [True, False])
-    iterables2 = ([0, 1], ['a,a', 'b,b', None])
+    iterables2 = ([0, 1], ['a', 'b', 's'])
     for (charge, multp), restr in it.product(*iterables1):
         orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
         orbitals.solve()
-        for ncore, spin_block in it.product(*iterables2):
+        for ncore, spin_sector in it.product(*iterables2):
             orbitals.ncore = ncore
             s = orbitals.get_mo_1e_dipole(mo_block='o,o',
-                                          spin_block=spin_block)
+                                          spin_sector=spin_sector)
             assert (s.shape == next(shapes))
             assert (np.isclose(np.linalg.norm(s), next(norms)))
 
@@ -471,9 +459,7 @@ def run_mo_1e_fock_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
-    # Test the integrals interface
     shapes = iter([
         (5, 5), (5, 5), (10, 10), (4, 4), (4, 4), (8, 8), (5, 5), (5, 5),
         (10, 10), (4, 4), (4, 4), (8, 8), (5, 5), (4, 4), (9, 9), (4, 4),
@@ -490,14 +476,13 @@ def run_mo_1e_fock_check(integrals_class, orbitals_class):
         2.7437151843912368, 2.331579022277483, 3.6005879728432499
     ])
     iterables1 = ([(0, 1), (1, 2)], [True, False])
-    iterables2 = ([0, 1], ['a,a', 'b,b', None])
+    iterables2 = ([0, 1], ['a', 'b', 's'])
     for (charge, multp), restr in it.product(*iterables1):
         orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
         orbitals.solve()
-        for ncore, spin_block in it.product(*iterables2):
+        for ncore, spin_sector in it.product(*iterables2):
             orbitals.ncore = ncore
-            s = orbitals.get_mo_1e_fock(mo_block='o,o',
-                                        spin_block=spin_block)
+            s = orbitals.get_mo_1e_fock(mo_block='o,o', spin_sector=spin_sector)
             assert (s.shape == next(shapes))
             assert (np.isclose(np.linalg.norm(s), next(norms)))
 
@@ -512,9 +497,7 @@ def run_mo_1e_core_hamiltonian_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
-    # Test the integrals interface
     shapes = iter([
         (5, 5), (5, 5), (10, 10), (4, 4), (4, 4), (8, 8), (5, 5), (5, 5),
         (10, 10), (4, 4), (4, 4), (8, 8), (5, 5), (4, 4), (9, 9), (4, 4),
@@ -543,16 +526,14 @@ def run_mo_1e_core_hamiltonian_check(integrals_class, orbitals_class):
             10.707611901771482, 9.1274167489492939, 14.069921433610016
         ])
     iterables1 = ([(0, 1), (1, 2)], [True, False])
-    iterables2 = ([0, 1], ['a,a', 'b,b', None])
+    iterables2 = ([0, 1], ['a', 'b', 's'])
     for (charge, multp), restr in it.product(*iterables1):
         orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
         orbitals.solve()
-        for ncore, spin_block in it.product(*iterables2):
+        for ncore, spin_sector in it.product(*iterables2):
             orbitals.ncore = ncore
-            s = orbitals.get_mo_1e_fock(mo_block='o,o',
-                                        mo_space='c',
-                                        spin_block=spin_block,
-                                        electric_field=[0, 0, 1])
+            s = orbitals.get_mo_1e_fock(mo_block='o,o', spin_sector=spin_sector,
+                                        mo_space='c', electric_field=[0, 0, 1])
             assert (s.shape == next(shapes))
             assert (np.isclose(np.linalg.norm(s), next(norms)))
 
@@ -567,9 +548,7 @@ def run_mo_1e_core_field_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
-    # Test the integrals interface
     shapes = iter([
         (5, 5), (5, 5), (10, 10), (4, 4), (4, 4), (8, 8), (5, 5), (5, 5),
         (10, 10), (4, 4), (4, 4), (8, 8), (5, 5), (4, 4), (9, 9), (4, 4),
@@ -583,14 +562,14 @@ def run_mo_1e_core_field_check(integrals_class, orbitals_class):
         0.0, 4.0706002676280173, 3.3453108084212873, 5.268860497655405
     ])
     iterables1 = ([(0, 1), (1, 2)], [True, False])
-    iterables2 = ([0, 1], ['a,a', 'b,b', None])
+    iterables2 = ([0, 1], ['a', 'b', 's'])
     for (charge, multp), restr in it.product(*iterables1):
         orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
         orbitals.solve()
-        for ncore, spin_block in it.product(*iterables2):
+        for ncore, spin_sector in it.product(*iterables2):
             orbitals.ncore = ncore
             s = orbitals.get_mo_1e_mean_field(mo_block='o,o',
-                                              spin_block=spin_block,
+                                              spin_sector=spin_sector,
                                               mo_space='c')
             assert (s.shape == next(shapes))
             assert (np.isclose(np.linalg.norm(s), next(norms)))
@@ -606,9 +585,7 @@ def run_mo_2e_repulsion_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
-    # Test the integrals interface
     shapes = iter([
         (5, 5, 5, 5), (5, 5, 5, 5), (10, 10, 10, 10), (4, 4, 4, 4),
         (4, 4, 4, 4), (8, 8, 8, 8), (5, 5, 5, 5), (5, 5, 5, 5),
@@ -628,14 +605,14 @@ def run_mo_2e_repulsion_check(integrals_class, orbitals_class):
         3.0018963441591642, 2.1465213178463722, 5.1210698203967588
     ])
     iterables1 = ([(0, 1), (1, 2)], [True, False])
-    iterables2 = ([0, 1], ['a,a,a,a', 'b,b,b,b', None])
+    iterables2 = ([0, 1], ['a,a', 'b,b', 's,s'])
     for (charge, multp), restr in it.product(*iterables1):
         orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
         orbitals.solve()
-        for ncore, spin_block in it.product(*iterables2):
+        for ncore, spin_sector in it.product(*iterables2):
             orbitals.ncore = ncore
             s = orbitals.get_mo_2e_repulsion(mo_block='o,o,o,o',
-                                             spin_block=spin_block)
+                                             spin_sector=spin_sector)
             assert (s.shape == next(shapes))
             assert (np.isclose(np.linalg.norm(s), next(norms)))
 
@@ -650,9 +627,7 @@ def run_ao_1e_density_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
-    # Test the integrals interface
     shapes = iter([
         (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
         (7, 7), (7, 7), (7, 7), (14, 14), (14, 14), (14, 14), (14, 14),
@@ -721,14 +696,14 @@ def run_ao_1e_density_check(integrals_class, orbitals_class):
         2.8504390024285406, 5.8296567071069108, 6.015792470268055
     ])
     iterables1 = ([(0, 1), (1, 2)], [True, False])
-    iterables2 = ([0, 1], ['a', 'b', None],
+    iterables2 = ([0, 1], ['a', 'b', 's'],
                   ['c', 'o', 'v', 'co', 'ov', 'cov'])
     for (charge, multp), restr in it.product(*iterables1):
         orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
         orbitals.solve()
-        for ncore, mo_type, mo_space in it.product(*iterables2):
+        for ncore, spin_sector, mo_space in it.product(*iterables2):
             orbitals.ncore = ncore
-            s = orbitals.get_ao_1e_hf_density(mo_space, mo_type)
+            s = orbitals.get_ao_1e_hf_density(mo_space, spin_sector)
             assert (s.shape == next(shapes))
             assert (np.isclose(np.linalg.norm(s), next(norms)))
 
@@ -743,9 +718,7 @@ def run_ao_1e_mean_field_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
-    # Test the integrals interface
     shapes = iter([
         (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
         (7, 7), (7, 7), (7, 7), (14, 14), (14, 14), (14, 14), (14, 14),
@@ -814,14 +787,14 @@ def run_ao_1e_mean_field_check(integrals_class, orbitals_class):
         28.093457278114151, 30.485320210946707, 40.150410949862497
     ])
     iterables1 = ([(0, 1), (1, 2)], [True, False])
-    iterables2 = ([0, 1], ['a', 'b', None],
+    iterables2 = ([0, 1], ['a', 'b', 's'],
                   ['c', 'o', 'v', 'co', 'ov', 'cov'])
     for (charge, multp), restr in it.product(*iterables1):
         orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
         orbitals.solve()
-        for ncore, mo_type, mo_space in it.product(*iterables2):
+        for ncore, spin_sector, mo_space in it.product(*iterables2):
             orbitals.ncore = ncore
-            s = orbitals.get_ao_1e_mean_field(mo_space, mo_type)
+            s = orbitals.get_ao_1e_mean_field(mo_space, spin_sector)
             assert (s.shape == next(shapes))
             assert (np.isclose(np.linalg.norm(s), next(norms)))
 
@@ -836,9 +809,7 @@ def run_ao_1e_fock_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
-    # Test the integrals interface
     shapes = iter([
         (7, 7), (7, 7), (14, 14), (7, 7), (7, 7), (14, 14), (7, 7), (7, 7),
         (14, 14), (7, 7), (7, 7), (14, 14)
@@ -853,8 +824,8 @@ def run_ao_1e_fock_check(integrals_class, orbitals_class):
     for (charge, multp), restr in it.product(*iterables1):
         orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
         orbitals.solve()
-        for spin in ['a', 'b', None]:
-            s = orbitals.get_ao_1e_fock(mo_space='co', spin=spin)
+        for spin_sector in ['a', 'b', 's']:
+            s = orbitals.get_ao_1e_fock(mo_space='co', spin_sector=spin_sector)
             assert (s.shape == next(shapes))
             assert (np.isclose(np.linalg.norm(s), next(norms)))
 
@@ -869,9 +840,7 @@ def run_hf_energy_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
-    # Test the integrals interface
     energies = iter([
         -74.963343795087525, -74.963343795087511, -74.654712456959146,
         -74.656730208992286
@@ -884,7 +853,6 @@ def run_hf_energy_check(integrals_class, orbitals_class):
         assert (np.isclose(energy, next(energies)))
 
 
-
 def run_core_energy_check(integrals_class, orbitals_class):
     import numpy as np
     import itertools as it
@@ -895,9 +863,7 @@ def run_core_energy_check(integrals_class, orbitals_class):
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
-    # Test the integrals interface
     energies = iter([
         9.1671453128090299, -51.488166696349197, 9.1671453128090299,
         -51.488166696349211, 9.1671453128090299, -51.48869849456608,

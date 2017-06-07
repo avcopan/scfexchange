@@ -66,9 +66,7 @@ def run_interface_check(integrals_class):
                                [0.0000000000, -1.4343021349, 0.9864370414],
                                [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "cc-pvdz")
-    # Test the integrals interface
     check_interface(integrals)
 
 
@@ -81,9 +79,7 @@ def run_ao_1e_overlap_check(integrals_class):
                                [0.0000000000, -1.4343021349, 0.9864370414],
                                [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
-    # Test the integrals interface
     s = integrals.get_ao_1e_overlap()
     assert (s.shape == (7, 7))
     assert (numpy.isclose(numpy.linalg.norm(s), 2.95961615642))
@@ -104,9 +100,7 @@ def run_ao_1e_kinetic_check(integrals_class):
                                [0.0000000000, -1.4343021349, 0.9864370414],
                                [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
-    # Test the integrals interface
     s = integrals.get_ao_1e_kinetic()
     assert (s.shape == (7, 7))
     assert (numpy.isclose(numpy.linalg.norm(s), 29.3703412473))
@@ -127,9 +121,7 @@ def run_ao_1e_potential_check(integrals_class):
                                [0.0000000000, -1.4343021349, 0.9864370414],
                                [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
-    # Test the integrals interface
     s = integrals.get_ao_1e_potential()
     assert (s.shape == (7, 7))
     assert (numpy.isclose(numpy.linalg.norm(s), 67.1181391119))
@@ -150,9 +142,7 @@ def run_ao_1e_dipole_check(integrals_class):
                                [0.0000000000, -1.4343021349, 0.9864370414],
                                [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
-    # Test the integrals interface
     if hasattr(integrals, '_pyscf_molecule'):
         norm = 3.36216114637
     elif hasattr(integrals, '_psi4_molecule'):
@@ -177,9 +167,7 @@ def run_ao_1e_core_hamiltonian_check(integrals_class):
                                [0.0000000000, -1.4343021349, 0.9864370414],
                                [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
-    # Test the integrals interface
     s = integrals.get_ao_1e_core_hamiltonian(electric_field=[0, 0, 1])
     assert (s.shape == (7, 7))
     if hasattr(integrals, '_pyscf_molecule'):
@@ -198,9 +186,7 @@ def run_ao_2e_repulsion_check(integrals_class):
                                [0.0000000000, -1.4343021349, 0.9864370414],
                                [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    # Build integrals
     integrals = integrals_class(nuclei, "sto-3g")
-    # Test the integrals interface
     s = integrals.get_ao_2e_repulsion()
     assert (s.shape == (7, 7, 7, 7))
     assert (numpy.isclose(numpy.linalg.norm(s), 8.15009229415))
