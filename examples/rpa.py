@@ -92,12 +92,12 @@ if __name__ == "__main__":
 
     energy_fn = phf.get_energy_field_function(niter=300, e_threshold=1e-14,
                                               d_threshold=1e-13)
-    hess_fn = ndt.Hessian(energy_fn, step=0.005, order=12, method='central',
-                          full_output=True)
     hess_diag_fn = ndt.Hessdiag(energy_fn, step=0.005, order=12,
                                 method='central', full_output=True)
-    hess, hess_results = hess_fn(np.r_[0., 0., 0.])
+    hess_fn = ndt.Hessian(energy_fn, step=0.005, order=12, method='central',
+                          full_output=True)
     hess_diag, hess_diag_results = hess_diag_fn(np.r_[0., 0., 0.])
+    hess, hess_results = hess_fn(np.r_[0., 0., 0.])
 
     # This is the correct answer:
     print(-alpha.diagonal())  # ->[-7.93556221 -3.06821077 -0.05038621]
@@ -111,4 +111,20 @@ if __name__ == "__main__":
     print(hess.diagonal())    # ->[-7.93496262 -3.06834544 -0.05039031]
 
 
+
+    # This is the output string from ndt.Hessian:
+    print(hess_results)
+    # ->info(error_estimate=array([[ 0.06353102,  0.06353102,  0.06353102],
+    #                              [ 0.06353102,  0.06353102,  0.06353102],
+    #                              [ 0.06353102,  0.06353102,  0.06353102]]),
+    #        final_step=array([[ 0.005,  0.005,  0.005],
+    #                          [ 0.005,  0.005,  0.005],
+    #                          [ 0.005,  0.005,  0.005]]),
+    #        index=array([0, 1, 2, 3, 4, 5, 6, 7, 8]) )
+
+    # This is the output string from ndt.Hessdiag:
+    print(hess_diag_results)
+    # ->info(error_estimate=array([ 0.66617107,  0.66617107,  0.66617107])
+    #        final_step=array([ 0.0524288,  0.0524288,  0.0524288])
+    #        index=array([0, 1, 2]))
 
