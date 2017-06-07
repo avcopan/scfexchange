@@ -9,7 +9,7 @@ class PerturbedHartreeFock(OrbitalsInterface):
 
     def solve(self, niter=40, e_threshold=1e-12, d_threshold=1e-8,
               electric_field=None):
-        """
+        """Solve for electrically perturbed Hartree-Fock orbitals.
         
         Args:
             niter (int): Maximum number of iterations allowed.
@@ -51,16 +51,29 @@ class PerturbedHartreeFock(OrbitalsInterface):
             converged = (energy_change < e_threshold and
                          orb_grad_norm < d_threshold)
             if converged:
-                print("@UHF converged energy = {:20.15f}".format(energy))
                 break
 
+        print(electric_field)
+        print("E={:20.15f} (iter: {:3d}, dE: {:7.0e}, orb grad: {:7.1e})"
+              .format(energy, iteration, energy_change, orb_grad_norm))
         if not converged:
             warnings.warn("UHF algorithm did not converge!")
+
+    def get_energy_field_function(self, niter=40, e_threshold=1e-12,
+                                  d_threshold=1e-8):
+
+        def energy_fn(field=(0., 0., 0.)):
+            self.solve(niter=niter, e_threshold=e_threshold,
+                       d_threshold=d_threshold, electric_field=field)
+            return self.get_energy(electric_field=field)
+
+        return energy_fn
 
 
 if __name__ == "__main__":
     from scfexchange.pyscf_interface import Integrals
     from scfexchange.molecule import Nuclei
+    from scfexchange import DeterminantDensity
 
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
@@ -69,22 +82,17 @@ if __name__ == "__main__":
     nuclei = Nuclei(labels, coordinates)
     # Build integrals
     integrals = Integrals(nuclei, "sto-3g")
-    orbitals = PerturbedHartreeFock(integrals, charge=1, multiplicity=2,
-                                    restrict_spin=False)
-    orbitals.solve(niter=100, e_threshold=1e-14, d_threshold=1e-12)
-    d_occ = orbitals.get_mo_1e_dipole(mo_block='o,o', spin_sector='s')
-    mu = [np.trace(d_occ_x) for d_occ_x in d_occ]
+    phf = PerturbedHartreeFock(integrals, charge=1, multiplicity=2,
+                               restrict_spin=False)
+    phf.solve(niter=100, e_threshold=1e-14, d_threshold=1e-12)
+    density = DeterminantDensity(phf)
+    mu = density.get_dipole_moment()
 
-    import scipy.misc
+    import numdifftools as ndt
 
-    def energy(field_value=0., field_component=0):
-        e_field = np.zeros((3,))
-        e_field[field_component] = field_value
-        orbitals.solve(niter=100, e_threshold=1e-15,
-                       d_threshold=1e-13, electric_field=e_field)
-        return -orbitals.get_energy(electric_field=e_field)
+    energy_fn = phf.get_energy_field_function(niter=300, e_threshold=1e-13,
+                                              d_threshold=1e-12)
+    grad = ndt.Gradient(energy_fn, step=0.005, order=8)
+    print(grad(np.r_[0., 0., 0.]))
+    print(-mu)
 
-    dedz = scipy.misc.derivative(energy, 0., dx=0.005, n=1, args=(2,),
-                                 order=7)
-    print(dedz)
-    print(mu[2])

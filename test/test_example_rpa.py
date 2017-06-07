@@ -13,7 +13,7 @@ def test__rpa_cis_spectrum():
     orbitals = Orbitals(integrals)
     orbitals.solve()
     rpa = RPA(orbitals)
-    spectrum = rpa.compute_cis_spectrum()
+    spectrum = rpa.get_cis_spectrum()
     ref_spectrum = [
         0.2872554996, 0.2872554996, 0.2872554996, 0.3444249963, 0.3444249963,
         0.3444249963, 0.3564617587, 0.3659889948, 0.3659889948, 0.3659889948,
@@ -43,7 +43,7 @@ def test__rpa_rpa_spectrum():
     orbitals = Orbitals(integrals)
     orbitals.solve()
     rpa = RPA(orbitals)
-    spectrum = rpa.compute_rpa_spectrum()
+    spectrum = rpa.get_rpa_spectrum()
     ref_spectrum = [
         0.2851637170, 0.2851637170, 0.2851637170, 0.2997434467, 0.2997434467,
         0.2997434467, 0.3526266606, 0.3526266606, 0.3526266606, 0.3547782530,

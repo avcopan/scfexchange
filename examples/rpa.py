@@ -8,7 +8,7 @@ class RPA(object):
     def __init__(self, orbitals):
         self.orbitals = orbitals
 
-    def compute_a_matrix(self):
+    def get_a_matrix(self):
         gvovo = self.orbitals.get_mo_2e_repulsion(mo_block='v,o,v,o',
                                                   spin_sector='s,s',
                                                   antisymmetrize=True)
@@ -29,7 +29,7 @@ class RPA(object):
         a_matrix = a_array.reshape((nocc * nvir, nocc * nvir))
         return a_matrix
 
-    def compute_b_matrix(self):
+    def get_b_matrix(self):
         goovv = self.orbitals.get_mo_2e_repulsion(mo_block='o,o,v,v',
                                                   spin_sector='s,s',
                                                   antisymmetrize=True)
@@ -39,23 +39,42 @@ class RPA(object):
         b_matrix = b_array.reshape((nocc * nvir, nocc * nvir))
         return b_matrix
 
-    def compute_cis_spectrum(self):
-        a = self.compute_a_matrix()
+    def get_dipole_gradient_matrix(self):
+        nocc = self.orbitals.get_mo_count(mo_space='o')
+        nvir = self.orbitals.get_mo_count(mo_space='v')
+        d_ints = self.orbitals.get_mo_1e_dipole(mo_block='o,v',
+                                                spin_sector='s')
+        d_array = d_ints.transpose((1, 2, 0))
+        d_matrix = d_array.reshape((nocc * nvir, 3))
+        return d_matrix
+
+    def get_cis_spectrum(self):
+        a = self.get_a_matrix()
         spectrum = spla.eigvalsh(a)
         return spectrum
 
-    def compute_rpa_spectrum(self):
-        a = self.compute_a_matrix()
-        b = self.compute_b_matrix()
+    def get_rpa_spectrum(self):
+        a = self.get_a_matrix()
+        b = self.get_b_matrix()
         h = (a + b).dot(a - b)
         spectrum = np.sqrt(spla.eigvals(h).real)
         spectrum.sort()
         return spectrum
 
+    def get_dipole_polarizability_tensor(self):
+        a = self.get_a_matrix()
+        b = self.get_b_matrix()
+        d = self.get_dipole_gradient_matrix()
+        e = np.bmat([[a, b], [b, a]]).view(np.ndarray)
+        t = np.bmat([[d], [d]]).view(np.ndarray)
+        r = spla.solve(e, t, sym_pos=True)
+        return t.T.dot(r)
+
 
 if __name__ == "__main__":
     from scfexchange import Nuclei
-    from scfexchange.pyscf_interface import Integrals, Orbitals
+    from scfexchange.pyscf_interface import Integrals
+    from scfexchange.examples.phf import PerturbedHartreeFock
 
     labels = ("O", "H", "H")
     coordinates = np.array([[ 0.000000000000, -0.143225816552,  0.000000000000],
@@ -64,9 +83,32 @@ if __name__ == "__main__":
 
     nuclei = Nuclei(labels, coordinates)
     integrals = Integrals(nuclei, "sto-3g")
-    orbitals = Orbitals(integrals)
-    orbitals.solve()
-    rpa = RPA(orbitals)
-    spectrum = rpa.compute_rpa_spectrum()
-    print(spectrum)
+    phf = PerturbedHartreeFock(integrals)
+    phf.solve(niter=300, e_threshold=1e-14, d_threshold=1e-13)
+    rpa = RPA(phf)
+    alpha = rpa.get_dipole_polarizability_tensor()
+
+    import numdifftools as ndt
+
+    energy_fn = phf.get_energy_field_function(niter=300, e_threshold=1e-14,
+                                              d_threshold=1e-13)
+    hess_fn = ndt.Hessian(energy_fn, step=0.005, order=12, method='central',
+                          full_output=True)
+    hess_diag_fn = ndt.Hessdiag(energy_fn, step=0.005, order=12,
+                                method='central', full_output=True)
+    hess, hess_results = hess_fn(np.r_[0., 0., 0.])
+    hess_diag, hess_diag_results = hess_diag_fn(np.r_[0., 0., 0.])
+
+    # This is the correct answer:
+    print(-alpha.diagonal())  # ->[-7.93556221 -3.06821077 -0.05038621]
+
+    # ndt.Hessdiag gives the correct answer, but seems to use a different
+    # stepping scheme from the one I requested:
+    print(hess_diag)          # ->[-7.93556221 -3.06821077 -0.05038621]
+
+    # ndt.Hessian gives an incorrect answer, but seems to use the stepping
+    # scheme I requested:
+    print(hess.diagonal())    # ->[-7.93496262 -3.06834544 -0.05039031]
+
+
 

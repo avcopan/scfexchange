@@ -94,8 +94,14 @@ class DensityInterface(with_metaclass(abc.ABCMeta)):
                                           electric_field=electric_field)
         return e_elec_1e + e_elec_2e + e_core
 
-    def get_dipole(self):
-        raise NotImplementedError
+    def get_dipole_moment(self):
+        ad = self.orbitals.get_mo_1e_dipole(spin_sector='a')
+        bd = self.orbitals.get_mo_1e_dipole(spin_sector='b')
+        agamma1 = self.get_1e_moment(spin_sector='a')
+        bgamma1 = self.get_1e_moment(spin_sector='b')
+        mu = np.array([np.sum(ad_x * agamma1 + bd_x * bgamma1)
+                       for ad_x, bd_x in zip(ad, bd)])
+        return mu
 
 
 class DeterminantDensity(DensityInterface):
