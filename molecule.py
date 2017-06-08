@@ -41,7 +41,7 @@ class Nuclei(object):
         else:
             return self.coordinates * constants.BOHR_TO_ANGSTROM
 
-    def get_nuclear_repulsion_energy(self):
+    def get_energy(self):
         """Calculate the nuclear repulsion energy.
     
         Returns:
@@ -152,7 +152,7 @@ if __name__ == "__main__":
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
     nuclei = Nuclei(labels, coordinates)
-    print(nuclei.get_nuclear_repulsion_energy())
+    print(nuclei.get_energy())
     print(repr(nuclei.get_center_of_charge()))
     print(repr(nuclei.get_center_of_mass()))
     print(repr(nuclei.get_dipole_moment()))

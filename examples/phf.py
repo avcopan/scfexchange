@@ -7,7 +7,7 @@ from scfexchange import OrbitalsInterface
 
 class PerturbedHartreeFock(OrbitalsInterface):
 
-    def solve(self, niter=40, e_threshold=1e-12, d_threshold=1e-8,
+    def solve(self, niter=50, e_threshold=1e-12, d_threshold=1e-8,
               electric_field=None):
         """Solve for electrically perturbed Hartree-Fock orbitals.
         
@@ -53,13 +53,12 @@ class PerturbedHartreeFock(OrbitalsInterface):
             if converged:
                 break
 
-        print(electric_field)
-        print("E={:20.15f} (iter: {:3d}, dE: {:7.0e}, orb grad: {:7.1e})"
+        print("E={:20.15f} ({:3d} iterations, dE: {:7.0e}, orb grad: {:7.1e})"
               .format(energy, iteration, energy_change, orb_grad_norm))
         if not converged:
             warnings.warn("UHF algorithm did not converge!")
 
-    def get_energy_field_function(self, niter=40, e_threshold=1e-12,
+    def get_energy_field_function(self, niter=50, e_threshold=1e-12,
                                   d_threshold=1e-8):
 
         def energy_fn(field=(0., 0., 0.)):

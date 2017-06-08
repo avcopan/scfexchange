@@ -110,7 +110,11 @@ if __name__ == "__main__":
     # scheme I requested:
     print(hess.diagonal())    # ->[-7.93496262 -3.06834544 -0.05039031]
 
-
+    # This is the output string from ndt.Hessdiag:
+    print(hess_diag_results)
+    # ->info(error_estimate=array([ 0.66617107,  0.66617107,  0.66617107])
+    #        final_step=array([ 0.0524288,  0.0524288,  0.0524288])
+    #        index=array([0, 1, 2]))
 
     # This is the output string from ndt.Hessian:
     print(hess_results)
@@ -121,10 +125,3 @@ if __name__ == "__main__":
     #                          [ 0.005,  0.005,  0.005],
     #                          [ 0.005,  0.005,  0.005]]),
     #        index=array([0, 1, 2, 3, 4, 5, 6, 7, 8]) )
-
-    # This is the output string from ndt.Hessdiag:
-    print(hess_diag_results)
-    # ->info(error_estimate=array([ 0.66617107,  0.66617107,  0.66617107])
-    #        final_step=array([ 0.0524288,  0.0524288,  0.0524288])
-    #        index=array([0, 1, 2]))
-

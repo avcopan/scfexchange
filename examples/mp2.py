@@ -46,11 +46,14 @@ class MP2Density(CorrelatedDensityInterface):
         elif spin_sector == 'b,b':
             return self.bbt2
         elif spin_sector == 's,s':
-            nocc = orbitals.get_mo_count(mo_space='o', spin='s')
-            nvir = orbitals.get_mo_count(mo_space='v', spin='s')
-            t2 = np.zeros((nocc, nocc, nvir, nvir))
-            # Finish this later
-            raise NotImplementedError
+            g = self.orbitals.get_mo_2e_repulsion(mo_block='o,o,v,v',
+                                                  antisymmetrize=True)
+            eocc = self.orbitals.get_mo_fock_diagonal(mo_space='o')
+            evir = self.orbitals.get_mo_fock_diagonal(mo_space='v')
+            x = np.newaxis
+            t2 = g / (+ eocc[:, x, x, x] + eocc[x, :, x, x]
+                      - evir[x, x, :, x] - evir[x, x, x, :])
+            return t2
         else:
             raise ValueError("Invalid 'spin_sector' argument.")
 

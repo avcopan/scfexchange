@@ -522,6 +522,6 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         wa = self.get_ao_1e_mean_field(mo_space=mo_space, spin_sector='a')
         wb = self.get_ao_1e_mean_field(mo_space=mo_space, spin_sector='b')
         e_elec = np.sum((h + wa / 2) * da + (h + wb / 2) * db)
-        e_nuc = self.molecule.nuclei.get_nuclear_repulsion_energy()
+        e_nuc = self.molecule.nuclei.get_energy()
         return e_elec + e_nuc
 

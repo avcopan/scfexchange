@@ -169,7 +169,7 @@ class Orbitals(OrbitalsInterface):
                 values include 'auto', 'core', 'gwh', 'sad', and 'read'.
         """
         if not isinstance(self.integrals, Integrals):
-            raise ValueError("Requires integrals object from the Psi4 "
+            raise ValueError("Please use an integrals object from the Psi4 "
                              "interface.")
         charge = self.molecule.charge
         multp = self.molecule.multiplicity

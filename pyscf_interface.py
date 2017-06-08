@@ -161,7 +161,7 @@ class Orbitals(OrbitalsInterface):
             d_threshold (float): Density convergence threshold.
         """
         if not isinstance(self.integrals, Integrals):
-            raise ValueError("Requires integrals object from the PySCF "
+            raise ValueError("Please use an integrals object from the PySCF "
                              "interface.")
         charge = self.molecule.charge
         spin = self.molecule.multiplicity - 1
