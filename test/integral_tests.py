@@ -58,7 +58,7 @@ def check_interface(integrals_instance):
             == (nbf, nbf, nbf, nbf))
 
 
-def run_interface_check(integrals_class):
+def run_test__interface(integrals_class):
     import numpy
     from scfexchange import Nuclei
     labels = ("O", "H", "H")
@@ -70,7 +70,7 @@ def run_interface_check(integrals_class):
     check_interface(integrals)
 
 
-def run_ao_1e_overlap_check(integrals_class):
+def run_test__get_ao_1e_overlap(integrals_class):
     import numpy
     from scfexchange import Nuclei
 
@@ -91,7 +91,7 @@ def run_ao_1e_overlap_check(integrals_class):
     assert (numpy.isclose(numpy.linalg.norm(s), 2.95961615642))
 
 
-def run_ao_1e_kinetic_check(integrals_class):
+def run_test__get_ao_1e_kinetic(integrals_class):
     import numpy
     from scfexchange import Nuclei
 
@@ -112,7 +112,7 @@ def run_ao_1e_kinetic_check(integrals_class):
     assert (numpy.isclose(numpy.linalg.norm(s), 29.3703412473))
 
 
-def run_ao_1e_potential_check(integrals_class):
+def run_test__get_ao_1e_potential(integrals_class):
     import numpy
     from scfexchange import Nuclei
 
@@ -133,7 +133,7 @@ def run_ao_1e_potential_check(integrals_class):
     assert (numpy.isclose(numpy.linalg.norm(s), 67.1181391119))
 
 
-def run_ao_1e_dipole_check(integrals_class):
+def run_test__get_ao_1e_dipole(integrals_class):
     import numpy
     from scfexchange import Nuclei
 
@@ -158,7 +158,7 @@ def run_ao_1e_dipole_check(integrals_class):
     assert (numpy.isclose(numpy.linalg.norm(s), norm))
 
 
-def run_ao_1e_core_hamiltonian_check(integrals_class):
+def run_test__get_ao_1e_core_hamiltonian(integrals_class):
     import numpy
     from scfexchange import Nuclei
 
@@ -177,7 +177,7 @@ def run_ao_1e_core_hamiltonian_check(integrals_class):
     assert (numpy.isclose(numpy.linalg.norm(s), norm))
 
 
-def run_ao_2e_repulsion_check(integrals_class):
+def run_test__get_ao_2e_repulsion(integrals_class):
     import numpy
     from scfexchange import Nuclei
 
