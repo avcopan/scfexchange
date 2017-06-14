@@ -1,24 +1,21 @@
 from scfexchange.pyscf_interface import Integrals, get_hf_mo_coefficients
 from scfexchange.orbitals import Orbitals
-from scfexchange import Molecule
+from scfexchange.molecule import electron_spin_count, nuclear_repulsion_energy
 
 
 def test__rotate():
     import pytest as pt
     import numpy as np
     import scipy.linalg as spla
-    from scfexchange import Nuclei
 
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
-    nuclei = Nuclei(labels, coordinates)
-    molecule = Molecule(nuclei, charge=0, multiplicity=1)
-    integrals = Integrals(nuclei, "sto-3g")
+    integrals = Integrals("sto-3g", labels, coordinates)
     mo_coefficients = get_hf_mo_coefficients(integrals)
-    orbitals = Orbitals(integrals, mo_coefficients, molecule.nalpha,
-                        molecule.nbeta)
+    nalpha, nbeta = electron_spin_count(labels)
+    orbitals = Orbitals(integrals, mo_coefficients, nalpha, nbeta)
 
     two = 2 * np.identity(integrals.nbf)
     sp_order = orbitals.get_spinorb_order()
@@ -38,14 +35,12 @@ def test__rotate():
 def test__get_mo_count():
     import numpy as np
     import itertools as it
-    from scfexchange import Nuclei
 
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
-    nuclei = Nuclei(labels, coordinates)
-    integrals = Integrals(nuclei, "sto-3g")
+    integrals = Integrals("sto-3g", labels, coordinates)
     counts = iter([
         0, 5, 2, 5, 7, 7, 0, 5, 2, 5, 7, 7, 0, 10, 4, 10, 14, 14, 1, 4, 2, 5, 6,
         7, 1, 4, 2, 5, 6, 7, 2, 8, 4, 10, 12, 14, 0, 5, 2, 5, 7, 7, 0, 4, 3, 4,
@@ -55,10 +50,11 @@ def test__get_mo_count():
     iterables = ([0, 1], ['a', 'b', 's'],
                  ['c', 'o', 'v', 'co', 'ov', 'cov'])
     for charge, multp in [(0, 1), (1, 2)]:
-        mol = Molecule(nuclei, charge=charge, multiplicity=multp)
         mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
-                                             multp=multp)
-        orbitals = Orbitals(integrals, mo_coefficients, mol.nalpha, mol.nbeta)
+                                                 multp=multp)
+        nalpha, nbeta = electron_spin_count(labels, mol_charge=charge,
+                                            multiplicity=multp)
+        orbitals = Orbitals(integrals, mo_coefficients, nalpha, nbeta)
         for ncore, spin, mo_space in it.product(*iterables):
             orbitals.ncore = ncore
             count = orbitals.get_mo_count(mo_space, spin)
@@ -68,14 +64,12 @@ def test__get_mo_count():
 def test__get_mo_slice():
     import numpy as np
     import itertools as it
-    from scfexchange import Nuclei
 
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
-    nuclei = Nuclei(labels, coordinates)
-    integrals = Integrals(nuclei, "sto-3g")
+    integrals = Integrals("sto-3g", labels, coordinates)
     slices = iter([
         slice(0, 0, None), slice(0, 5, None), slice(5, 7, None),
         slice(0, 5, None), slice(0, 7, None), slice(0, 7, None),
@@ -105,10 +99,11 @@ def test__get_mo_slice():
     iterables = ([0, 1], ['a', 'b', 's'],
                  ['c', 'o', 'v', 'co', 'ov', 'cov'])
     for charge, multp in [(0, 1), (1, 2)]:
-        mol = Molecule(nuclei, charge=charge, multiplicity=multp)
         mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
-                                             multp=multp)
-        orbitals = Orbitals(integrals, mo_coefficients, mol.nalpha, mol.nbeta)
+                                                 multp=multp)
+        naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
+                                           multiplicity=multp)
+        orbitals = Orbitals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, spin, mo_space in it.product(*iterables):
             orbitals.ncore = ncore
             slc = orbitals.get_mo_slice(mo_space, spin)
@@ -118,14 +113,12 @@ def test__get_mo_slice():
 def test__get_mo_coefficients():
     import numpy as np
     import itertools as it
-    from scfexchange import Nuclei
 
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
-    nuclei = Nuclei(labels, coordinates)
-    integrals = Integrals(nuclei, "sto-3g")
+    integrals = Integrals("sto-3g", labels, coordinates)
     shapes = iter([
         (7, 0), (7, 5), (7, 2), (7, 5), (7, 7), (7, 7), (7, 0), (7, 5), (7, 2),
         (7, 5), (7, 7), (7, 7), (14, 0), (14, 10), (14, 4), (14, 10), (14, 14),
@@ -196,10 +189,12 @@ def test__get_mo_coefficients():
     iterables2 = ([0, 1], ['a', 'b', 's'],
                   ['c', 'o', 'v', 'co', 'ov', 'cov'])
     for (charge, multp), restr in it.product(*iterables1):
-        mol = Molecule(nuclei, charge=charge, multiplicity=multp)
         mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
-                                             multp=multp, restrict_spin=restr)
-        orbitals = Orbitals(integrals, mo_coefficients, mol.nalpha, mol.nbeta)
+                                                 multp=multp,
+                                                 restrict_spin=restr)
+        naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
+                                           multiplicity=multp)
+        orbitals = Orbitals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, spin, mo_space in it.product(*iterables2):
             orbitals.ncore = ncore
             c = orbitals.get_mo_coefficients(mo_space, spin)
@@ -211,14 +206,12 @@ def test__get_mo_coefficients():
 def test__get_mo_fock_diagonal():
     import numpy as np
     import itertools as it
-    from scfexchange import Nuclei
 
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
-    nuclei = Nuclei(labels, coordinates)
-    integrals = Integrals(nuclei, "sto-3g")
+    integrals = Integrals("sto-3g", labels, coordinates)
     shapes = iter([
         (0,), (5,), (2,), (5,), (7,), (7,), (0,), (5,), (2,), (5,), (7,), (7,),
         (0,), (10,), (4,), (10,), (14,), (14,), (1,), (4,), (2,), (5,), (6,),
@@ -284,10 +277,12 @@ def test__get_mo_fock_diagonal():
     iterables2 = ([0, 1], ['a', 'b', 's'],
                   ['c', 'o', 'v', 'co', 'ov', 'cov'])
     for (charge, multp), restr in it.product(*iterables1):
-        mol = Molecule(nuclei, charge=charge, multiplicity=multp)
         mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
-                                             multp=multp, restrict_spin=restr)
-        orbitals = Orbitals(integrals, mo_coefficients, mol.nalpha, mol.nbeta)
+                                                 multp=multp,
+                                                 restrict_spin=restr)
+        naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
+                                           multiplicity=multp)
+        orbitals = Orbitals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, spin, mo_space in it.product(*iterables2):
             orbitals.ncore = ncore
             e = orbitals.get_mo_fock_diagonal(mo_space, spin)
@@ -299,14 +294,12 @@ def test__get_mo_fock_diagonal():
 def test__get_mo_1e_kinetic():
     import numpy as np
     import itertools as it
-    from scfexchange import Nuclei
 
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
-    nuclei = Nuclei(labels, coordinates)
-    integrals = Integrals(nuclei, "sto-3g")
+    integrals = Integrals("sto-3g", labels, coordinates)
     shapes = iter([
         (0, 5), (0, 2), (0, 5), (0, 7), (0, 7), (5, 2), (5, 5), (5, 7), (5, 7),
         (2, 5), (2, 7), (2, 7), (5, 7), (5, 7), (7, 7), (0, 5), (0, 2), (0, 5),
@@ -460,10 +453,12 @@ def test__get_mo_1e_kinetic():
     iterables2 = ([0, 1], ['a', 'b', 's'])
     mo_spaces = ['c', 'o', 'v', 'co', 'ov', 'cov']
     for (charge, multp), restr in it.product(*iterables1):
-        mol = Molecule(nuclei, charge=charge, multiplicity=multp)
         mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
-                                             multp=multp, restrict_spin=restr)
-        orbitals = Orbitals(integrals, mo_coefficients, mol.nalpha, mol.nbeta)
+                                                 multp=multp,
+                                                 restrict_spin=restr)
+        naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
+                                           multiplicity=multp)
+        orbitals = Orbitals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, spin_sector in it.product(*iterables2):
             orbitals.ncore = ncore
             for block_key in it.combinations(mo_spaces, 2):
@@ -477,14 +472,12 @@ def test__get_mo_1e_kinetic():
 def test__get_mo_1e_potential():
     import numpy as np
     import itertools as it
-    from scfexchange import Nuclei
 
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
-    nuclei = Nuclei(labels, coordinates)
-    integrals = Integrals(nuclei, "sto-3g")
+    integrals = Integrals("sto-3g", labels, coordinates)
     shapes = iter([
         (0, 5), (0, 2), (0, 5), (0, 7), (0, 7), (5, 2), (5, 5), (5, 7), (5, 7),
         (2, 5), (2, 7), (2, 7), (5, 7), (5, 7), (7, 7), (0, 5), (0, 2), (0, 5),
@@ -638,10 +631,12 @@ def test__get_mo_1e_potential():
     iterables2 = ([0, 1], ['a', 'b', 's'])
     mo_spaces = ['c', 'o', 'v', 'co', 'ov', 'cov']
     for (charge, multp), restr in it.product(*iterables1):
-        mol = Molecule(nuclei, charge=charge, multiplicity=multp)
         mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
-                                             multp=multp, restrict_spin=restr)
-        orbitals = Orbitals(integrals, mo_coefficients, mol.nalpha, mol.nbeta)
+                                                 multp=multp,
+                                                 restrict_spin=restr)
+        naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
+                                           multiplicity=multp)
+        orbitals = Orbitals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, spin_sector in it.product(*iterables2):
             orbitals.ncore = ncore
             for block_key in it.combinations(mo_spaces, 2):
@@ -655,14 +650,12 @@ def test__get_mo_1e_potential():
 def test__get_mo_1e_dipole():
     import numpy as np
     import itertools as it
-    from scfexchange import Nuclei
 
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
-    nuclei = Nuclei(labels, coordinates)
-    integrals = Integrals(nuclei, "sto-3g")
+    integrals = Integrals("sto-3g", labels, coordinates)
     shapes = iter([
         (3, 0, 5), (3, 0, 2), (3, 0, 5), (3, 0, 7), (3, 0, 7), (3, 5, 2),
         (3, 5, 5), (3, 5, 7), (3, 5, 7), (3, 2, 5), (3, 2, 7), (3, 2, 7),
@@ -834,10 +827,12 @@ def test__get_mo_1e_dipole():
     iterables2 = ([0, 1], ['a', 'b', 's'])
     mo_spaces = ['c', 'o', 'v', 'co', 'ov', 'cov']
     for (charge, multp), restr in it.product(*iterables1):
-        mol = Molecule(nuclei, charge=charge, multiplicity=multp)
         mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
-                                             multp=multp, restrict_spin=restr)
-        orbitals = Orbitals(integrals, mo_coefficients, mol.nalpha, mol.nbeta)
+                                                 multp=multp,
+                                                 restrict_spin=restr)
+        naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
+                                           multiplicity=multp)
+        orbitals = Orbitals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, spin_sector in it.product(*iterables2):
             orbitals.ncore = ncore
             for block_key in it.combinations(mo_spaces, 2):
@@ -851,14 +846,12 @@ def test__get_mo_1e_dipole():
 def test__get_mo_1e_core_hamiltonian():
     import numpy as np
     import itertools as it
-    from scfexchange import Nuclei
 
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
-    nuclei = Nuclei(labels, coordinates)
-    integrals = Integrals(nuclei, "sto-3g")
+    integrals = Integrals("sto-3g", labels, coordinates)
     shapes = iter([
         (0, 5), (0, 2), (0, 5), (0, 7), (0, 7), (5, 2), (5, 5), (5, 7), (5, 7),
         (2, 5), (2, 7), (2, 7), (5, 7), (5, 7), (7, 7), (0, 5), (0, 2), (0, 5),
@@ -1158,10 +1151,12 @@ def test__get_mo_1e_core_hamiltonian():
     iterables2 = ([0, 1], ['a', 'b', 's'], [(0., 0., 0.), (0., 0., 10.)])
     mo_spaces = ['c', 'o', 'v', 'co', 'ov', 'cov']
     for (charge, multp), restr in it.product(*iterables1):
-        mol = Molecule(nuclei, charge=charge, multiplicity=multp)
         mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
-                                             multp=multp, restrict_spin=restr)
-        orbitals = Orbitals(integrals, mo_coefficients, mol.nalpha, mol.nbeta)
+                                                 multp=multp,
+                                                 restrict_spin=restr)
+        naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
+                                           multiplicity=multp)
+        orbitals = Orbitals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, spin_sector, e_field in it.product(*iterables2):
             orbitals.ncore = ncore
             for block_key in it.combinations(mo_spaces, 2):
@@ -1176,14 +1171,12 @@ def test__get_mo_1e_core_hamiltonian():
 def test__get_mo_1e_mean_field():
     import numpy as np
     import itertools as it
-    from scfexchange import Nuclei
 
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
-    nuclei = Nuclei(labels, coordinates)
-    integrals = Integrals(nuclei, "sto-3g")
+    integrals = Integrals("sto-3g", labels, coordinates)
     shapes = iter([
         (0, 5), (0, 2), (0, 5), (0, 7), (0, 7), (5, 2), (5, 5), (5, 7), (5, 7),
         (2, 5), (2, 7), (2, 7), (5, 7), (5, 7), (7, 7), (0, 5), (0, 2), (0, 5),
@@ -2036,10 +2029,12 @@ def test__get_mo_1e_mean_field():
     iterables2 = ([0, 1], ['a', 'b', 's'], ['c', 'o', 'v', 'co', 'ov', 'cov'])
     mo_spaces = ['c', 'o', 'v', 'co', 'ov', 'cov']
     for (charge, multp), restr in it.product(*iterables1):
-        mol = Molecule(nuclei, charge=charge, multiplicity=multp)
         mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
-                                             multp=multp, restrict_spin=restr)
-        orbitals = Orbitals(integrals, mo_coefficients, mol.nalpha, mol.nbeta)
+                                                 multp=multp,
+                                                 restrict_spin=restr)
+        naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
+                                           multiplicity=multp)
+        orbitals = Orbitals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, spin_sector, mo_space in it.product(*iterables2):
             orbitals.ncore = ncore
             for block_key in it.combinations(mo_spaces, 2):
@@ -2054,14 +2049,12 @@ def test__get_mo_1e_mean_field():
 def test__get_mo_1e_fock():
     import numpy as np
     import itertools as it
-    from scfexchange import Nuclei
 
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
-    nuclei = Nuclei(labels, coordinates)
-    integrals = Integrals(nuclei, "sto-3g")
+    integrals = Integrals("sto-3g", labels, coordinates)
     shapes = iter([
         (0, 5), (0, 2), (0, 5), (0, 7), (0, 7), (5, 2), (5, 5), (5, 7), (5, 7),
         (2, 5), (2, 7), (2, 7), (5, 7), (5, 7), (7, 7), (0, 5), (0, 2), (0, 5),
@@ -3823,10 +3816,12 @@ def test__get_mo_1e_fock():
                   [(0., 0., 0.), (0., 0., 10.)])
     mo_spaces = ['c', 'o', 'v', 'co', 'ov', 'cov']
     for (charge, multp), restr in it.product(*iterables1):
-        mol = Molecule(nuclei, charge=charge, multiplicity=multp)
         mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
-                                             multp=multp, restrict_spin=restr)
-        orbitals = Orbitals(integrals, mo_coefficients, mol.nalpha, mol.nbeta)
+                                                 multp=multp,
+                                                 restrict_spin=restr)
+        naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
+                                           multiplicity=multp)
+        orbitals = Orbitals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, spin_sector, mo_space, e_field in it.product(*iterables2):
             orbitals.ncore = ncore
             for block_key in it.combinations(mo_spaces, 2):
@@ -3842,14 +3837,12 @@ def test__get_mo_1e_fock():
 def test__get_mo_2e_repulsion():
     import numpy as np
     import itertools as it
-    from scfexchange import Nuclei
 
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
-    nuclei = Nuclei(labels, coordinates)
-    integrals = Integrals(nuclei, "sto-3g")
+    integrals = Integrals("sto-3g", labels, coordinates)
     shapes = iter([
         (0, 5, 2, 5), (0, 5, 2, 7), (0, 5, 2, 7), (0, 5, 5, 7), (0, 5, 5, 7),
         (0, 5, 7, 7), (0, 2, 5, 7), (0, 2, 5, 7), (0, 2, 7, 7), (0, 5, 7, 7),
@@ -4295,10 +4288,12 @@ def test__get_mo_2e_repulsion():
     iterables2 = ([0, 1], ['a,a', 'a,b', 'b,b', 's,s'], [True, False])
     mo_spaces = ['c', 'o', 'v', 'co', 'ov', 'cov']
     for (charge, multp), restr in it.product(*iterables1):
-        mol = Molecule(nuclei, charge=charge, multiplicity=multp)
         mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
-                                             multp=multp, restrict_spin=restr)
-        orbitals = Orbitals(integrals, mo_coefficients, mol.nalpha, mol.nbeta)
+                                                 multp=multp,
+                                                 restrict_spin=restr)
+        naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
+                                           multiplicity=multp)
+        orbitals = Orbitals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, spin_sector, antisymmetrize in it.product(*iterables2):
             orbitals.ncore = ncore
             for block_key in it.combinations(mo_spaces, 4):
@@ -4313,14 +4308,12 @@ def test__get_mo_2e_repulsion():
 def test__get_ao_1e_hf_density():
     import numpy as np
     import itertools as it
-    from scfexchange import Nuclei
 
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
-    nuclei = Nuclei(labels, coordinates)
-    integrals = Integrals(nuclei, "sto-3g")
+    integrals = Integrals("sto-3g", labels, coordinates)
     shapes = iter([
         (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
         (7, 7), (7, 7), (7, 7), (14, 14), (14, 14), (14, 14), (14, 14),
@@ -4392,10 +4385,12 @@ def test__get_ao_1e_hf_density():
     iterables2 = ([0, 1], ['a', 'b', 's'],
                   ['c', 'o', 'v', 'co', 'ov', 'cov'])
     for (charge, multp), restr in it.product(*iterables1):
-        mol = Molecule(nuclei, charge=charge, multiplicity=multp)
         mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
-                                             multp=multp, restrict_spin=restr)
-        orbitals = Orbitals(integrals, mo_coefficients, mol.nalpha, mol.nbeta)
+                                                 multp=multp,
+                                                 restrict_spin=restr)
+        naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
+                                           multiplicity=multp)
+        orbitals = Orbitals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, spin_sector, mo_space in it.product(*iterables2):
             orbitals.ncore = ncore
             s = orbitals.get_ao_1e_hf_density(mo_space, spin_sector)
@@ -4406,14 +4401,12 @@ def test__get_ao_1e_hf_density():
 def test__get_ao_1e_mean_field():
     import numpy as np
     import itertools as it
-    from scfexchange import Nuclei
 
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
-    nuclei = Nuclei(labels, coordinates)
-    integrals = Integrals(nuclei, "sto-3g")
+    integrals = Integrals("sto-3g", labels, coordinates)
     shapes = iter([
         (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
         (7, 7), (7, 7), (7, 7), (14, 14), (14, 14), (14, 14), (14, 14),
@@ -4485,10 +4478,12 @@ def test__get_ao_1e_mean_field():
     iterables2 = ([0, 1], ['a', 'b', 's'],
                   ['c', 'o', 'v', 'co', 'ov', 'cov'])
     for (charge, multp), restr in it.product(*iterables1):
-        mol = Molecule(nuclei, charge=charge, multiplicity=multp)
         mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
-                                             multp=multp, restrict_spin=restr)
-        orbitals = Orbitals(integrals, mo_coefficients, mol.nalpha, mol.nbeta)
+                                                 multp=multp,
+                                                 restrict_spin=restr)
+        naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
+                                           multiplicity=multp)
+        orbitals = Orbitals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, spin_sector, mo_space in it.product(*iterables2):
             orbitals.ncore = ncore
             s = orbitals.get_ao_1e_mean_field(mo_space, spin_sector)
@@ -4499,14 +4494,12 @@ def test__get_ao_1e_mean_field():
 def test__get_ao_1e_fock():
     import numpy as np
     import itertools as it
-    from scfexchange import Nuclei
 
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
-    nuclei = Nuclei(labels, coordinates)
-    integrals = Integrals(nuclei, "sto-3g")
+    integrals = Integrals("sto-3g", labels, coordinates)
     shapes = iter([
         (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
         (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
@@ -4646,10 +4639,12 @@ def test__get_ao_1e_fock():
                   ['c', 'o', 'v', 'co', 'ov', 'cov'],
                   [(0., 0., 0.), (0., 0., 10.)])
     for (charge, multp), restr in it.product(*iterables1):
-        mol = Molecule(nuclei, charge=charge, multiplicity=multp)
         mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
-                                             multp=multp, restrict_spin=restr)
-        orbitals = Orbitals(integrals, mo_coefficients, mol.nalpha, mol.nbeta)
+                                                 multp=multp,
+                                                 restrict_spin=restr)
+        naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
+                                           multiplicity=multp)
+        orbitals = Orbitals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, spin_sector, mo_space, e_field in it.product(*iterables2):
             orbitals.ncore = ncore
             s = orbitals.get_ao_1e_fock(mo_space, spin_sector,
@@ -4661,15 +4656,12 @@ def test__get_ao_1e_fock():
 def test__get_energy():
     import numpy as np
     import itertools as it
-    from scfexchange import Nuclei
 
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
-    nuclei = Nuclei(labels, coordinates)
-    e_nuc = nuclei.get_energy()
-    integrals = Integrals(nuclei, "sto-3g")
+    integrals = Integrals("sto-3g", labels, coordinates)
     energies = iter([
         9.1671453128090299, 9.1671453128090299, -74.963343795087511,
         -71.98840209994593, -9.4585139503899534, 18.155108247645693,
@@ -4706,11 +4698,14 @@ def test__get_energy():
     iterables1 = ([(0, 1), (1, 2)], [True, False])
     iterables2 = ([0, 1], ['c', 'o', 'v', 'co', 'ov', 'cov'],
                   [(0., 0., 0.), (0., 0., 10.)])
+    e_nuc = nuclear_repulsion_energy(labels, coordinates)
     for (charge, multp), restr in it.product(*iterables1):
-        mol = Molecule(nuclei, charge=charge, multiplicity=multp)
         mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
-                                             multp=multp, restrict_spin=restr)
-        orbitals = Orbitals(integrals, mo_coefficients, mol.nalpha, mol.nbeta)
+                                                 multp=multp,
+                                                 restrict_spin=restr)
+        naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
+                                           multiplicity=multp)
+        orbitals = Orbitals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, mo_space, e_field in it.product(*iterables2):
             orbitals.ncore = ncore
             energy = orbitals.get_energy(mo_space=mo_space,

@@ -3,7 +3,7 @@
 Attributes:
     BOHR_TO_ANGSTROM (float): Bohr to angstrom conversion factor.
     ELEMENT_LABELS (list): A list of atomic symbols, indexed by element.
-    ELEMENT_CORE_ELECTRON_COUNTS (list): Atomic core electron counts, indexed
+    CORE_ELECTRON_COUNTS (list): Atomic core electron counts, indexed
         by element.
     ISOTOPE_LABELS (list): Contains the atomic symbol of each element as well as
         the labels of its isotopes, such as "H", "H1", "H2", etc.
@@ -13,7 +13,7 @@ import re
 
 
 # Helper functions
-def get_charge(isotope_label):
+def nuclear_charge(isotope_label):
     """Determine an atom's charge from its label.
   
     Args:
@@ -31,7 +31,7 @@ def get_charge(isotope_label):
                          .format(isotope_label))
 
 
-def get_mass(isotope_label):
+def isotopic_mass(isotope_label):
     """Determine an atom's mass from its label.
   
     Args:
@@ -46,9 +46,9 @@ def get_mass(isotope_label):
                          .format(isotope_label))
 
 
-def get_core_electron_count(isotope_label):
-    """Determine an atom's core electron count from its label.
-  
+def core_electron_count(isotope_label):
+    """Determine number of one-particle staes in an atom's inner shell.
+
     Args:
         isotope_label: A string containing an atomic symbol, followed by an
             optional mass number identifying the isotope.
@@ -57,7 +57,7 @@ def get_core_electron_count(isotope_label):
         match = re.search(r'([A-Za-z]{1,3})[0-9]{0,3}', isotope_label)
         element_label = match.group(1)
         element_index = ELEMENT_LABELS.index(element_label.upper())
-        return ELEMENT_CORE_ELECTRON_COUNTS[element_index]
+        return CORE_ELECTRON_COUNTS[element_index]
     except:
         raise ValueError("Label {:s} does not identify an atom or isotope"
                          .format(isotope_label))
@@ -79,7 +79,7 @@ ELEMENT_LABELS = [
     "LR", "RF", "DB", "SG", "BH", "HS", "MT", "DS", "RG", "UUB", "UUT", "UUQ",
     "UUP", "UUH", "UUS", "UUO"]
 
-ELEMENT_CORE_ELECTRON_COUNTS = [
+CORE_ELECTRON_COUNTS = [
     0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 10, 10, 10, 10, 10, 10, 10, 10, 18, 18, 18,
     18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 36, 36, 36, 36,
     36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 54, 54, 54, 54, 54,
@@ -1106,7 +1106,7 @@ ISOTOPE_MASSES = [
     291.206564, 291.206564, 292.207549, 293.214670, 293.214670]
 
 if __name__ == "__main__":
-    print(get_charge("UUO293"))
-    print(get_mass("UUO293"))
-    print(get_core_electron_count("FR"))
-    print(get_core_electron_count("RN"))
+    print(nuclear_charge("UUO293"))
+    print(isotopic_mass("UUO293"))
+    print(core_electron_count("FR"))
+    print(core_electron_count("RN"))

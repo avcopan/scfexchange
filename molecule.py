@@ -1,163 +1,144 @@
 import numpy as np
+import itertools as it
 
 from . import constants
 
 
-class Nuclei(object):
-    """A class to store information about the nuclei in a chemical system.
-    
-    Attributes:
-        natoms (int): The number of atoms.
-        labels (`tuple`): Atomic symbols.
-        charges (`tuple`): Atomic charges.
-        masses (`tuple`): Atomic masses.
-        coordinates (`numpy.ndarray`): Atomic coordinates in Bohr.
+# Public functions
+def electron_count(nuc_labels, mol_charge=0):
+    """The number of electrons in a molecule.
+
+    Args:
+        nuc_labels (`tuple`): Atomic symbols.:
+        mol_charge (`int`): Total molecular charge.
+
+    Returns:
+        int: The number of electrons.
     """
-
-    def __init__(self, labels, coordinates):
-        """Initialize this Nuclei object.
-        
-        Args:
-            labels (`tuple`): Atomic symbols.
-            coordinates (`numpy.ndarray`): Atomic coordinates in Bohr.
-        """
-        self.natoms = len(labels)
-        self.labels = tuple(labels)
-        self.charges = tuple(constants.get_charge(lbl) for lbl in self.labels)
-        self.masses = tuple(constants.get_mass(lbl) for lbl in self.labels)
-        self.coordinates = np.array(coordinates)
-
-    def get_coordinates(self, convert_to_angstroms=False):
-        """Returns the coordinate array.
-        
-        Args:
-            convert_to_angstroms (bool): Return the coordinates in Angstroms?
-
-        Returns:
-            numpy.ndarray: The coordinates.
-        """
-        if not convert_to_angstroms:
-            return self.coordinates
-        else:
-            return self.coordinates * constants.BOHR_TO_ANGSTROM
-
-    def get_energy(self):
-        """Calculate the nuclear repulsion energy.
-    
-        Returns:
-            float: The nuclear repulsion energy.
-        """
-        z = list(constants.get_charge(label) for label in self.labels)
-        r = self.coordinates
-        e_nuc = 0.0
-        for a in range(self.natoms):
-            for b in range(a):
-                e_nuc += z[a] * z[b] / np.linalg.norm(r[a] - r[b])
-        return e_nuc
-
-    def get_center_of_mass(self):
-        """Get the nuclear center of mass.
-        
-        Returns:
-            numpy.ndarray: The center of mass.
-        """
-        m_tot = sum(self.masses)
-        r_m = sum(m * r for m, r in zip(self.masses, self.coordinates)) / m_tot
-        return r_m
-
-    def get_center_of_charge(self):
-        """Get the nuclear center of charge.
-        
-        Returns:
-            numpy.ndarray: The center of charge.
-        """
-        q_tot = sum(self.charges)
-        r_c = sum(q * r for q, r in zip(self.charges, self.coordinates)) / q_tot
-        return r_c
-
-    def get_dipole_moment(self):
-        """Get the nuclear dipole moment.
-        
-        Returns:
-            numpy.ndarray: The dipole moment.
-        """
-        mu = sum(q * r for q, r in zip(self.charges, self.coordinates))
-        return mu
-
-    def __str__(self):
-        """Display the nuclear positions as a string.
-        """
-        geom_line_template = "{:2s} {: >15.10f} {: >15.10f} {: >15.10f}\n"
-        ret = ""
-        for label, coordinate in zip(self.labels, self.coordinates):
-            ret += geom_line_template.format(label, *coordinate)
-        return ret
-
-    def __repr__(self):
-        return "Nuclei(\n{:s})".format(self.__str__())
+    nuc_charge = sum(map(constants.nuclear_charge, nuc_labels))
+    return nuc_charge - mol_charge
 
 
-class Molecule(object):
-    """A class to store information about a chemical system.
-  
-    Attributes:
-        nuclei (:obj:`scfexchange.Nuclei`): The nuclei of this molecule.
-        charge (int): Total molecular charge.
-        multiplicity (int): `2*S+1` where `S` is the spin-magnitude quantum
-            number.
-        nelec (int): The number of electrons.
-        nalpha (int): The number of alpha-spin electrons.
-        nbeta (int): The number of beta-spin electrons.
+def electron_spin_count(nuc_labels, mol_charge=0, multiplicity=1):
+    """The number of electrons in a molecule, by spin.
+
+    Assumes a high-spin (M_S = S) state.
+
+    Args:
+        nuc_labels (`tuple`): Atomic symbols.:
+        mol_charge (`int`): Total molecular charge.
+        multiplicity (`int): Electronic spin multiplicity.
+
+    Returns:
+        tuple: The number of alpha and beta electrons.
     """
-
-    def __init__(self, nuclei, charge=0, multiplicity=1):
-        """Initialize this nuclei.
-        
-        Args:
-            nuclei (:obj:`scfexchange.Nuclei`): The nuclei of this molecule.
-            charge (int): Total molecular charge.
-            multiplicity (int): `2*S+1` where `S` is the spin-magnitude quantum
-                number.
-        """
-        self.nuclei = nuclei
-        self.charge = int(charge)
-        self.multiplicity = int(multiplicity)
-
-        # Determine the number of electrons as the difference between the charge
-        # of the nuclear framework and the total molecular charge.
-        total_nuclear_charge = sum(self.nuclei.charges)
-        self.nelec = total_nuclear_charge - self.charge
-
-        # Assuming a high-spin open-shell electronic state, so that S = M_S,
-        # determine the number of alpha and beta electrons.
-        nunpaired = self.multiplicity - 1
-        npaired = (self.nelec - nunpaired) // 2
-        self.nalpha = npaired + nunpaired
-        self.nbeta = npaired
-
-    def __str__(self):
-        """Display the molecule as a string.
-        """
-        charge_str = 'charge {:d}'.format(self.charge)
-        multp_str = 'multiplicity {:d}'.format(self.multiplicity)
-        return ', '.join((charge_str, multp_str, repr(self.nuclei)))
-
-    def __repr__(self):
-        return "Molecule({:s})".format(self.__str__())
+    nelec = electron_count(nuc_labels, mol_charge)
+    nsocc = multiplicity - 1
+    ndocc = (nelec - nsocc) // 2
+    nalpha = ndocc + nsocc
+    nbeta = ndocc
+    return nalpha, nbeta
 
 
-if __name__ == "__main__":
-    labels = ("O", "H", "H")
-    coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
-                            [0.0000000000, -1.4343021349, 0.9864370414],
-                            [0.0000000000, 1.4343021349, 0.9864370414]])
-    nuclei = Nuclei(labels, coordinates)
-    print(nuclei.get_energy())
-    print(repr(nuclei.get_center_of_charge()))
-    print(repr(nuclei.get_center_of_mass()))
-    print(repr(nuclei.get_dipole_moment()))
-    mol = Molecule(nuclei, charge=+1, multiplicity=2)
-    print(nuclei)
-    print(repr(nuclei))
-    print(mol)
-    print(repr(mol))
+def nuclear_coordinates_in_bohr(nuc_coords, units="bohr"):
+    ret_coords = np.array(nuc_coords)
+    if not ret_coords.ndim == 2 and ret_coords.shape[1] == 3:
+        raise ValueError("Invalid coordinate array.")
+    if units.lower() == "angstrom":
+        ret_coords *= constants.BOHR_TO_ANGSTROM
+    elif units.lower() != "bohr":
+        raise ValueError("Invalid 'units' argument.")
+    return ret_coords
+
+
+def nuclear_coordinate_string(nuc_labels, nuc_coords, units=None):
+    """A string displaying the nuclear coordinates.
+
+    Args:
+        nuc_labels (`tuple`): Atomic symbols.
+        nuc_coords (`numpy.ndarray`): Atomic coordinates.
+
+    Returns:
+        str: The coordinate string.
+    """
+    coord_line_template = "{:2s} {: >15.10f} {: >15.10f} {: >15.10f}"
+    ret_str = "\n".join(coord_line_template.format(label, *coord)
+                        for label, coord in zip(nuc_labels, nuc_coords))
+    if units != None:
+        ret_str += "\nunits {:s}".format(str(units))
+    return ret_str
+
+
+def nuclear_repulsion_energy(nuc_labels, nuc_coords, units="bohr"):
+    """The Coulomb repulsion energy of some nuclei.
+
+    Args:
+        nuc_labels (`tuple`): Atomic symbols.
+        nuc_coords (`numpy.ndarray`): Atomic coordinates.
+        units (`str`): The units of `nuc_coords`, "angstrom" or "bohr".
+
+    Returns:
+        float: The nuclear repulsion energy.
+    """
+    if len(nuc_labels) != len(nuc_coords):
+        raise ValueError("'nuc_labels' and 'nuc_coords' do not match.")
+    natom = len(nuc_labels)
+    r = nuclear_coordinates_in_bohr(nuc_coords, units=units)
+    q = list(map(constants.nuclear_charge, nuc_labels))
+    return sum(q[i] * q[j] / np.linalg.norm(r[i] - r[j])
+               for i, j in it.combinations(range(natom), r=2))
+
+
+def nuclear_dipole_moment(nuc_labels, nuc_coords, units="bohr"):
+    """The dipole moment of some nuclei.
+
+    Args:
+        nuc_labels (`tuple`): Atomic symbols.
+        nuc_coords (`numpy.ndarray`): Atomic coordinates.
+        units (`str`): The units of `nuc_coords`, "angstrom" or "bohr".
+
+    Returns:
+        numpy.ndarray: The dipole moment.
+    """
+    if len(nuc_labels) != len(nuc_coords):
+        raise ValueError("'nuc_labels' and 'nuc_coords' do not match.")
+    r = nuclear_coordinates_in_bohr(nuc_coords, units=units)
+    q = list(map(constants.nuclear_charge, nuc_labels))
+    return sum(q * r for q, r in zip(q, r))
+
+
+def nuclear_center_of_charge(nuc_labels, nuc_coords, units="bohr"):
+    """The center of charge of some nuclei.
+
+    Args:
+        nuc_labels (`tuple`): Atomic symbols.
+        nuc_coords (`numpy.ndarray`): Atomic coordinates.
+        units (`str`): The units of `nuc_coords`, "angstrom" or "bohr".
+
+    Returns:
+        numpy.ndarray: The center of charge.
+    """
+    if len(nuc_labels) != len(nuc_coords):
+        raise ValueError("'nuc_labels' and 'nuc_coords' do not match.")
+    r = nuclear_coordinates_in_bohr(nuc_coords, units=units)
+    q = list(map(constants.nuclear_charge, nuc_labels))
+    return sum(q * r for q, r in zip(q, r)) / sum(q)
+
+
+def nuclear_center_of_mass(nuc_labels, nuc_coords, units="bohr"):
+    """The center of mass of some nuclei.
+
+    Args:
+        nuc_labels (`tuple`): Atomic symbols.
+        nuc_coords (`numpy.ndarray`): Atomic coordinates.
+        units (`str`): The units of `nuc_coords`, "angstrom" or "bohr".
+
+    Returns:
+        numpy.ndarray: The center of mass.
+    """
+    if len(nuc_labels) != len(nuc_coords):
+        raise ValueError("'nuc_labels' and 'nuc_coords' do not match.")
+    r = nuclear_coordinates_in_bohr(nuc_coords, units=units)
+    m = list(map(constants.isotopic_mass, nuc_labels))
+    return sum(m * r for m, r in zip(m, r)) / sum(m)
+

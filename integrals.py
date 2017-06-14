@@ -12,8 +12,8 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
     arrays (such as `get_ao_1e_kinetic`).
     
     Attributes:
-        nuclei (:obj:`scfexchange.Nuclei`): The nuclei on which the basis
-            functions are centered
+        nuc_labels (`tuple`): Atomic symbols.
+        nuc_coords (`numpy.ndarray`): Atomic coordinates.
         basis_label (str): The basis set label (e.g. 'sto-3g').
         nbf (int): The number of basis functions.
     """
@@ -89,7 +89,7 @@ class IntegralsInterface(with_metaclass(abc.ABCMeta)):
         if electric_field is not None:
             d = self.get_ao_1e_dipole(use_spinorbs=use_spinorbs,
                                       recompute=recompute)
-            h += -np.tensordot(d, electric_field, axes=(0, 0))
+            h += -tu.contract(d, electric_field)
         return h
 
     @abc.abstractmethod
