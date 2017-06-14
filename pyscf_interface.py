@@ -179,6 +179,27 @@ class Orbitals(OrbitalsInterface):
             self.mo_coefficients = np.array([self.mo_coefficients] * 2)
 
 
+def get_hf_mo_coefficients(integrals, charge=0, multp=1,
+                           restrict_spin=False, niter=100, e_threshold=1e-12,
+                           d_threshold=1e-6):
+    if not isinstance(integrals, Integrals):
+        raise ValueError("Please use an integrals object from the PySCF "
+                         "interface.")
+    integrals._pyscf_molecule.build(charge=charge, spin=multp - 1)
+    if restrict_spin:
+        pyscf_hf = pyscf.scf.RHF(integrals._pyscf_molecule)
+    else:
+        pyscf_hf = pyscf.scf.UHF(integrals._pyscf_molecule)
+    pyscf_hf.conv_tol = e_threshold
+    pyscf_hf.conv_tol_grad = d_threshold
+    pyscf_hf.max_cycle = niter
+    pyscf_hf.kernel()
+    mo_coefficients = pyscf_hf.mo_coeff
+    if restrict_spin:
+        mo_coefficients = np.array([mo_coefficients] * 2)
+    return mo_coefficients
+
+
 if __name__ == "__main__":
     import itertools as it
     from .molecule import Nuclei
@@ -194,8 +215,11 @@ if __name__ == "__main__":
     iterables2 = ([0, 1], ['c', 'o', 'v', 'co', 'ov', 'cov'],
                   [(0., 0., 0.), (0., 0., 10.)])
     for (charge, multp), restr in it.product(*iterables1):
-        orbitals = Orbitals(integrals, charge, multp, restrict_spin=restr)
-        orbitals.solve()
+        mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
+                                                 multp=multp,
+                                                 restrict_spin=restr)
+        orbitals = Orbitals(integrals, mo_coefficients=mo_coefficients,
+                            charge=charge, multiplicity=multp)
         for ncore, mo_space, e_field in it.product(*iterables2):
             orbitals.ncore = ncore
             energy = orbitals.get_energy(mo_space=mo_space,
