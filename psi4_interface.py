@@ -2,7 +2,6 @@ import numpy as np
 import psi4.core
 
 from .integrals import IntegralsInterface
-from .orbitals import OrbitalsInterface
 
 
 class Integrals(IntegralsInterface):
@@ -142,66 +141,9 @@ class Integrals(IntegralsInterface):
         return g
 
 
-class Orbitals(OrbitalsInterface):
-    """Molecular orbitals (Psi4).
-    
-    Attributes:
-        integrals (:obj:`scfexchange.IntegralsInterface`): The integrals.
-        molecule (:obj:`scfexchange.Molecule`): A Molecule object specifying
-            the total molecular charge and spin multiplicity of the system.
-        mo_coefficients (numpy.ndarray): The orbital expansion coefficients.
-        spin_is_restricted (bool): Are the orbital spin-restricted?
-        ncore (int): The number of low-energy orbitals assigned to the core
-            orbital space.
-    """
-
-    def solve(self, niter=40, e_threshold=1e-12, d_threshold=1e-6,
-              guess="auto"):
-        """Solve for Hartree-Fock orbitals with Psi4.
-
-        The orbitals are stored in `self.mo_coefficients`.
-
-        Args:
-            niter (int): Maximum number of iterations allowed.
-            e_threshold (float): Energy convergence threshold.
-            d_threshold (float): Density convergence threshold.
-            guess (str): The starting guess to be used by Psi4.  Possible 
-                values include 'auto', 'core', 'gwh', 'sad', and 'read'.
-        """
-        if not isinstance(self.integrals, Integrals):
-            raise ValueError("Please use an integrals object from the Psi4 "
-                             "interface.")
-        charge = self.molecule.charge
-        multp = self.molecule.multiplicity
-        self.integrals._psi4_molecule.set_molecular_charge(charge)
-        self.integrals._psi4_molecule.set_multiplicity(multp)
-        wfn = psi4.core.Wavefunction.build(self.integrals._psi4_molecule,
-                                           self.integrals.basis_label)
-        sf, _ = psi4.driver.dft_funcs.build_superfunctional("HF", False)
-        psi4.core.set_global_option("guess", guess)
-        psi4.core.set_global_option("e_convergence", e_threshold)
-        psi4.core.set_global_option("d_convergence", d_threshold)
-        psi4.core.set_global_option("maxiter", niter)
-        if self.spin_is_restricted:
-            if multp is 1:
-                psi4.core.set_global_option("reference", "RHF")
-                psi4_hf = psi4.core.RHF(wfn, sf)
-            else:
-                psi4.core.set_global_option("reference", "ROHF")
-                psi4_hf = psi4.core.ROHF(wfn, sf)
-        else:
-            psi4.core.set_global_option("reference", "UHF")
-            psi4_hf = psi4.core.UHF(wfn, sf)
-        psi4_hf.compute_energy()
-        mo_alpha_coeffs = np.array(psi4_hf.Ca())
-        mo_beta_coeffs = np.array(psi4_hf.Cb())
-        self.mo_coefficients = np.array([mo_alpha_coeffs, mo_beta_coeffs])
-
-
-
 def get_hf_mo_coefficients(integrals, charge=0, multp=1,
                            restrict_spin=False, niter=100, e_threshold=1e-12,
-                           d_threshold=1e-6):
+                           d_threshold=1e-6, guess="auto"):
     if not isinstance(integrals, Integrals):
         raise ValueError("Please use an integrals object from the PySCF "
                          "interface.")
@@ -233,7 +175,8 @@ def get_hf_mo_coefficients(integrals, charge=0, multp=1,
 
 if __name__ == "__main__":
     import itertools as it
-    from .molecule import Nuclei
+    from .molecule import Nuclei, Molecule
+    from .orbitals import Orbitals
 
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
@@ -249,8 +192,9 @@ if __name__ == "__main__":
         mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
                                                  multp=multp,
                                                  restrict_spin=restr)
-        orbitals = Orbitals(integrals, mo_coefficients=mo_coefficients,
-                            charge=charge, multiplicity=multp)
+        molecule = Molecule(nuclei, charge=charge, multiplicity=multp)
+        orbitals = Orbitals(integrals, mo_coefficients, molecule.nalpha,
+                            molecule.nbeta)
         for ncore, mo_space, e_field in it.product(*iterables2):
             orbitals.ncore = ncore
             energy = orbitals.get_energy(mo_space=mo_space,
