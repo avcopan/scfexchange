@@ -2,7 +2,6 @@ import numpy as np
 import pyscf
 
 from .integrals import IntegralsInterface
-from .orbitals import OrbitalsInterface
 
 
 class Integrals(IntegralsInterface):
@@ -137,51 +136,31 @@ class Integrals(IntegralsInterface):
         return g
 
 
-class Orbitals(OrbitalsInterface):
-    """Molecular orbitals (PySCF).
-    
-    Attributes:
-        integrals (:obj:`scfexchange.IntegralsInterface`): The integrals.
-        molecule (:obj:`scfexchange.Molecule`): A Molecule object specifying
-            the total molecular charge and spin multiplicity of the system.
-        mo_coefficients (numpy.ndarray): The orbital expansion coefficients.
-        spin_is_restricted (bool): Are the orbital spin-restricted?
-        ncore (int): The number of low-energy orbitals assigned to the core
-            orbital space.
-    """
-
-    def solve(self, niter=40, e_threshold=1e-12, d_threshold=1e-6):
-        """Solve for Hartree-Fock orbitals with PySCF.
-        
-        The orbitals are stored in `self.mo_coefficients`.
-        
-        Args:
-            niter (int): Maximum number of iterations allowed.
-            e_threshold (float): Energy convergence threshold.
-            d_threshold (float): Density convergence threshold.
-        """
-        if not isinstance(self.integrals, Integrals):
-            raise ValueError("Please use an integrals object from the PySCF "
-                             "interface.")
-        charge = self.molecule.charge
-        spin = self.molecule.multiplicity - 1
-        self.integrals._pyscf_molecule.build(charge=charge, spin=spin)
-        if self.spin_is_restricted:
-            pyscf_hf = pyscf.scf.RHF(self.integrals._pyscf_molecule)
-        else:
-            pyscf_hf = pyscf.scf.UHF(self.integrals._pyscf_molecule)
-        pyscf_hf.conv_tol = e_threshold
-        pyscf_hf.conv_tol_grad = d_threshold
-        pyscf_hf.max_cycle = niter
-        pyscf_hf.kernel()
-        self.mo_coefficients = pyscf_hf.mo_coeff
-        if self.spin_is_restricted:
-            self.mo_coefficients = np.array([self.mo_coefficients] * 2)
+def get_hf_mo_coefficients(integrals, charge=0, multp=1,
+                           restrict_spin=False, niter=100, e_threshold=1e-12,
+                           d_threshold=1e-6):
+    if not isinstance(integrals, Integrals):
+        raise ValueError("Please use an integrals object from the PySCF "
+                         "interface.")
+    integrals._pyscf_molecule.build(charge=charge, spin=multp - 1)
+    if restrict_spin:
+        pyscf_hf = pyscf.scf.RHF(integrals._pyscf_molecule)
+    else:
+        pyscf_hf = pyscf.scf.UHF(integrals._pyscf_molecule)
+    pyscf_hf.conv_tol = e_threshold
+    pyscf_hf.conv_tol_grad = d_threshold
+    pyscf_hf.max_cycle = niter
+    pyscf_hf.kernel()
+    mo_coefficients = pyscf_hf.mo_coeff
+    if restrict_spin:
+        mo_coefficients = np.array([mo_coefficients] * 2)
+    return mo_coefficients
 
 
 if __name__ == "__main__":
     import itertools as it
-    from .molecule import Nuclei
+    from .molecule import Nuclei, Molecule
+    from .orbitals import Orbitals
 
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
@@ -194,8 +173,12 @@ if __name__ == "__main__":
     iterables2 = ([0, 1], ['c', 'o', 'v', 'co', 'ov', 'cov'],
                   [(0., 0., 0.), (0., 0., 10.)])
     for (charge, multp), restr in it.product(*iterables1):
-        orbitals = Orbitals(integrals, charge, multp, restrict_spin=restr)
-        orbitals.solve()
+        mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
+                                                 multp=multp,
+                                                 restrict_spin=restr)
+        molecule = Molecule(nuclei, charge=charge, multiplicity=multp)
+        orbitals = Orbitals(integrals, mo_coefficients, molecule.nalpha,
+                            molecule.nbeta)
         for ncore, mo_space, e_field in it.product(*iterables2):
             orbitals.ncore = ncore
             energy = orbitals.get_energy(mo_space=mo_space,

@@ -13,12 +13,12 @@ from .integrals import IntegralsInterface
 from .molecule import Molecule
 
 
-class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
-    """Molecular orbitals base class.
-    
-    Subclasses should override the `solve` method, which sets the value 
+class Orbitals(object):
+    """Molecular orbitals class.
+
+    Subclasses should override the `solve` method, which sets the value
     of `mo_coefficients`.
-    
+
     Attributes:
         integrals (:obj:`scfexchange.IntegralsInterface`): The integrals.
         molecule (:obj:`scfexchange.Molecule`): A Molecule object specifying
@@ -29,43 +29,18 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
             orbital space.
     """
 
-    def __init__(self, integrals, mo_coefficients=None, charge=0,
-                 multiplicity=1, ncore=0, restrict_spin=False):
-        """Initialize an instance of the OrbitalsInterface.
-        
-        Args:
-            integrals (:obj:`scfexchange.IntegralsInterface`): The integrals.
-            charge (int): Total molecular charge.
-            multiplicity (int): Spin multiplicity.
-            restrict_spin (bool): Spin-restrict the orbitals?
-            mo_coefficients (numpy.ndarray): The orbital expansion coefficients.
-            ncore (int): The number of low-energy orbitals to be assigned to the
-                core orbital space.
-        """
+    def __init__(self, integrals, mo_coefficients, naocc, nbocc, ncore=0):
         self.integrals = integrals
-        self.molecule = Molecule(integrals.nuclei, charge, multiplicity)
         self.mo_coefficients = mo_coefficients
-        self.spin_is_restricted = bool(restrict_spin)
-        self.ncore = int(ncore)
+        self.naocc = naocc
+        self.nbocc = nbocc
+        self.ncore = ncore
+        self.norb = self.integrals.nbf
         if not isinstance(integrals, IntegralsInterface):
             raise ValueError("Invalid 'integrals' argument.")
-        nbf = integrals.nbf
-        if self.mo_coefficients is None:
-            self.mo_coefficients = np.zeros((2, nbf, nbf))
-        elif not (isinstance(self.mo_coefficients, np.ndarray)
-                  and self.mo_coefficients.shape == (2, nbf, nbf)):
+        if not (isinstance(mo_coefficients, np.ndarray) and
+                mo_coefficients.shape == (2, self.norb, self.norb)):
             raise ValueError("Invalid 'mo_coefficients' argument.")
-
-    @abc.abstractmethod
-    def solve(self, **options):
-        """Solve for the orbitals.
-
-        Sets `self.mo_coefficients` to a new value.
-        
-        Args:
-            **options: Convergence thresholds, etc.
-        """
-        return
 
     def get_block_keys(self, mo_block, spin_sector):
         spin_keys = spin_sector.split(',') * 2
@@ -144,17 +119,16 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         Returns:
             tuple: The sorting indices.
         """
-        nbf = self.integrals.nbf
-        alumo_idx = self.molecule.nalpha
-        blumo_idx = self.molecule.nbeta + nbf
-        occ_indices = tuple(mit.interleave_longest(range(0, alumo_idx),
-                                                   range(nbf, blumo_idx)))
-        vir_indices = tuple(mit.interleave_longest(range(alumo_idx, nbf),
-                                                   range(blumo_idx, 2 * nbf)))
-        spinorb_order = occ_indices + vir_indices
+        alumo_idx = self.naocc
+        blumo_idx = self.nbocc + self.norb
+        occ_indices = mit.interleave_longest(range(0, alumo_idx),
+                                             range(self.norb, blumo_idx))
+        vir_indices = mit.interleave_longest(range(alumo_idx, self.norb),
+                                             range(blumo_idx, 2 * self.norb))
+        spinorb_order = tuple(occ_indices) + tuple(vir_indices)
 
         # If requested, return the inverse of the sorting permutation.
-        perm_helper = pu.PermutationHelper(range(2 * nbf))
+        perm_helper = pu.PermutationHelper(range(2 * self.norb))
         spinorb_inv_order = perm_helper.get_inverse(spinorb_order)
         return spinorb_order if not invert else spinorb_inv_order
 
@@ -163,7 +137,7 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
 
         Args:
             mo_space (str): Any contiguous combination of 'c' (core),
-                'o' (occupied), and 'v' (virtual).  Defaults to 'ov', 
+                'o' (occupied), and 'v' (virtual).  Defaults to 'ov',
                 which denotes all unfrozen orbitals.
             spin (str): 'a' (alpha), 'b' (beta), or 's' (spin-orbital).
 
@@ -175,24 +149,24 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
             if 'c' in mo_space:
                 count += self.ncore
             if 'o' in mo_space:
-                count += self.molecule.nalpha - self.ncore
+                count += self.naocc - self.ncore
             if 'v' in mo_space:
-                count += self.integrals.nbf - self.molecule.nalpha
+                count += self.norb - self.naocc
         if spin in ('b', 's'):
             if 'c' in mo_space:
                 count += self.ncore
             if 'o' in mo_space:
-                count += self.molecule.nbeta - self.ncore
+                count += self.nbocc - self.ncore
             if 'v' in mo_space:
-                count += self.integrals.nbf - self.molecule.nbeta
+                count += self.norb - self.nbocc
         return count
 
     def get_mo_slice(self, mo_space='ov', spin='s'):
         """Return the slice for a given orbital space.
-    
+
         Args:
             mo_space (str): Any contiguous combination of 'c' (core),
-                'o' (occupied), and 'v' (virtual).  Defaults to 'ov', 
+                'o' (occupied), and 'v' (virtual).  Defaults to 'ov',
                 which denotes all unfrozen orbitals.
             spin (str): 'a' (alpha), 'b' (beta), or 's' (spin-orbital).
 
@@ -214,7 +188,7 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
 
     def get_mo_coefficients(self, mo_space='ov', spin='s'):
         """Return the molecular orbital coefficients.
-    
+
         Args:
             mo_space (str): Any contiguous combination of 'c' (core),
                 'o' (occupied), and 'v' (virtual).  Defaults to 'ov',
@@ -265,10 +239,10 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
 
     def get_mo_1e_kinetic(self, mo_block='ov,ov', spin_sector='s'):
         """Get the kinetic energy integrals.
-        
+
         Returns the representation of the electron kinetic-energy operator in
         the molecular-orbital basis, <p(1)| - 1 / 2 * nabla_1^2 |q(1)>.
-    
+
         Args:
             mo_block (str): A comma-separated list of characters specifying the
                 MO space block.  Each MO space is identified by a contiguous
@@ -287,7 +261,7 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
 
         Returns the representation of the nuclear potential operator in the
         molecular-orbital basis, <p(1)| sum_A Z_A / ||r_1 - r_A|| |q(1)>.
-    
+
         Args:
             mo_block (str): A comma-separated list of characters specifying the
                 MO space block.  Each MO space is identified by a contiguous
@@ -373,10 +347,10 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
     def get_mo_1e_fock(self, mo_block='ov,ov', spin_sector='s', mo_space='co',
                        electric_field=None):
         """Get the Fock operator integrals.
-        
+
         Returns the core Hamiltonian plus the mean field of an orbital space in
         the molecular-orbital basis, <p(1)*spin|h(1) + J(1) - K(1)|q(1)*spin>.
-        
+
         Args:
             mo_block (str): A comma-separated list of characters specifying the
                 MO space block.  Each MO space is identified by a contiguous
@@ -386,8 +360,8 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
             mo_space (str): The MO space applying the field, 'c' (core),
                 'o' (occupied), and 'v' (virtual).
             electric_field (numpy.ndarray): A three-component vector specifying
-                the magnitude of an external static electric field.  Its 
-                negative dot product with the dipole integrals will be added to 
+                the magnitude of an external static electric field.  Its
+                negative dot product with the dipole integrals will be added to
                 the core Hamiltonian.
 
         Returns:
@@ -401,10 +375,10 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
                             antisymmetrize=False):
         """Get the electron-repulsion integrals.
 
-        Returns the representation of the electron repulsion operator in the 
+        Returns the representation of the electron repulsion operator in the
         molecular-orbital basis, <mu(1) nu(2)| 1 / ||r_1 - r_2|| |rh(1) si(2)>.
         Note that these are returned in physicist's notation.
-    
+
         Args:
             mo_block (str): A comma-separated list of characters specifying the
                 MO space block.  Each MO space is identified by a contiguous
@@ -412,7 +386,7 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
             spin_sector (str): The requested spin sector (diagonal spin block).
                 Spins are 'a' (alpha), 'b' (beta), or 's' (spin-orbital).
             antisymmetrize (bool): Antisymmetrize the integral tensor?
-    
+
         Returns:
             numpy.ndarray: The integrals.
         """
@@ -424,12 +398,12 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
 
     def get_ao_1e_hf_density(self, mo_space='co', spin_sector='s'):
         """Get the electronic density matrix.
-        
+
         Returns the SCF density matrix, D_mu,nu = sum_i C_mu,i C_nu,i^*, in the
         atomic-orbital basis.  This is not the same as the one-particle reduced
         density matrix, which is S * D * S where S is the atomic orbital overlap
         matrix.
-    
+
         Args:
             mo_space (str): The MO space of the electrons, 'c' (core),
                 'o' (occupied), and 'v' (virtual).
@@ -445,8 +419,8 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
 
     def get_ao_1e_mean_field(self, mo_space='co', spin_sector='s'):
         """Get the electron mean-field integrals.
-        
-        Returns the representation of electronic mean field of a given orbital 
+
+        Returns the representation of electronic mean field of a given orbital
         space in the atomic-orbital basis, <mu(1)*spin|J(1) - K(1)|nu(1)*spin>.
 
         Args:
@@ -476,18 +450,18 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
     def get_ao_1e_fock(self, mo_space='co', spin_sector='s',
                        electric_field=None):
         """Get the Fock operator integrals.
-        
+
         Returns the core Hamiltonian plus the mean field of an orbital space in
         the atomic-orbital basis, <mu(1)*spin|h(1) + J(1) - K(1)|nu(1)*spin>.
-        
+
         Args:
             mo_space (str): The MO space applying the field, 'c' (core),
                 'o' (occupied), and 'v' (virtual).
             spin_sector (str): The requested spin sector (diagonal spin block).
                 Spins are 'a' (alpha), 'b' (beta), or 's' (spin-orbital).
             electric_field (numpy.ndarray): A three-component vector specifying
-                the magnitude of an external static electric field.  Its 
-                negative dot product with the dipole integrals will be added to 
+                the magnitude of an external static electric field.  Its
+                negative dot product with the dipole integrals will be added to
                 the core Hamiltonian.
 
         Returns:
@@ -501,15 +475,15 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
 
     def get_energy(self, mo_space='co', electric_field=None):
         """Get the total mean-field energy of a given orbital space.
-        
-        Includes the nuclear repulsion energy.
-        
+
+        Note that this does *not* include the nuclear repulsion energy.
+
         Args:
             mo_space (str): The MO space of the electrons, 'c' (core),
                 'o' (occupied), and 'v' (virtual).
             electric_field (numpy.ndarray): A three-component vector specifying
-                the magnitude of an external static electric field.  Its 
-                negative dot product with the dipole integrals will be added to 
+                the magnitude of an external static electric field.  Its
+                negative dot product with the dipole integrals will be added to
                 the core Hamiltonian.
 
         Returns:
@@ -522,6 +496,4 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
         wa = self.get_ao_1e_mean_field(mo_space=mo_space, spin_sector='a')
         wb = self.get_ao_1e_mean_field(mo_space=mo_space, spin_sector='b')
         e_elec = np.sum((h + wa / 2) * da + (h + wb / 2) * db)
-        e_nuc = self.molecule.nuclei.get_energy()
-        return e_elec + e_nuc
-
+        return e_elec
