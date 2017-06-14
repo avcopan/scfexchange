@@ -2,33 +2,37 @@ import numpy as np
 import pyscf
 
 from .integrals import IntegralsInterface
+from .molecule import nuclear_coordinates_in_bohr
 
 
 class Integrals(IntegralsInterface):
     """Molecular integrals (PySCF).
     
     Attributes:
-        nuclei (:obj:`scfexchange.Nuclei`): The nuclei on which the basis
-            functions are centered
         basis_label (str): The basis set label (e.g. 'sto-3g').
+        nuc_labels (tuple): Atomic symbols.
+        nuc_coords (numpy.ndarray): Atomic coordinates in Bohr.
         nbf (int): The number of basis functions.
     """
 
-    def __init__(self, nuclei, basis_label):
+    def __init__(self, basis_label, nuc_labels, nuc_coords, units="bohr"):
         """Initialize Integrals object.
     
         Args:
-            nuclei (:obj:`scfexchange.Nuclei`): The nuclei on which the basis
-                functions are centered
             basis_label (str): What basis set to use.
+            nuc_labels (tuple): Atomic symbols.
+            nuc_coords (numpy.ndarray): Atomic coordinates.
+            units (str): The units of `nuc_coords`, "angstrom" or "bohr".
         """
-        self._pyscf_molecule = pyscf.gto.Mole(atom=str(nuclei),
-                                              unit="bohr",
+        atom_arg = list(zip(nuc_labels, nuc_coords))
+        self._pyscf_molecule = pyscf.gto.Mole(atom=atom_arg,
+                                              unit=units,
                                               basis=basis_label)
         self._pyscf_molecule.build()
 
-        self.nuclei = nuclei
-        self.basis_label = basis_label
+        self.nuc_labels = tuple(nuc_labels)
+        self.nuc_coords = nuclear_coordinates_in_bohr(nuc_coords, units)
+        self.basis_label = str(basis_label)
         self.nbf = int(self._pyscf_molecule.nao_nr())
 
     def get_ao_1e_overlap(self, use_spinorbs=False, recompute=False):
@@ -159,15 +163,14 @@ def get_hf_mo_coefficients(integrals, charge=0, multp=1,
 
 if __name__ == "__main__":
     import itertools as it
-    from .molecule import Nuclei, Molecule
     from .orbitals import Orbitals
+    from .molecule import electron_spin_count
 
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
-    nuclei = Nuclei(labels, coordinates)
-    integrals = Integrals(nuclei, "sto-3g")
+    integrals = Integrals("sto-3g", labels, coordinates)
     energies = []
     iterables1 = ([(0, 1), (1, 2)], [True, False])
     iterables2 = ([0, 1], ['c', 'o', 'v', 'co', 'ov', 'cov'],
@@ -176,9 +179,9 @@ if __name__ == "__main__":
         mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
                                                  multp=multp,
                                                  restrict_spin=restr)
-        molecule = Molecule(nuclei, charge=charge, multiplicity=multp)
-        orbitals = Orbitals(integrals, mo_coefficients, molecule.nalpha,
-                            molecule.nbeta)
+        nalpha, nbeta = electron_spin_count(labels, mol_charge=charge,
+                                            multiplicity=multp)
+        orbitals = Orbitals(integrals, mo_coefficients, nalpha, nbeta)
         for ncore, mo_space, e_field in it.product(*iterables2):
             orbitals.ncore = ncore
             energy = orbitals.get_energy(mo_space=mo_space,

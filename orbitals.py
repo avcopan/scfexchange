@@ -10,7 +10,6 @@ import tensorutils as tu
 import permutils as pu
 
 from .integrals import IntegralsInterface
-from .molecule import Molecule
 
 
 class Orbitals(object):

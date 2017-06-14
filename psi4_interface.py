@@ -2,39 +2,41 @@ import numpy as np
 import psi4.core
 
 from .integrals import IntegralsInterface
+from .molecule import nuclear_coordinate_string, nuclear_coordinates_in_bohr
 
 
 class Integrals(IntegralsInterface):
     """Molecular integrals (Psi4).
     
     Attributes:
-        nuclei (:obj:`scfexchange.Nuclei`): The nuclei on which the basis
-            functions are centered
         basis_label (str): The basis set label (e.g. 'sto-3g').
+        nuc_labels (tuple): Atomic symbols.
+        nuc_coords (numpy.ndarray): Atomic coordinates in Bohr.
         nbf (int): The number of basis functions.
     """
 
-    def __init__(self, nuclei, basis_label):
+    def __init__(self, basis_label, nuc_labels, nuc_coords, units="bohr"):
         """Initialize Integrals object.
-    
+
         Args:
-            nuclei (:obj:`scfexchange.Nuclei`): The nuclei on which the basis
-                functions are centered
             basis_label (str): What basis set to use.
+            nuc_labels (tuple): Atomic symbols.
+            nuc_coords (numpy.ndarray): Atomic coordinates.
+            units (str): The units of `nuc_coords`, "angstrom" or "bohr".
         """
-        self.nuclei = nuclei
-        self.basis_label = basis_label
-        s = '\n'.join(["units bohr", str(nuclei)])
+        s = nuclear_coordinate_string(nuc_labels, nuc_coords, units)
         self._psi4_molecule = psi4.core.Molecule.create_molecule_from_string(s)
         self._psi4_molecule.reset_point_group("c1")
         self._psi4_molecule.update_geometry()
-        self._mints_helper = self._get_mints_helper()
-        self.nbf = int(self._mints_helper.nbf())
-
-    def _get_mints_helper(self):
         basis, _ = psi4.core.BasisSet.build(self._psi4_molecule, "BASIS",
-                                            self.basis_label)
-        return psi4.core.MintsHelper(basis)
+                                            basis_label)
+        self._mints_helper = psi4.core.MintsHelper(basis)
+
+        self.nuc_labels = tuple(nuc_labels)
+        self.nuc_coords = nuclear_coordinates_in_bohr(nuc_coords, units)
+        self.basis_label = str(basis_label)
+        self.basis_label = basis_label
+        self.nbf = int(self._mints_helper.nbf())
 
     def get_ao_1e_overlap(self, use_spinorbs=False, recompute=False):
         """Get the overlap integrals.
