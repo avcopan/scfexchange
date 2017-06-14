@@ -198,6 +198,39 @@ class Orbitals(OrbitalsInterface):
         self.mo_coefficients = np.array([mo_alpha_coeffs, mo_beta_coeffs])
 
 
+
+def get_hf_mo_coefficients(integrals, charge=0, multp=1,
+                           restrict_spin=False, niter=100, e_threshold=1e-12,
+                           d_threshold=1e-6):
+    if not isinstance(integrals, Integrals):
+        raise ValueError("Please use an integrals object from the PySCF "
+                         "interface.")
+    integrals._psi4_molecule.set_molecular_charge(charge)
+    integrals._psi4_molecule.set_multiplicity(multp)
+    wfn = psi4.core.Wavefunction.build(integrals._psi4_molecule,
+                                       integrals.basis_label)
+    sf, _ = psi4.driver.dft_funcs.build_superfunctional("HF", False)
+    psi4.core.set_global_option("guess", guess)
+    psi4.core.set_global_option("e_convergence", e_threshold)
+    psi4.core.set_global_option("d_convergence", d_threshold)
+    psi4.core.set_global_option("maxiter", niter)
+    if restrict_spin:
+        if multp is 1:
+            psi4.core.set_global_option("reference", "RHF")
+            psi4_hf = psi4.core.RHF(wfn, sf)
+        else:
+            psi4.core.set_global_option("reference", "ROHF")
+            psi4_hf = psi4.core.ROHF(wfn, sf)
+    else:
+        psi4.core.set_global_option("reference", "UHF")
+        psi4_hf = psi4.core.UHF(wfn, sf)
+    psi4_hf.compute_energy()
+    ac = np.array(psi4_hf.Ca())
+    bc = np.array(psi4_hf.Cb())
+    mo_coefficients = np.array([ac, bc])
+    return mo_coefficients
+
+
 if __name__ == "__main__":
     import itertools as it
     from .molecule import Nuclei
@@ -213,8 +246,11 @@ if __name__ == "__main__":
     iterables2 = ([0, 1], ['c', 'o', 'v', 'co', 'ov', 'cov'],
                   [(0., 0., 0.), (0., 0., 10.)])
     for (charge, multp), restr in it.product(*iterables1):
-        orbitals = Orbitals(integrals, charge, multp, restrict_spin=restr)
-        orbitals.solve()
+        mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
+                                                 multp=multp,
+                                                 restrict_spin=restr)
+        orbitals = Orbitals(integrals, mo_coefficients=mo_coefficients,
+                            charge=charge, multiplicity=multp)
         for ncore, mo_space, e_field in it.product(*iterables2):
             orbitals.ncore = ncore
             energy = orbitals.get_energy(mo_space=mo_space,
