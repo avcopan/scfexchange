@@ -29,8 +29,8 @@ class OrbitalsInterface(with_metaclass(abc.ABCMeta)):
             orbital space.
     """
 
-    def __init__(self, integrals, charge=0, multiplicity=1, restrict_spin=False,
-                 mo_coefficients=None, ncore=0):
+    def __init__(self, integrals, mo_coefficients=None, charge=0,
+                 multiplicity=1, ncore=0, restrict_spin=False):
         """Initialize an instance of the OrbitalsInterface.
         
         Args:

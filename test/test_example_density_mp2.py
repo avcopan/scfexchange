@@ -3,7 +3,7 @@ def test__mp2_ref_energy():
     import numpy as np
     from scfexchange import Nuclei
     from scfexchange.pyscf_interface import Integrals, Orbitals
-    from scfexchange.examples.mp2 import MP2Density
+    from scfexchange.examples.density_mp2 import MP2Density
 
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
@@ -17,7 +17,8 @@ def test__mp2_ref_energy():
     ])
     iterables1 = ([(0, 1), (1, 2)], [True, False])
     for (charge, multp), restr in it.product(*iterables1):
-        orbitals = Orbitals(integrals, charge, multp, restrict_spin=restr)
+        orbitals = Orbitals(integrals, charge=charge, multiplicity=multp,
+                            restrict_spin=restr)
         orbitals.solve()
         density = MP2Density(orbitals)
         energy = density.get_energy()
@@ -28,7 +29,7 @@ def test__mp2_total_energy():
     import numpy as np
     from scfexchange import Nuclei
     from scfexchange.pyscf_interface import Integrals, Orbitals
-    from scfexchange.examples.mp2 import MP2Density
+    from scfexchange.examples.density_mp2 import MP2Density
 
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
@@ -41,7 +42,8 @@ def test__mp2_total_energy():
         -74.684441944448196
     ])
     for (charge, multp) in [(0, 1), (1, 2)]:
-        orbitals = Orbitals(integrals, charge, multp, restrict_spin=False)
+        orbitals = Orbitals(integrals, charge=charge, multiplicity=multp,
+                            restrict_spin=False)
         orbitals.solve()
         for ncore in [0, 1]:
             orbitals.ncore = ncore

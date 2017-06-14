@@ -17,7 +17,8 @@ def test__determinant_energy():
     ])
     iterables1 = ([(0, 1), (1, 2)], [True, False])
     for (charge, multp), restr in it.product(*iterables1):
-        orbitals = Orbitals(integrals, charge, multp, restrict_spin=restr)
+        orbitals = Orbitals(integrals, charge=charge, multiplicity=multp,
+                            restrict_spin=restr)
         orbitals.solve()
         density = DeterminantDensity(orbitals)
         energy = density.get_energy()

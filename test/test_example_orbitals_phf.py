@@ -1,4 +1,4 @@
-from scfexchange.examples.phf import PerturbedHartreeFock
+from scfexchange.examples.orbitals_phf import PerturbedHartreeFock
 
 
 def test__hellmann_feynman_theorem():

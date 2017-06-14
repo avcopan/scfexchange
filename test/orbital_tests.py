@@ -35,7 +35,7 @@ def run_test__interface(integrals_class, orbitals_class):
     integrals = integrals_class(nuclei, "sto-3g")
     iterables = ([(0, 1), (1, 2)], [True, False], [0, 1])
     for (charge, multp), restr, ncore in it.product(*iterables):
-        orbitals = orbitals_class(integrals, charge, multp,
+        orbitals = orbitals_class(integrals, charge=charge, multiplicity=multp,
                                   restrict_spin=restr, ncore=ncore)
         check_interface(orbitals)
 
@@ -88,7 +88,7 @@ def run_test__get_mo_count(integrals_class, orbitals_class):
     iterables = ([0, 1], ['a', 'b', 's'],
                  ['c', 'o', 'v', 'co', 'ov', 'cov'])
     for charge, multp in [(0, 1), (1, 2)]:
-        orbitals = orbitals_class(integrals, charge, multp)
+        orbitals = orbitals_class(integrals, charge=charge, multiplicity=multp)
         for ncore, spin, mo_space in it.product(*iterables):
             orbitals.ncore = ncore
             count = orbitals.get_mo_count(mo_space, spin)
@@ -135,7 +135,7 @@ def run_test__get_mo_slice(integrals_class, orbitals_class):
     iterables = ([0, 1], ['a', 'b', 's'],
                  ['c', 'o', 'v', 'co', 'ov', 'cov'])
     for charge, multp in [(0, 1), (1, 2)]:
-        orbitals = orbitals_class(integrals, charge, multp)
+        orbitals = orbitals_class(integrals, charge=charge, multiplicity=multp)
         for ncore, spin, mo_space in it.product(*iterables):
             orbitals.ncore = ncore
             slc = orbitals.get_mo_slice(mo_space, spin)
@@ -218,7 +218,8 @@ def run_test__get_mo_fock_diagonal(integrals_class, orbitals_class):
     iterables2 = ([0, 1], ['a', 'b', 's'],
                   ['c', 'o', 'v', 'co', 'ov', 'cov'])
     for (charge, multp), restr in it.product(*iterables1):
-        orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
+        orbitals = orbitals_class(integrals, charge=charge, multiplicity=multp,
+                                  restrict_spin=restr)
         orbitals.solve()
         for ncore, spin, mo_space in it.product(*iterables2):
             orbitals.ncore = ncore
@@ -309,7 +310,8 @@ def run_test__get_mo_coefficients(integrals_class, orbitals_class):
     iterables2 = ([0, 1], ['a', 'b', 's'],
                   ['c', 'o', 'v', 'co', 'ov', 'cov'])
     for (charge, multp), restr in it.product(*iterables1):
-        orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
+        orbitals = orbitals_class(integrals, charge=charge, multiplicity=multp,
+                                  restrict_spin=restr)
         orbitals.solve()
         for ncore, spin, mo_space in it.product(*iterables2):
             orbitals.ncore = ncore
@@ -483,7 +485,8 @@ def run_test__get_mo_1e_kinetic(integrals_class, orbitals_class):
     iterables2 = ([0, 1], ['a', 'b', 's'])
     mo_spaces = ['c', 'o', 'v', 'co', 'ov', 'cov']
     for (charge, multp), restr in it.product(*iterables1):
-        orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
+        orbitals = orbitals_class(integrals, charge=charge, multiplicity=multp,
+                                  restrict_spin=restr)
         orbitals.solve()
         for ncore, spin_sector in it.product(*iterables2):
             orbitals.ncore = ncore
@@ -659,7 +662,8 @@ def run_test__get_mo_1e_potential(integrals_class, orbitals_class):
     iterables2 = ([0, 1], ['a', 'b', 's'])
     mo_spaces = ['c', 'o', 'v', 'co', 'ov', 'cov']
     for (charge, multp), restr in it.product(*iterables1):
-        orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
+        orbitals = orbitals_class(integrals, charge=charge, multiplicity=multp,
+                                  restrict_spin=restr)
         orbitals.solve()
         for ncore, spin_sector in it.product(*iterables2):
             orbitals.ncore = ncore
@@ -960,7 +964,8 @@ def run_test__get_mo_1e_dipole(integrals_class, orbitals_class):
     iterables2 = ([0, 1], ['a', 'b', 's'])
     mo_spaces = ['c', 'o', 'v', 'co', 'ov', 'cov']
     for (charge, multp), restr in it.product(*iterables1):
-        orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
+        orbitals = orbitals_class(integrals, charge=charge, multiplicity=multp,
+                                  restrict_spin=restr)
         orbitals.solve()
         for ncore, spin_sector in it.product(*iterables2):
             orbitals.ncore = ncore
@@ -1493,7 +1498,8 @@ def run_test__get_mo_1e_core_hamiltonian(integrals_class, orbitals_class):
     iterables2 = ([0, 1], ['a', 'b', 's'], [(0., 0., 0.), (0., 0., 10.)])
     mo_spaces = ['c', 'o', 'v', 'co', 'ov', 'cov']
     for (charge, multp), restr in it.product(*iterables1):
-        orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
+        orbitals = orbitals_class(integrals, charge=charge, multiplicity=multp,
+                                  restrict_spin=restr)
         orbitals.solve()
         for ncore, spin_sector, e_field in it.product(*iterables2):
             orbitals.ncore = ncore
@@ -2369,7 +2375,8 @@ def run_test__get_mo_1e_mean_field(integrals_class, orbitals_class):
     iterables2 = ([0, 1], ['a', 'b', 's'], ['c', 'o', 'v', 'co', 'ov', 'cov'])
     mo_spaces = ['c', 'o', 'v', 'co', 'ov', 'cov']
     for (charge, multp), restr in it.product(*iterables1):
-        orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
+        orbitals = orbitals_class(integrals, charge=charge, multiplicity=multp,
+                                  restrict_spin=restr)
         orbitals.solve()
         for ncore, spin_sector, mo_space in it.product(*iterables2):
             orbitals.ncore = ncore
@@ -5405,7 +5412,8 @@ def run_test__get_mo_1e_fock(integrals_class, orbitals_class):
                   [(0., 0., 0.), (0., 0., 10.)])
     mo_spaces = ['c', 'o', 'v', 'co', 'ov', 'cov']
     for (charge, multp), restr in it.product(*iterables1):
-        orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
+        orbitals = orbitals_class(integrals, charge=charge, multiplicity=multp,
+                                  restrict_spin=restr)
         orbitals.solve()
         for ncore, spin_sector, mo_space, e_field in it.product(*iterables2):
             orbitals.ncore = ncore
@@ -5875,7 +5883,8 @@ def run_test__get_mo_2e_repulsion(integrals_class, orbitals_class):
     iterables2 = ([0, 1], ['a,a', 'a,b', 'b,b', 's,s'], [True, False])
     mo_spaces = ['c', 'o', 'v', 'co', 'ov', 'cov']
     for (charge, multp), restr in it.product(*iterables1):
-        orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
+        orbitals = orbitals_class(integrals, charge=charge, multiplicity=multp,
+                                  restrict_spin=restr)
         orbitals.solve()
         for ncore, spin_sector, antisymmetrize in it.product(*iterables2):
             orbitals.ncore = ncore
@@ -5970,7 +5979,8 @@ def run_test__get_ao_1e_hf_density(integrals_class, orbitals_class):
     iterables2 = ([0, 1], ['a', 'b', 's'],
                   ['c', 'o', 'v', 'co', 'ov', 'cov'])
     for (charge, multp), restr in it.product(*iterables1):
-        orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
+        orbitals = orbitals_class(integrals, charge=charge, multiplicity=multp,
+                                  restrict_spin=restr)
         orbitals.solve()
         for ncore, spin_sector, mo_space in it.product(*iterables2):
             orbitals.ncore = ncore
@@ -6061,7 +6071,8 @@ def run_test__get_ao_1e_mean_field(integrals_class, orbitals_class):
     iterables2 = ([0, 1], ['a', 'b', 's'],
                   ['c', 'o', 'v', 'co', 'ov', 'cov'])
     for (charge, multp), restr in it.product(*iterables1):
-        orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
+        orbitals = orbitals_class(integrals, charge=charge, multiplicity=multp,
+                                  restrict_spin=restr)
         orbitals.solve()
         for ncore, spin_sector, mo_space in it.product(*iterables2):
             orbitals.ncore = ncore
@@ -6319,7 +6330,8 @@ def run_test__get_ao_1e_fock(integrals_class, orbitals_class):
                   ['c', 'o', 'v', 'co', 'ov', 'cov'],
                   [(0., 0., 0.), (0., 0., 10.)])
     for (charge, multp), restr in it.product(*iterables1):
-        orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
+        orbitals = orbitals_class(integrals, charge=charge, multiplicity=multp,
+                                  restrict_spin=restr)
         orbitals.solve()
         for ncore, spin_sector, mo_space, e_field in it.product(*iterables2):
             orbitals.ncore = ncore
@@ -6412,7 +6424,8 @@ def run_test__get_energy(integrals_class, orbitals_class):
     iterables2 = ([0, 1], ['c', 'o', 'v', 'co', 'ov', 'cov'],
                   [(0., 0., 0.), (0., 0., 10.)])
     for (charge, multp), restr in it.product(*iterables1):
-        orbitals = orbitals_class(integrals, charge, multp, restrict_spin=restr)
+        orbitals = orbitals_class(integrals, charge=charge, multiplicity=multp,
+                                  restrict_spin=restr)
         orbitals.solve()
         for ncore, mo_space, e_field in it.product(*iterables2):
             orbitals.ncore = ncore

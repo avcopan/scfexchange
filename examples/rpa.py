@@ -74,7 +74,7 @@ class RPA(object):
 if __name__ == "__main__":
     from scfexchange import Nuclei
     from scfexchange.pyscf_interface import Integrals
-    from scfexchange.examples.phf import PerturbedHartreeFock
+    from scfexchange.examples.orbitals_phf import PerturbedHartreeFock
 
     labels = ("O", "H", "H")
     coordinates = np.array([[ 0.000000000000, -0.143225816552,  0.000000000000],
