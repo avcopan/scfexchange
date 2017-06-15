@@ -9,13 +9,13 @@ class RPA(object):
         self.orbitals = orbitals
 
     def get_a_matrix(self):
-        gvovo = self.orbitals.get_mo_2e_repulsion(mo_block='v,o,v,o',
-                                                  spin_sector='s,s',
-                                                  antisymmetrize=True)
-        foo = self.orbitals.get_mo_1e_fock(mo_block='o,o')
-        fvv = self.orbitals.get_mo_1e_fock(mo_block='v,v')
-        nocc = self.orbitals.get_mo_count(mo_space='o')
-        nvir = self.orbitals.get_mo_count(mo_space='v')
+        gvovo = self.orbitals.electron_repulsion(mo_block='v,o,v,o',
+                                                 spin_sector='s,s',
+                                                 antisymmetrize=True)
+        foo = self.orbitals.fock(mo_block='o,o')
+        fvv = self.orbitals.fock(mo_block='v,v')
+        nocc = self.orbitals.mo_count(mo_space='o')
+        nvir = self.orbitals.mo_count(mo_space='v')
         ioo = np.identity(nocc)
         ivv = np.identity(nvir)
         a_array = (
@@ -30,20 +30,20 @@ class RPA(object):
         return a_matrix
 
     def get_b_matrix(self):
-        goovv = self.orbitals.get_mo_2e_repulsion(mo_block='o,o,v,v',
-                                                  spin_sector='s,s',
-                                                  antisymmetrize=True)
-        nocc = self.orbitals.get_mo_count(mo_space='o')
-        nvir = self.orbitals.get_mo_count(mo_space='v')
+        goovv = self.orbitals.electron_repulsion(mo_block='o,o,v,v',
+                                                 spin_sector='s,s',
+                                                 antisymmetrize=True)
+        nocc = self.orbitals.mo_count(mo_space='o')
+        nvir = self.orbitals.mo_count(mo_space='v')
         b_array = tu.einsum('ijab->iajb', goovv)
         b_matrix = b_array.reshape((nocc * nvir, nocc * nvir))
         return b_matrix
 
     def get_dipole_gradient_matrix(self):
-        nocc = self.orbitals.get_mo_count(mo_space='o')
-        nvir = self.orbitals.get_mo_count(mo_space='v')
-        d_ints = self.orbitals.get_mo_1e_dipole(mo_block='o,v',
-                                                spin_sector='s')
+        nocc = self.orbitals.mo_count(mo_space='o')
+        nvir = self.orbitals.mo_count(mo_space='v')
+        d_ints = self.orbitals.dipole(mo_block='o,v',
+                                      spin_sector='s')
         d_array = d_ints.transpose((1, 2, 0))
         d_matrix = d_array.reshape((nocc * nvir, 3))
         return d_matrix
@@ -72,17 +72,17 @@ class RPA(object):
 
 
 if __name__ == "__main__":
-    from scfexchange import Orbitals
-    from scfexchange.pyscf_interface import Integrals, get_hf_mo_coefficients
+    from scfexchange import MOIntegrals
+    from scfexchange.pyscf_interface import AOIntegrals, hf_mo_coefficients
 
     labels = ("O", "H", "H")
     coordinates = np.array([[ 0.000000000000, -0.143225816552,  0.000000000000],
                             [ 1.638036840407,  1.136548822547, -0.000000000000],
                             [-1.638036840407,  1.136548822547, -0.000000000000]])
 
-    integrals = Integrals("sto-3g", labels, coordinates)
-    mo_coefficients = get_hf_mo_coefficients(integrals, charge=0, multp=1)
-    orbitals = Orbitals(integrals, mo_coefficients, naocc=5, nbocc=5)
+    integrals = AOIntegrals("sto-3g", labels, coordinates)
+    mo_coefficients = hf_mo_coefficients(integrals, charge=0, multp=1)
+    orbitals = MOIntegrals(integrals, mo_coefficients, naocc=5, nbocc=5)
     rpa = RPA(orbitals)
     alpha = rpa.get_dipole_polarizability_tensor()
     print(alpha)

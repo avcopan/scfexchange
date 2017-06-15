@@ -1,5 +1,5 @@
-from scfexchange.pyscf_interface import Integrals, get_hf_mo_coefficients
-from scfexchange.orbitals import Orbitals
+from scfexchange.pyscf_interface import AOIntegrals, hf_mo_coefficients
+from scfexchange.mo import MOIntegrals
 from scfexchange.molecule import electron_spin_count, nuclear_repulsion_energy
 
 
@@ -12,20 +12,20 @@ def test__rotate():
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
-    integrals = Integrals("sto-3g", labels, coordinates)
-    mo_coefficients = get_hf_mo_coefficients(integrals)
+    integrals = AOIntegrals("sto-3g", labels, coordinates)
+    mo_coefficients = hf_mo_coefficients(integrals)
     nalpha, nbeta = electron_spin_count(labels)
-    orbitals = Orbitals(integrals, mo_coefficients, nalpha, nbeta)
+    orbitals = MOIntegrals(integrals, mo_coefficients, nalpha, nbeta)
 
     two = 2 * np.identity(integrals.nbf)
-    sp_order = orbitals.get_spinorb_order()
+    sp_order = orbitals.spinorb_order()
     sp_two = spla.block_diag(two, two)[sp_order, :]
     iterables = (two, [two, two], sp_two)
     for rotation_matrix in iterables:
-        orbitals.mo_coefficients = mo_coefficients
-        norm = spla.norm(orbitals.mo_coefficients)
+        orbitals.mo_coeffs = mo_coefficients
+        norm = spla.norm(orbitals.mo_coeffs)
         orbitals.rotate(rotation_matrix)
-        new_norm = spla.norm(orbitals.mo_coefficients)
+        new_norm = spla.norm(orbitals.mo_coeffs)
         assert new_norm == 2 * norm
     with pt.raises(ValueError):
         rotation_matrix = np.ones(sp_two.shape)
@@ -40,7 +40,7 @@ def test__get_mo_count():
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
-    integrals = Integrals("sto-3g", labels, coordinates)
+    integrals = AOIntegrals("sto-3g", labels, coordinates)
     counts = iter([
         0, 5, 2, 5, 7, 7, 0, 5, 2, 5, 7, 7, 0, 10, 4, 10, 14, 14, 1, 4, 2, 5, 6,
         7, 1, 4, 2, 5, 6, 7, 2, 8, 4, 10, 12, 14, 0, 5, 2, 5, 7, 7, 0, 4, 3, 4,
@@ -50,14 +50,14 @@ def test__get_mo_count():
     iterables = ([0, 1], ['a', 'b', 's'],
                  ['c', 'o', 'v', 'co', 'ov', 'cov'])
     for charge, multp in [(0, 1), (1, 2)]:
-        mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
-                                                 multp=multp)
+        mo_coefficients = hf_mo_coefficients(integrals, charge=charge,
+                                             multp=multp)
         nalpha, nbeta = electron_spin_count(labels, mol_charge=charge,
                                             multiplicity=multp)
-        orbitals = Orbitals(integrals, mo_coefficients, nalpha, nbeta)
+        orbitals = MOIntegrals(integrals, mo_coefficients, nalpha, nbeta)
         for ncore, spin, mo_space in it.product(*iterables):
             orbitals.ncore = ncore
-            count = orbitals.get_mo_count(mo_space, spin)
+            count = orbitals.mo_count(mo_space, spin)
             assert (count == next(counts))
 
 
@@ -69,7 +69,7 @@ def test__get_mo_slice():
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
-    integrals = Integrals("sto-3g", labels, coordinates)
+    integrals = AOIntegrals("sto-3g", labels, coordinates)
     slices = iter([
         slice(0, 0, None), slice(0, 5, None), slice(5, 7, None),
         slice(0, 5, None), slice(0, 7, None), slice(0, 7, None),
@@ -99,14 +99,14 @@ def test__get_mo_slice():
     iterables = ([0, 1], ['a', 'b', 's'],
                  ['c', 'o', 'v', 'co', 'ov', 'cov'])
     for charge, multp in [(0, 1), (1, 2)]:
-        mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
-                                                 multp=multp)
+        mo_coefficients = hf_mo_coefficients(integrals, charge=charge,
+                                             multp=multp)
         naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
                                            multiplicity=multp)
-        orbitals = Orbitals(integrals, mo_coefficients, naocc, nbocc)
+        orbitals = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, spin, mo_space in it.product(*iterables):
             orbitals.ncore = ncore
-            slc = orbitals.get_mo_slice(mo_space, spin)
+            slc = orbitals.mo_slice(mo_space, spin)
             assert (slc == next(slices))
 
 
@@ -118,7 +118,7 @@ def test__get_mo_coefficients():
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
-    integrals = Integrals("sto-3g", labels, coordinates)
+    integrals = AOIntegrals("sto-3g", labels, coordinates)
     shapes = iter([
         (7, 0), (7, 5), (7, 2), (7, 5), (7, 7), (7, 7), (7, 0), (7, 5), (7, 2),
         (7, 5), (7, 7), (7, 7), (14, 0), (14, 10), (14, 4), (14, 10), (14, 14),
@@ -189,15 +189,15 @@ def test__get_mo_coefficients():
     iterables2 = ([0, 1], ['a', 'b', 's'],
                   ['c', 'o', 'v', 'co', 'ov', 'cov'])
     for (charge, multp), restr in it.product(*iterables1):
-        mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
-                                                 multp=multp,
-                                                 restrict_spin=restr)
+        mo_coefficients = hf_mo_coefficients(integrals, charge=charge,
+                                             multp=multp,
+                                             restrict_spin=restr)
         naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
                                            multiplicity=multp)
-        orbitals = Orbitals(integrals, mo_coefficients, naocc, nbocc)
+        orbitals = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, spin, mo_space in it.product(*iterables2):
             orbitals.ncore = ncore
-            c = orbitals.get_mo_coefficients(mo_space, spin)
+            c = orbitals.mo_coefficients(mo_space, spin)
             assert (c.shape == next(shapes))
             norm_ref = next(norms)
             assert (np.isclose(np.linalg.norm(c), norm_ref))
@@ -211,7 +211,7 @@ def test__get_mo_fock_diagonal():
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
-    integrals = Integrals("sto-3g", labels, coordinates)
+    integrals = AOIntegrals("sto-3g", labels, coordinates)
     shapes = iter([
         (0,), (5,), (2,), (5,), (7,), (7,), (0,), (5,), (2,), (5,), (7,), (7,),
         (0,), (10,), (4,), (10,), (14,), (14,), (1,), (4,), (2,), (5,), (6,),
@@ -277,15 +277,17 @@ def test__get_mo_fock_diagonal():
     iterables2 = ([0, 1], ['a', 'b', 's'],
                   ['c', 'o', 'v', 'co', 'ov', 'cov'])
     for (charge, multp), restr in it.product(*iterables1):
-        mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
-                                                 multp=multp,
-                                                 restrict_spin=restr)
+        mo_coefficients = hf_mo_coefficients(integrals, charge=charge,
+                                             multp=multp,
+                                             restrict_spin=restr)
         naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
                                            multiplicity=multp)
-        orbitals = Orbitals(integrals, mo_coefficients, naocc, nbocc)
+        orbitals = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, spin, mo_space in it.product(*iterables2):
             orbitals.ncore = ncore
-            e = orbitals.get_mo_fock_diagonal(mo_space, spin)
+            blk = ','.join([mo_space, mo_space])
+            e, _ = orbitals.fock(mo_block=blk, spin_sector=spin,
+                                 mo_space='co', split_diagonal=True)
             assert (e.shape == next(shapes))
             norm_ref = next(norms)
             assert (np.isclose(np.linalg.norm(e), norm_ref))
@@ -299,7 +301,7 @@ def test__get_mo_1e_kinetic():
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
-    integrals = Integrals("sto-3g", labels, coordinates)
+    integrals = AOIntegrals("sto-3g", labels, coordinates)
     shapes = iter([
         (0, 5), (0, 2), (0, 5), (0, 7), (0, 7), (5, 2), (5, 5), (5, 7), (5, 7),
         (2, 5), (2, 7), (2, 7), (5, 7), (5, 7), (7, 7), (0, 5), (0, 2), (0, 5),
@@ -453,18 +455,18 @@ def test__get_mo_1e_kinetic():
     iterables2 = ([0, 1], ['a', 'b', 's'])
     mo_spaces = ['c', 'o', 'v', 'co', 'ov', 'cov']
     for (charge, multp), restr in it.product(*iterables1):
-        mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
-                                                 multp=multp,
-                                                 restrict_spin=restr)
+        mo_coefficients = hf_mo_coefficients(integrals, charge=charge,
+                                             multp=multp,
+                                             restrict_spin=restr)
         naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
                                            multiplicity=multp)
-        orbitals = Orbitals(integrals, mo_coefficients, naocc, nbocc)
+        orbitals = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, spin_sector in it.product(*iterables2):
             orbitals.ncore = ncore
             for block_key in it.combinations(mo_spaces, 2):
                 mo_block = ','.join(block_key)
-                s = orbitals.get_mo_1e_kinetic(mo_block=mo_block,
-                                               spin_sector=spin_sector)
+                s = orbitals.kinetic(mo_block=mo_block,
+                                     spin_sector=spin_sector)
                 assert (s.shape == next(shapes))
                 assert (np.isclose(np.linalg.norm(s), next(norms)))
 
@@ -477,7 +479,7 @@ def test__get_mo_1e_potential():
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
-    integrals = Integrals("sto-3g", labels, coordinates)
+    integrals = AOIntegrals("sto-3g", labels, coordinates)
     shapes = iter([
         (0, 5), (0, 2), (0, 5), (0, 7), (0, 7), (5, 2), (5, 5), (5, 7), (5, 7),
         (2, 5), (2, 7), (2, 7), (5, 7), (5, 7), (7, 7), (0, 5), (0, 2), (0, 5),
@@ -631,18 +633,18 @@ def test__get_mo_1e_potential():
     iterables2 = ([0, 1], ['a', 'b', 's'])
     mo_spaces = ['c', 'o', 'v', 'co', 'ov', 'cov']
     for (charge, multp), restr in it.product(*iterables1):
-        mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
-                                                 multp=multp,
-                                                 restrict_spin=restr)
+        mo_coefficients = hf_mo_coefficients(integrals, charge=charge,
+                                             multp=multp,
+                                             restrict_spin=restr)
         naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
                                            multiplicity=multp)
-        orbitals = Orbitals(integrals, mo_coefficients, naocc, nbocc)
+        orbitals = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, spin_sector in it.product(*iterables2):
             orbitals.ncore = ncore
             for block_key in it.combinations(mo_spaces, 2):
                 mo_block = ','.join(block_key)
-                s = orbitals.get_mo_1e_potential(mo_block=mo_block,
-                                                 spin_sector=spin_sector)
+                s = orbitals.potential(mo_block=mo_block,
+                                       spin_sector=spin_sector)
                 assert (s.shape == next(shapes))
                 assert (np.isclose(np.linalg.norm(s), next(norms)))
 
@@ -655,7 +657,7 @@ def test__get_mo_1e_dipole():
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
-    integrals = Integrals("sto-3g", labels, coordinates)
+    integrals = AOIntegrals("sto-3g", labels, coordinates)
     shapes = iter([
         (3, 0, 5), (3, 0, 2), (3, 0, 5), (3, 0, 7), (3, 0, 7), (3, 5, 2),
         (3, 5, 5), (3, 5, 7), (3, 5, 7), (3, 2, 5), (3, 2, 7), (3, 2, 7),
@@ -827,18 +829,18 @@ def test__get_mo_1e_dipole():
     iterables2 = ([0, 1], ['a', 'b', 's'])
     mo_spaces = ['c', 'o', 'v', 'co', 'ov', 'cov']
     for (charge, multp), restr in it.product(*iterables1):
-        mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
-                                                 multp=multp,
-                                                 restrict_spin=restr)
+        mo_coefficients = hf_mo_coefficients(integrals, charge=charge,
+                                             multp=multp,
+                                             restrict_spin=restr)
         naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
                                            multiplicity=multp)
-        orbitals = Orbitals(integrals, mo_coefficients, naocc, nbocc)
+        orbitals = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, spin_sector in it.product(*iterables2):
             orbitals.ncore = ncore
             for block_key in it.combinations(mo_spaces, 2):
                 mo_block = ','.join(block_key)
-                s = orbitals.get_mo_1e_dipole(mo_block=mo_block,
-                                              spin_sector=spin_sector)
+                s = orbitals.dipole(mo_block=mo_block,
+                                    spin_sector=spin_sector)
                 assert (s.shape == next(shapes))
                 assert (np.isclose(np.linalg.norm(s), next(norms)))
 
@@ -851,7 +853,7 @@ def test__get_mo_1e_core_hamiltonian():
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
-    integrals = Integrals("sto-3g", labels, coordinates)
+    integrals = AOIntegrals("sto-3g", labels, coordinates)
     shapes = iter([
         (0, 5), (0, 2), (0, 5), (0, 7), (0, 7), (5, 2), (5, 5), (5, 7), (5, 7),
         (2, 5), (2, 7), (2, 7), (5, 7), (5, 7), (7, 7), (0, 5), (0, 2), (0, 5),
@@ -1151,19 +1153,19 @@ def test__get_mo_1e_core_hamiltonian():
     iterables2 = ([0, 1], ['a', 'b', 's'], [(0., 0., 0.), (0., 0., 10.)])
     mo_spaces = ['c', 'o', 'v', 'co', 'ov', 'cov']
     for (charge, multp), restr in it.product(*iterables1):
-        mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
-                                                 multp=multp,
-                                                 restrict_spin=restr)
+        mo_coefficients = hf_mo_coefficients(integrals, charge=charge,
+                                             multp=multp,
+                                             restrict_spin=restr)
         naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
                                            multiplicity=multp)
-        orbitals = Orbitals(integrals, mo_coefficients, naocc, nbocc)
+        orbitals = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, spin_sector, e_field in it.product(*iterables2):
             orbitals.ncore = ncore
             for block_key in it.combinations(mo_spaces, 2):
                 mo_block = ','.join(block_key)
-                s = orbitals.get_mo_1e_core_hamiltonian(mo_block=mo_block,
-                                                        spin_sector=spin_sector,
-                                                        electric_field=e_field)
+                s = orbitals.core_hamiltonian(mo_block=mo_block,
+                                              spin_sector=spin_sector,
+                                              electric_field=e_field)
                 assert (s.shape == next(shapes))
                 assert (np.isclose(np.linalg.norm(s), next(norms)))
 
@@ -1176,7 +1178,7 @@ def test__get_mo_1e_mean_field():
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
-    integrals = Integrals("sto-3g", labels, coordinates)
+    integrals = AOIntegrals("sto-3g", labels, coordinates)
     shapes = iter([
         (0, 5), (0, 2), (0, 5), (0, 7), (0, 7), (5, 2), (5, 5), (5, 7), (5, 7),
         (2, 5), (2, 7), (2, 7), (5, 7), (5, 7), (7, 7), (0, 5), (0, 2), (0, 5),
@@ -2029,19 +2031,19 @@ def test__get_mo_1e_mean_field():
     iterables2 = ([0, 1], ['a', 'b', 's'], ['c', 'o', 'v', 'co', 'ov', 'cov'])
     mo_spaces = ['c', 'o', 'v', 'co', 'ov', 'cov']
     for (charge, multp), restr in it.product(*iterables1):
-        mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
-                                                 multp=multp,
-                                                 restrict_spin=restr)
+        mo_coefficients = hf_mo_coefficients(integrals, charge=charge,
+                                             multp=multp,
+                                             restrict_spin=restr)
         naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
                                            multiplicity=multp)
-        orbitals = Orbitals(integrals, mo_coefficients, naocc, nbocc)
+        orbitals = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, spin_sector, mo_space in it.product(*iterables2):
             orbitals.ncore = ncore
             for block_key in it.combinations(mo_spaces, 2):
                 mo_block = ','.join(block_key)
-                s = orbitals.get_mo_1e_mean_field(mo_block=mo_block,
-                                                  spin_sector=spin_sector,
-                                                  mo_space=mo_space)
+                s = orbitals.mean_field(mo_block=mo_block,
+                                        spin_sector=spin_sector,
+                                        mo_space=mo_space)
                 assert (s.shape == next(shapes))
                 assert (np.isclose(np.linalg.norm(s), next(norms)))
 
@@ -2054,7 +2056,7 @@ def test__get_mo_1e_fock():
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
-    integrals = Integrals("sto-3g", labels, coordinates)
+    integrals = AOIntegrals("sto-3g", labels, coordinates)
     shapes = iter([
         (0, 5), (0, 2), (0, 5), (0, 7), (0, 7), (5, 2), (5, 5), (5, 7), (5, 7),
         (2, 5), (2, 7), (2, 7), (5, 7), (5, 7), (7, 7), (0, 5), (0, 2), (0, 5),
@@ -3816,20 +3818,20 @@ def test__get_mo_1e_fock():
                   [(0., 0., 0.), (0., 0., 10.)])
     mo_spaces = ['c', 'o', 'v', 'co', 'ov', 'cov']
     for (charge, multp), restr in it.product(*iterables1):
-        mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
-                                                 multp=multp,
-                                                 restrict_spin=restr)
+        mo_coefficients = hf_mo_coefficients(integrals, charge=charge,
+                                             multp=multp,
+                                             restrict_spin=restr)
         naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
                                            multiplicity=multp)
-        orbitals = Orbitals(integrals, mo_coefficients, naocc, nbocc)
+        orbitals = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, spin_sector, mo_space, e_field in it.product(*iterables2):
             orbitals.ncore = ncore
             for block_key in it.combinations(mo_spaces, 2):
                 mo_block = ','.join(block_key)
-                s = orbitals.get_mo_1e_fock(mo_block=mo_block,
-                                            spin_sector=spin_sector,
-                                            mo_space=mo_space,
-                                            electric_field=e_field)
+                s = orbitals.fock(mo_block=mo_block,
+                                  spin_sector=spin_sector,
+                                  mo_space=mo_space,
+                                  electric_field=e_field)
                 assert (s.shape == next(shapes))
                 assert (np.isclose(np.linalg.norm(s), next(norms)))
 
@@ -3842,7 +3844,7 @@ def test__get_mo_2e_repulsion():
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
-    integrals = Integrals("sto-3g", labels, coordinates)
+    integrals = AOIntegrals("sto-3g", labels, coordinates)
     shapes = iter([
         (0, 5, 2, 5), (0, 5, 2, 7), (0, 5, 2, 7), (0, 5, 5, 7), (0, 5, 5, 7),
         (0, 5, 7, 7), (0, 2, 5, 7), (0, 2, 5, 7), (0, 2, 7, 7), (0, 5, 7, 7),
@@ -4288,24 +4290,24 @@ def test__get_mo_2e_repulsion():
     iterables2 = ([0, 1], ['a,a', 'a,b', 'b,b', 's,s'], [True, False])
     mo_spaces = ['c', 'o', 'v', 'co', 'ov', 'cov']
     for (charge, multp), restr in it.product(*iterables1):
-        mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
-                                                 multp=multp,
-                                                 restrict_spin=restr)
+        mo_coefficients = hf_mo_coefficients(integrals, charge=charge,
+                                             multp=multp,
+                                             restrict_spin=restr)
         naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
                                            multiplicity=multp)
-        orbitals = Orbitals(integrals, mo_coefficients, naocc, nbocc)
+        orbitals = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, spin_sector, antisymmetrize in it.product(*iterables2):
             orbitals.ncore = ncore
             for block_key in it.combinations(mo_spaces, 4):
                 mo_block = ','.join(block_key)
-                s = orbitals.get_mo_2e_repulsion(mo_block=mo_block,
-                                                 spin_sector=spin_sector,
-                                                 antisymmetrize=antisymmetrize)
+                s = orbitals.electron_repulsion(mo_block=mo_block,
+                                                spin_sector=spin_sector,
+                                                antisymmetrize=antisymmetrize)
                 assert (s.shape == next(shapes))
                 assert (np.isclose(np.linalg.norm(s), next(norms)))
 
 
-def test__get_ao_1e_hf_density():
+def test__get_mean_field_energy():
     import numpy as np
     import itertools as it
 
@@ -4313,355 +4315,7 @@ def test__get_ao_1e_hf_density():
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
-    integrals = Integrals("sto-3g", labels, coordinates)
-    shapes = iter([
-        (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (7, 7), (7, 7), (7, 7), (14, 14), (14, 14), (14, 14), (14, 14),
-        (14, 14), (14, 14), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (14, 14), (14, 14),
-        (14, 14), (14, 14), (14, 14), (14, 14), (7, 7), (7, 7), (7, 7), (7, 7),
-        (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (14, 14), (14, 14), (14, 14), (14, 14), (14, 14), (14, 14), (7, 7),
-        (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (7, 7), (7, 7), (14, 14), (14, 14), (14, 14), (14, 14), (14, 14),
-        (14, 14), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (14, 14), (14, 14), (14, 14),
-        (14, 14), (14, 14), (14, 14), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (14, 14),
-        (14, 14), (14, 14), (14, 14), (14, 14), (14, 14), (7, 7), (7, 7),
-        (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (7, 7), (14, 14), (14, 14), (14, 14), (14, 14), (14, 14), (14, 14),
-        (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (7, 7), (7, 7), (7, 7), (14, 14), (14, 14), (14, 14), (14, 14),
-        (14, 14), (14, 14)
-    ])
-    norms = iter([
-        0.0, 2.1471072366542963, 3.5264725554374987, 2.1471072366542963,
-        4.2538076499375155, 4.2538076499375155, 0.0, 2.1471072366542963,
-        3.5264725554374987, 2.1471072366542963, 4.2538076499375155,
-        4.2538076499375155, 0.0, 3.0364681739459245, 4.9871853152362169,
-        3.0364681739459245, 6.0157924702680567, 6.0157924702680567,
-        0.9890990469221751, 1.8781215817791728, 3.5264725554374987,
-        2.1471072366542963, 4.1223798066864976, 4.2538076499375155,
-        0.9890990469221751, 1.8781215817791728, 3.5264725554374987,
-        2.1471072366542963, 4.1223798066864976, 4.2538076499375155,
-        1.3987972866876424, 2.6560650127377161, 4.9871853152362169,
-        3.0364681739459245, 5.8299254318690226, 6.0157924702680567, 0.0,
-        2.1471072366508408, 3.5264725554409364, 2.1471072366508408,
-        4.2538076499375155, 4.2538076499375155, 0.0, 2.1471072366508404,
-        3.5264725554409342, 2.1471072366508404, 4.2538076499375137,
-        4.2538076499375137, 0.0, 3.0364681739410373, 4.9871853152410761,
-        3.0364681739410373, 6.0157924702680567, 6.0157924702680567,
-        0.98909904692216344, 1.8781215817753043, 3.5264725554409364,
-        2.1471072366508408, 4.1223798066865038, 4.2538076499375155,
-        0.98909904692216299, 1.8781215817753039, 3.5264725554409342,
-        2.1471072366508404, 4.1223798066865021, 4.2538076499375137,
-        1.3987972866876255, 2.6560650127322449, 4.9871853152410761,
-        3.0364681739410373, 5.8299254318690297, 6.0157924702680567, 0.0,
-        2.1357724012664083, 3.5156656206839156, 2.1357724012664083,
-        4.2538076499375137, 4.2538076499375137, 0.0, 1.8871999761581391,
-        3.6551203477394316, 1.8871999761581391, 4.2538076499375137,
-        4.2538076499375137, 0.0, 2.8500960510169757, 5.0714701530145723,
-        2.8500960510169757, 6.0157924702680567, 6.0157924702680567,
-        0.98952091984310386, 1.86445920366094, 3.5156656206839156,
-        2.1357724012664083, 4.1221892708069801, 4.2538076499375137,
-        0.98952091984310386, 1.5735971918238756, 3.6551203477394316,
-        1.8871999761581391, 4.1221892708069801, 4.2538076499375137,
-        1.3993939050940176, 2.4397574150378092, 5.0714701530145723,
-        2.8500960510169757, 5.8296559734440896, 6.0157924702680567, 0.0,
-        2.1517048496893159, 3.4876400494476942, 2.1517048496893159,
-        4.2538076499375146, 4.2538076499375146, 0.0, 1.8695370406572025,
-        3.6815560275372317, 1.8695370406572025, 4.2538076499375137,
-        4.2538076499375137, 0.0, 2.8504390024285406, 5.071241258154382,
-        2.8504390024285406, 6.015792470268055, 6.015792470268055,
-        0.98900076672012749, 1.8825996259943494, 3.4876400494476942,
-        2.1517048496893159, 4.1224143256561732, 4.2538076499375146,
-        0.99003813042041844, 1.5525903321000629, 3.6815560275372317,
-        1.8695370406572025, 4.1219652412825303, 4.2538076499375137,
-        1.3993920166484293, 2.440229106277656, 5.071241258154382,
-        2.8504390024285406, 5.8296567071069108, 6.015792470268055
-    ])
-    iterables1 = ([(0, 1), (1, 2)], [True, False])
-    iterables2 = ([0, 1], ['a', 'b', 's'],
-                  ['c', 'o', 'v', 'co', 'ov', 'cov'])
-    for (charge, multp), restr in it.product(*iterables1):
-        mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
-                                                 multp=multp,
-                                                 restrict_spin=restr)
-        naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
-                                           multiplicity=multp)
-        orbitals = Orbitals(integrals, mo_coefficients, naocc, nbocc)
-        for ncore, spin_sector, mo_space in it.product(*iterables2):
-            orbitals.ncore = ncore
-            s = orbitals.get_ao_1e_hf_density(mo_space, spin_sector)
-            assert (s.shape == next(shapes))
-            assert (np.isclose(np.linalg.norm(s), next(norms)))
-
-
-def test__get_ao_1e_mean_field():
-    import numpy as np
-    import itertools as it
-
-    labels = ("O", "H", "H")
-    coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
-                            [0.0000000000, -1.4343021349, 0.9864370414],
-                            [0.0000000000, 1.4343021349, 0.9864370414]])
-    integrals = Integrals("sto-3g", labels, coordinates)
-    shapes = iter([
-        (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (7, 7), (7, 7), (7, 7), (14, 14), (14, 14), (14, 14), (14, 14),
-        (14, 14), (14, 14), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (14, 14), (14, 14),
-        (14, 14), (14, 14), (14, 14), (14, 14), (7, 7), (7, 7), (7, 7), (7, 7),
-        (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (14, 14), (14, 14), (14, 14), (14, 14), (14, 14), (14, 14), (7, 7),
-        (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (7, 7), (7, 7), (14, 14), (14, 14), (14, 14), (14, 14), (14, 14),
-        (14, 14), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (14, 14), (14, 14), (14, 14),
-        (14, 14), (14, 14), (14, 14), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (14, 14),
-        (14, 14), (14, 14), (14, 14), (14, 14), (14, 14), (7, 7), (7, 7),
-        (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (7, 7), (14, 14), (14, 14), (14, 14), (14, 14), (14, 14), (14, 14),
-        (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (7, 7), (7, 7), (7, 7), (14, 14), (14, 14), (14, 14), (14, 14),
-        (14, 14), (14, 14)
-    ])
-    norms = iter([
-        0.0, 21.469484198565592, 7.003374862917715, 21.469484198565592,
-        28.390627850074399, 28.390627850074399, 0.0, 21.469484198565592,
-        7.003374862917715, 21.469484198565592, 28.390627850074399,
-        28.390627850074399, 0.0, 30.362435730766318, 9.9042677135210493,
-        30.362435730766318, 40.150410949862518, 40.150410949862518,
-        6.9893530018851333, 14.588880507866554, 7.003374862917715,
-        21.469484198565592, 21.557396723725716, 28.390627850074399,
-        6.9893530018851333, 14.588880507866554, 7.003374862917715,
-        21.469484198565592, 21.557396723725716, 28.390627850074399,
-        9.8844378074790598, 20.63179267406537, 9.9042677135210493,
-        30.362435730766318, 30.486762816150236, 40.150410949862518, 0.0,
-        21.469484198566249, 7.003374862917048, 21.469484198566249,
-        28.390627850074392, 28.390627850074392, 0.0, 21.469484198566246,
-        7.0033748629170471, 21.469484198566246, 28.390627850074384,
-        28.390627850074384, 0.0, 30.362435730767249, 9.9042677135201043,
-        30.362435730767249, 40.150410949862511, 40.150410949862511,
-        6.9893530018851067, 14.588880507867238, 7.003374862917048,
-        21.469484198566249, 21.557396723725738, 28.390627850074392,
-        6.989353001885104, 14.588880507867234, 7.0033748629170471,
-        21.469484198566246, 21.557396723725738, 28.390627850074384,
-        9.8844378074790207, 20.631792674066329, 9.9042677135201043,
-        30.362435730767249, 30.486762816150264, 40.150410949862511, 0.0,
-        19.636308590352421, 8.8619552575309868, 19.636308590352421,
-        28.390627850074406, 28.390627850074406, 0.0, 20.093659536021008,
-        8.4232911434694984, 20.093659536021008, 28.390627850074406,
-        28.390627850074406, 0.0, 28.095191200721096, 12.226450207404142,
-        28.095191200721096, 40.150410949862533, 40.150410949862533,
-        6.9904567783237308, 12.737226235885704, 8.8619552575309868,
-        19.636308590352421, 21.556367955398052, 28.390627850074406,
-        6.9904567783237308, 13.208947689339963, 8.4232911434694984,
-        20.093659536021008, 21.556367955398052, 28.390627850074406,
-        9.885998783088354, 18.349747443598634, 12.226450207404142,
-        28.095191200721096, 30.485307918028713, 40.150410949862533, 0.0,
-        19.628195630188493, 8.867950792488557, 19.628195630188493,
-        28.390627850074377, 28.390627850074377, 0.0, 20.099161130262981,
-        8.4203824200116468, 20.099161130262981, 28.390627850074377,
-        28.390627850074377, 0.0, 28.093457278114151, 12.228793536454836,
-        28.093457278114151, 40.150410949862497, 40.150410949862497,
-        6.9906840633554381, 12.730100191473223, 8.867950792488557,
-        19.628195630188493, 21.556404186777964, 28.390627850074377,
-        6.9902113846936489, 13.213657430740593, 8.4203824200116468,
-        20.099161130262981, 21.556349108794311, 28.390627850074377,
-        9.885985984025691, 18.348193196658702, 12.228793536454836,
-        28.093457278114151, 30.485320210946707, 40.150410949862497
-    ])
-    iterables1 = ([(0, 1), (1, 2)], [True, False])
-    iterables2 = ([0, 1], ['a', 'b', 's'],
-                  ['c', 'o', 'v', 'co', 'ov', 'cov'])
-    for (charge, multp), restr in it.product(*iterables1):
-        mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
-                                                 multp=multp,
-                                                 restrict_spin=restr)
-        naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
-                                           multiplicity=multp)
-        orbitals = Orbitals(integrals, mo_coefficients, naocc, nbocc)
-        for ncore, spin_sector, mo_space in it.product(*iterables2):
-            orbitals.ncore = ncore
-            s = orbitals.get_ao_1e_mean_field(mo_space, spin_sector)
-            assert (s.shape == next(shapes))
-            assert (np.isclose(np.linalg.norm(s), next(norms)))
-
-
-def test__get_ao_1e_fock():
-    import numpy as np
-    import itertools as it
-
-    labels = ("O", "H", "H")
-    coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
-                            [0.0000000000, -1.4343021349, 0.9864370414],
-                            [0.0000000000, 1.4343021349, 0.9864370414]])
-    integrals = Integrals("sto-3g", labels, coordinates)
-    shapes = iter([
-        (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (14, 14), (14, 14),
-        (14, 14), (14, 14), (14, 14), (14, 14), (14, 14), (14, 14), (14, 14),
-        (14, 14), (14, 14), (14, 14), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (7, 7), (14, 14), (14, 14), (14, 14), (14, 14), (14, 14), (14, 14),
-        (14, 14), (14, 14), (14, 14), (14, 14), (14, 14), (14, 14), (7, 7),
-        (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (14, 14), (14, 14), (14, 14),
-        (14, 14), (14, 14), (14, 14), (14, 14), (14, 14), (14, 14), (14, 14),
-        (14, 14), (14, 14), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (14, 14), (14, 14), (14, 14), (14, 14), (14, 14), (14, 14), (14, 14),
-        (14, 14), (14, 14), (14, 14), (14, 14), (14, 14), (7, 7), (7, 7),
-        (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (7, 7), (7, 7), (7, 7), (7, 7), (14, 14), (14, 14), (14, 14), (14, 14),
-        (14, 14), (14, 14), (14, 14), (14, 14), (14, 14), (14, 14), (14, 14),
-        (14, 14), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (14, 14), (14, 14), (14, 14), (14, 14), (14, 14), (14, 14), (14, 14),
-        (14, 14), (14, 14), (14, 14), (14, 14), (14, 14), (7, 7), (7, 7),
-        (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (7, 7), (7, 7), (7, 7), (7, 7), (14, 14), (14, 14), (14, 14), (14, 14),
-        (14, 14), (14, 14), (14, 14), (14, 14), (14, 14), (14, 14), (14, 14),
-        (14, 14), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7), (7, 7),
-        (14, 14), (14, 14), (14, 14), (14, 14), (14, 14), (14, 14), (14, 14),
-        (14, 14), (14, 14), (14, 14), (14, 14), (14, 14)])
-    norms = iter([
-        39.937341305323393, 42.432257194492486, 21.932021251272655,
-        29.375895484110412, 34.113918738664488, 38.200978100674654,
-        21.932021251272655, 29.375895484110412, 18.596330708906134,
-        28.597259505422173, 18.596330708906134, 28.597259505422173,
-        39.937341305323393, 42.432257194492486, 21.932021251272655,
-        29.375895484110412, 34.113918738664488, 38.200978100674654,
-        21.932021251272655, 29.375895484110412, 18.596330708906134,
-        28.597259505422173, 18.596330708906134, 28.597259505422173,
-        56.479929719111539, 60.00827360655461, 31.016561903804728,
-        41.543789800483495, 48.244366545912982, 54.02434132589169,
-        31.016561903804728, 41.543789800483495, 26.29918309891033,
-        40.442632239270942, 26.29918309891033, 40.442632239270942,
-        33.334406359752506, 36.766822996036744, 27.668933435395889,
-        33.352483430718515, 34.113918738664488, 38.200978100674654,
-        21.932021251272655, 29.375895484110412, 23.177073978037598,
-        31.20969541321675, 18.596330708906134, 28.597259505422173,
-        33.334406359752506, 36.766822996036744, 27.668933435395889,
-        33.352483430718515, 34.113918738664488, 38.200978100674654,
-        21.932021251272655, 29.375895484110412, 23.177073978037598,
-        31.20969541321675, 18.596330708906134, 28.597259505422173,
-        47.141969567617942, 51.99613972636616, 39.129780920735257,
-        47.167534406546061, 48.244366545912982, 54.02434132589169,
-        31.016561903804728, 41.543789800483495, 32.777332355865305,
-        44.137174530904502, 26.29918309891033, 40.442632239270942,
-        39.937341305323393, 42.432257194492486, 21.932021251272097,
-        29.375895484110266, 34.113918738665134, 38.200978100675016,
-        21.932021251272097, 29.375895484110266, 18.596330708906141,
-        28.597259505422173, 18.596330708906141, 28.597259505422173,
-        39.937341305323393, 42.432257194492486, 21.932021251272097,
-        29.375895484110266, 34.113918738665134, 38.200978100675016,
-        21.932021251272097, 29.375895484110266, 18.596330708906141,
-        28.597259505422173, 18.596330708906141, 28.597259505422173,
-        56.479929719111539, 60.00827360655461, 31.016561903803936,
-        41.543789800483289, 48.244366545913891, 54.024341325892209,
-        31.016561903803936, 41.543789800483289, 26.299183098910337,
-        40.442632239270942, 26.299183098910337, 40.442632239270942,
-        33.334406359752542, 36.76682299603678, 27.668933435395243,
-        33.352483430718216, 34.113918738665134, 38.200978100675016,
-        21.932021251272097, 29.375895484110266, 23.177073978037559,
-        31.209695413216721, 18.596330708906141, 28.597259505422173,
-        33.334406359752542, 36.76682299603678, 27.668933435395243,
-        33.352483430718216, 34.113918738665134, 38.200978100675016,
-        21.932021251272097, 29.375895484110266, 23.177073978037559,
-        31.209695413216721, 18.596330708906141, 28.597259505422173,
-        47.141969567617998, 51.996139726366209, 39.129780920734348,
-        47.167534406545634, 48.244366545913891, 54.024341325892209,
-        31.016561903803936, 41.543789800483289, 32.777332355865255,
-        44.137174530904467, 26.299183098910337, 40.442632239270942,
-        39.937341305323393, 42.432257194492486, 23.018062981238135,
-        29.88558798897342, 32.696706856887879, 37.191967529480813,
-        23.018062981238135, 29.88558798897342, 18.596330708906144,
-        28.597259505422176, 18.596330708906144, 28.597259505422176,
-        39.937341305323393, 42.432257194492486, 22.905504625569289,
-        29.784698786014285, 32.93678554043607, 37.414578142512539,
-        22.905504625569289, 29.784698786014285, 18.596330708906144,
-        28.597259505422176, 18.596330708906144, 28.597259505422176,
-        56.479929719111539, 60.00827360655461, 32.472963609135242,
-        42.193324723471044, 46.410198028256012, 52.755029203822197,
-        32.472963609135242, 42.193324723471044, 26.299183098910348,
-        40.442632239270957, 26.299183098910348, 40.442632239270957,
-        33.333051068173823, 36.765575560097879, 28.96979398495699,
-        34.168056381643432, 32.696706856887879, 37.191967529480813,
-        23.018062981238135, 29.88558798897342, 23.178399179756035,
-        31.210701550132697, 18.596330708906144, 28.597259505422176,
-        33.333051068173823, 36.765575560097879, 28.777573050140724,
-        33.99271712599181, 32.93678554043607, 37.414578142512539,
-        22.905504625569289, 29.784698786014285, 23.178399179756035,
-        31.210701550132697, 18.596330708906144, 28.597259505422176,
-        47.140052895886399, 51.994375585543231, 40.833781042012696,
-        48.197104627839018, 46.410198028256012, 52.755029203822197,
-        32.472963609135242, 42.193324723471044, 32.779206474108406,
-        44.138597423376645, 26.299183098910348, 40.442632239270957,
-        39.937341305323393, 42.432257194492486, 23.023049546736885,
-        29.900804745154236, 32.689949543777743, 37.176880485935364,
-        23.023049546736885, 29.900804745154236, 18.596330708906134,
-        28.597259505422169, 18.596330708906134, 28.597259505422169,
-        39.937341305323393, 42.432257194492486, 22.903420413137713,
-        29.771925184735903, 32.94084771632734, 37.427042912215398,
-        22.903420413137713, 29.771925184735903, 18.59633070890613,
-        28.597259505422169, 18.59633070890613, 28.597259505422169,
-        56.479929719111539, 60.00827360655461, 32.475028515036513,
-        42.195090397027826, 46.408320907408438, 52.753236714142339,
-        32.475028515036513, 42.195090397027826, 26.299183098910326,
-        40.442632239270935, 26.299183098910326, 40.442632239270935,
-        33.33278063770728, 36.765267332686122, 28.976487481916156,
-        34.183749704286186, 32.689949543777743, 37.176880485935364,
-        23.023049546736885, 29.900804745154236, 23.178890326056443,
-        31.211140562499665, 18.596330708906134, 28.597259505422169,
-        33.333342953598567, 36.76590330594189, 28.773836457029358,
-        33.979697669085745, 32.94084771632734, 37.427042912215398,
-        22.903420413137713, 29.771925184735903, 23.177887873837264,
-        31.21024748892015, 18.59633070890613, 28.597259505422169,
-        47.140068068509748, 51.994389389103773, 40.83589709122986,
-        48.199051832248294, 46.408320907408438, 52.753236714142339,
-        32.475028515036513, 42.195090397027826, 32.779192226769794,
-        44.138586786753365, 26.299183098910326, 40.442632239270935])
-    iterables1 = ([(0, 1), (1, 2)], [True, False])
-    iterables2 = ([0, 1], ['a', 'b', 's'],
-                  ['c', 'o', 'v', 'co', 'ov', 'cov'],
-                  [(0., 0., 0.), (0., 0., 10.)])
-    for (charge, multp), restr in it.product(*iterables1):
-        mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
-                                                 multp=multp,
-                                                 restrict_spin=restr)
-        naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
-                                           multiplicity=multp)
-        orbitals = Orbitals(integrals, mo_coefficients, naocc, nbocc)
-        for ncore, spin_sector, mo_space, e_field in it.product(*iterables2):
-            orbitals.ncore = ncore
-            s = orbitals.get_ao_1e_fock(mo_space, spin_sector,
-                                        electric_field=e_field)
-            assert (s.shape == next(shapes))
-            assert (np.isclose(np.linalg.norm(s), next(norms)))
-
-
-def test__get_energy():
-    import numpy as np
-    import itertools as it
-
-    labels = ("O", "H", "H")
-    coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
-                            [0.0000000000, -1.4343021349, 0.9864370414],
-                            [0.0000000000, 1.4343021349, 0.9864370414]])
-    integrals = Integrals("sto-3g", labels, coordinates)
+    integrals = AOIntegrals("sto-3g", labels, coordinates)
     energies = iter([
         9.1671453128090299, 9.1671453128090299, -74.963343795087511,
         -71.98840209994593, -9.4585139503899534, 18.155108247645693,
@@ -4700,14 +4354,14 @@ def test__get_energy():
                   [(0., 0., 0.), (0., 0., 10.)])
     e_nuc = nuclear_repulsion_energy(labels, coordinates)
     for (charge, multp), restr in it.product(*iterables1):
-        mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
-                                                 multp=multp,
-                                                 restrict_spin=restr)
+        mo_coefficients = hf_mo_coefficients(integrals, charge=charge,
+                                             multp=multp,
+                                             restrict_spin=restr)
         naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
                                            multiplicity=multp)
-        orbitals = Orbitals(integrals, mo_coefficients, naocc, nbocc)
+        orbitals = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, mo_space, e_field in it.product(*iterables2):
             orbitals.ncore = ncore
-            energy = orbitals.get_energy(mo_space=mo_space,
-                                         electric_field=e_field)
+            energy = orbitals.mean_field_energy(mo_space=mo_space,
+                                                electric_field=e_field)
             assert (np.isclose(energy + e_nuc, next(energies)))
