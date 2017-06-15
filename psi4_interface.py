@@ -53,7 +53,7 @@ class AOIntegrals(AOIntegralsInterface):
 
         def integrate(): return np.array(self._mints_helper.ao_overlap())
 
-        s = self._compute('1e_overlap', integrate, use_spinorbs, recompute)
+        s = self._compute('_overlap', integrate, use_spinorbs, recompute)
         return s
 
     def kinetic(self, use_spinorbs=False, recompute=False):
@@ -72,7 +72,7 @@ class AOIntegrals(AOIntegralsInterface):
 
         def integrate(): return np.array(self._mints_helper.ao_kinetic())
 
-        t = self._compute('1e_kinetic', integrate, use_spinorbs, recompute)
+        t = self._compute('_kinetic', integrate, use_spinorbs, recompute)
         return t
 
     def potential(self, use_spinorbs=False, recompute=False):
@@ -91,7 +91,7 @@ class AOIntegrals(AOIntegralsInterface):
 
         def integrate(): return np.array(self._mints_helper.ao_potential())
 
-        v = self._compute('1e_potential', integrate, use_spinorbs, recompute)
+        v = self._compute('_potential', integrate, use_spinorbs, recompute)
         return v
 
     def dipole(self, use_spinorbs=False, recompute=False):
@@ -112,7 +112,7 @@ class AOIntegrals(AOIntegralsInterface):
             comps = self._mints_helper.ao_dipole()
             return np.array([np.array(comp) for comp in comps])
 
-        d = self._compute('1e_dipole', integrate, use_spinorbs, recompute,
+        d = self._compute('_dipole', integrate, use_spinorbs, recompute,
                           ncomp=3)
         return d
 
@@ -137,22 +137,23 @@ class AOIntegrals(AOIntegralsInterface):
             g_chem = np.array(self._mints_helper.ao_eri())
             return g_chem.transpose((0, 2, 1, 3))
 
-        g = self._compute('2e_repulsion', integrate, use_spinorbs, recompute)
+        g = self._compute('_electron_repulsion', integrate, use_spinorbs,
+                          recompute)
         if antisymmetrize:
             g = g - g.transpose((0, 1, 3, 2))
         return g
 
 
-def hf_mo_coefficients(integrals, charge=0, multp=1,
-                       restrict_spin=False, niter=100, e_threshold=1e-12,
-                       d_threshold=1e-6, guess="auto"):
-    if not isinstance(integrals, AOIntegrals):
-        raise ValueError("Please use an integrals object from the PySCF "
+def hf_mo_coefficients(aoints, charge=0, multp=1, restrict_spin=False,
+                       niter=100, e_threshold=1e-12, d_threshold=1e-6,
+                       guess="auto"):
+    if not isinstance(aoints, AOIntegrals):
+        raise ValueError("Please use an aoints object from the PySCF "
                          "interface.")
-    integrals._psi4_molecule.set_molecular_charge(charge)
-    integrals._psi4_molecule.set_multiplicity(multp)
-    wfn = psi4.core.Wavefunction.build(integrals._psi4_molecule,
-                                       integrals.basis_label)
+    aoints._psi4_molecule.set_molecular_charge(charge)
+    aoints._psi4_molecule.set_multiplicity(multp)
+    wfn = psi4.core.Wavefunction.build(aoints._psi4_molecule,
+                                       aoints.basis_label)
     sf, _ = psi4.driver.dft_funcs.build_superfunctional("HF", False)
     psi4.core.set_global_option("guess", guess)
     psi4.core.set_global_option("e_convergence", e_threshold)
@@ -176,29 +177,19 @@ def hf_mo_coefficients(integrals, charge=0, multp=1,
 
 
 if __name__ == "__main__":
-    import itertools as it
-    from .mo import MOIntegrals
-    from .molecule import electron_spin_count, nuclear_repulsion_energy
+    import numpy
 
-    labels = ("O", "H", "H")
-    coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
-                            [0.0000000000, -1.4343021349, 0.9864370414],
-                            [0.0000000000, 1.4343021349, 0.9864370414]])
-    e_nuc = nuclear_repulsion_energy(labels, coordinates)
-    integrals = AOIntegrals("sto-3g", labels, coordinates)
-    energies = []
-    iterables1 = ([(0, 1), (1, 2)], [True, False])
-    iterables2 = ([0, 1], ['c', 'o', 'v', 'co', 'ov', 'cov'],
-                  [(0., 0., 0.), (0., 0., 10.)])
-    for (charge, multp), restr in it.product(*iterables1):
-        mo_coeffs = hf_mo_coefficients(integrals, charge=charge, multp=multp,
-                                       restrict_spin=restr)
-        nalpha, nbeta = electron_spin_count(labels, mol_charge=charge,
-                                            multiplicity=multp)
-        orbitals = MOIntegrals(integrals, mo_coeffs, nalpha, nbeta)
-        for ncore, mo_space, e_field in it.product(*iterables2):
-            orbitals.ncore = ncore
-            energy = orbitals.mean_field_energy(mo_space=mo_space,
-                                                electric_field=e_field)
-            energies.append(energy + e_nuc)
-    print(energies)
+    nuc_labels = ("O", "H", "H")
+    nuc_coords = numpy.array([[0.0000000000, 0.0000000000, -0.1247219248],
+                              [0.0000000000, -1.4343021349, 0.9864370414],
+                              [0.0000000000, 1.4343021349, 0.9864370414]])
+    aoints = AOIntegrals("sto-3g", nuc_labels, nuc_coords)
+    mo_coeffs = hf_mo_coefficients(aoints, charge=1, multp=2,
+                                   restrict_spin=False)
+    alpha_coeffs = mo_coeffs[0, :, :5]
+    beta_coeffs = mo_coeffs[1, :, :4]
+
+    # Test default
+    s = aoints.fock(alpha_coeffs, beta_coeffs=beta_coeffs,
+                    electric_field=[0., 0., 1.])
+    print(numpy.linalg.norm(s))

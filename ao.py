@@ -60,7 +60,7 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
         
         Args:
             name (str): A unique name for the type of integral, such as
-                '1e_kinetic' or '2e_repulsion'.
+                '_kinetic' or '_electron_repulsion'.
             integrate: A callable object that computes spatial electronic 
                 integrals.  Only gets called if `recompute` is True or if we
                 haven't previously computed integrals under this value of
@@ -74,15 +74,11 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
         Returns:
             numpy.ndarray: The integrals.
         """
-        # If spinorb integrals are requested and we have them, return them.
-        if use_spinorbs and hasattr(self, "_aso_" + name) and not recompute:
-            return getattr(self, "_aso_" + name)
-        # Otherwise, compute or retrieve the spatial integrals.
-        if hasattr(self, "_ao_" + name) and not recompute:
-            ints = getattr(self, "_ao_" + name)
+        if hasattr(self, name) and not recompute:
+            ints = getattr(self, name)
         else:
             ints = integrate()
-        setattr(self, "_ao_" + name, ints)
+        setattr(self, name, ints)
         # If requested, construct spin-orbital integrals from the spatial ones.
         if use_spinorbs:
             if ncomp is None:
@@ -90,7 +86,6 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
             else:
                 ints = np.array([tu.construct_spinorb_integrals(ints_x)
                                  for ints_x in ints])
-            setattr(self, "_aso_" + name, ints)
         return ints
 
     def core_hamiltonian(self, use_spinorbs=False, recompute=False,

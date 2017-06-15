@@ -1,30 +1,38 @@
-from scfexchange.psi4_interface import AOIntegrals
-from scfexchange.test import integral_tests
+import scfexchange.psi4_interface as interface
+from scfexchange.test import ao_tests
 
 
-def test__integral_interface():
-    integral_tests.run_test__interface(AOIntegrals)
+def test__ao_interface():
+    ao_tests.run_test__interface(interface)
 
 
-def test__integral_get_ao_1e_overlap():
-    integral_tests.run_test__overlap(AOIntegrals)
+def test__ao_overlap():
+    ao_tests.run_test__overlap(interface)
 
 
-def test__integral_get_ao_1e_kinetic():
-    integral_tests.run_test__kinetic(AOIntegrals)
+def test__ao_kinetic():
+    ao_tests.run_test__kinetic(interface)
 
 
-def test__integral_get_ao_1e_potential():
-    integral_tests.run_test__potential(AOIntegrals)
+def test__ao_potential():
+    ao_tests.run_test__potential(interface)
 
 
-def test__integral_get_ao_1e_dipole():
-    integral_tests.run_test__dipole(AOIntegrals)
+def test__ao_dipole():
+    ao_tests.run_test__dipole(interface)
 
 
-def test__integral_get_ao_1e_core_hamiltonian():
-    integral_tests.run_test__core_hamiltonian(AOIntegrals)
+def test__ao_electron_repulsion():
+    ao_tests.run_test__electron_repulsion(interface)
 
 
-def test__integral_get_ao_2e_repulsion():
-    integral_tests.run_test__electron_repulsion(AOIntegrals)
+def test__ao_core_hamiltonian():
+    ao_tests.run_test__core_hamiltonian(interface)
+
+
+def test__ao_mean_field():
+    ao_tests.run_test__mean_field(interface)
+
+
+def test__ao_fock():
+    ao_tests.run_test__fock(interface)
