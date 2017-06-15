@@ -1,2 +1,2 @@
-from .orbitals import Orbitals
-from .integrals import IntegralsInterface
+from .mo import MOIntegrals
+from .ao import AOIntegralsInterface

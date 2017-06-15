@@ -6,39 +6,39 @@ from functools import reduce
 import tensorutils as tu
 import permutils as pu
 
-from .integrals import IntegralsInterface
+from .ao import AOIntegralsInterface
 
 
-class Orbitals(object):
+class MOIntegrals(object):
     """Molecular orbitals class.
 
     Subclasses should override the `solve` method, which sets the value
-    of `mo_coefficients`.
+    of `mo_coeffs`.
 
     Attributes:
-        integrals (:obj:`scfexchange.IntegralsInterface`): The integrals.
+        aoints (:obj:`scfexchange.AOIntegralsInterface`): The integrals.
         molecule (:obj:`scfexchange.Molecule`): A Molecule object specifying
             the total molecular charge and spin multiplicity of the system.
-        mo_coefficients (numpy.ndarray): The orbital expansion coefficients.
+        mo_coeffs (numpy.ndarray): The orbital expansion coefficients.
         spin_is_restricted (bool): Are the orbital spin-restricted?
         ncore (int): The number of low-energy orbitals assigned to the core
             orbital space.
     """
 
-    def __init__(self, integrals, mo_coefficients, naocc, nbocc, ncore=0):
-        self.integrals = integrals
-        self.mo_coefficients = mo_coefficients
+    def __init__(self, aoints, mo_coeffs, naocc, nbocc, ncore=0):
+        self.aoints = aoints
+        self.mo_coeffs = mo_coeffs
         self.naocc = naocc
         self.nbocc = nbocc
         self.ncore = ncore
-        self.norb = self.integrals.nbf
-        if not isinstance(integrals, IntegralsInterface):
+        self.norb = self.aoints.nbf
+        if not isinstance(aoints, AOIntegralsInterface):
             raise ValueError("Invalid 'integrals' argument.")
-        if not (isinstance(mo_coefficients, np.ndarray) and
-                mo_coefficients.shape == (2, self.norb, self.norb)):
-            raise ValueError("Invalid 'mo_coefficients' argument.")
+        if not (isinstance(mo_coeffs, np.ndarray) and
+                mo_coeffs.shape == (2, self.norb, self.norb)):
+            raise ValueError("Invalid 'mo_coeffs' argument.")
 
-    def get_block_keys(self, mo_block, spin_sector):
+    def block_keys(self, mo_block, spin_sector):
         spin_keys = spin_sector.split(',') * 2
         space_keys = mo_block.split(',')
         if len(space_keys) is not len(spin_keys):
@@ -47,7 +47,7 @@ class Orbitals(object):
             raise NotImplementedError("Mixed spatial/spin-orbital block.")
         return space_keys, spin_keys
 
-    def _transform_ints(self, ao_ints, mo_block, spin_sector, ndim=0):
+    def _transform(self, ao_ints, mo_block, spin_sector, ndim=0):
         """Transform atomic-orbital integrals to the molecular-orbital basis.
 
         Args:
@@ -65,8 +65,8 @@ class Orbitals(object):
         Returns:
             numpy.array: The integrals.
         """
-        space_keys, spin_keys = self.get_block_keys(mo_block, spin_sector)
-        cs = tuple(self.get_mo_coefficients(mo_space, spin)
+        space_keys, spin_keys = self.block_keys(mo_block, spin_sector)
+        cs = tuple(self.mo_coefficients(mo_space, spin)
                    for mo_space, spin in zip(space_keys, spin_keys))
 
         # Before transforming, move the component axes to the end.
@@ -87,14 +87,14 @@ class Orbitals(object):
                 in the spin-orbital basis, but note that it must not combine
                 alpha and beta spins.
         """
-        nbf = self.integrals.nbf
+        nbf = self.aoints.nbf
         rot_mat = np.array(rotation_matrix)
         if rot_mat.shape == (nbf, nbf):
             arot_mat = brot_mat = rot_mat
         elif rot_mat.shape == (2, nbf, nbf):
             arot_mat, brot_mat = rot_mat
         elif rot_mat.shape == (2 * nbf, 2 * nbf):
-            spinorb_inv_order = self.get_spinorb_order(invert=True)
+            spinorb_inv_order = self.spinorb_order(invert=True)
             blocked_rot_mat = rot_mat[spinorb_inv_order, :]
             arot_mat = blocked_rot_mat[:nbf, :nbf]
             brot_mat = blocked_rot_mat[nbf:, nbf:]
@@ -103,10 +103,10 @@ class Orbitals(object):
                 raise ValueError("Spin-orbital rotation matrix mixes spins.")
         else:
             raise ValueError("Invalid 'rotation_matrix' argument.")
-        ac, bc = self.mo_coefficients
-        self.mo_coefficients = np.array([ac.dot(arot_mat), bc.dot(brot_mat)])
+        ac, bc = self.mo_coeffs
+        self.mo_coeffs = np.array([ac.dot(arot_mat), bc.dot(brot_mat)])
 
-    def get_spinorb_order(self, invert=False):
+    def spinorb_order(self, invert=False):
         """Get the spin-orbital sort order.
 
         Args:
@@ -128,7 +128,7 @@ class Orbitals(object):
         spinorb_inv_order = perm_helper.get_inverse(spinorb_order)
         return spinorb_order if not invert else spinorb_inv_order
 
-    def get_mo_count(self, mo_space='ov', spin='s'):
+    def mo_count(self, mo_space='ov', spin='s'):
         """Return the number of orbitals in a given space.
 
         Args:
@@ -157,7 +157,7 @@ class Orbitals(object):
                 count += self.norb - self.nbocc
         return count
 
-    def get_mo_slice(self, mo_space='ov', spin='s'):
+    def mo_slice(self, mo_space='ov', spin='s'):
         """Return the slice for a given orbital space.
 
         Args:
@@ -178,11 +178,11 @@ class Orbitals(object):
             return slice(0)
         start_str = 'cov'[:'cov'.index(mo_space[0])]
         end_str = 'cov'[:'cov'.index(mo_space[-1]) + 1]
-        start = self.get_mo_count(mo_space=start_str, spin=spin)
-        end = self.get_mo_count(mo_space=end_str, spin=spin)
+        start = self.mo_count(mo_space=start_str, spin=spin)
+        end = self.mo_count(mo_space=end_str, spin=spin)
         return slice(start, end)
 
-    def get_mo_coefficients(self, mo_space='ov', spin='s'):
+    def mo_coefficients(self, mo_space='ov', spin='s'):
         """Return the molecular orbital coefficients.
 
         Args:
@@ -194,46 +194,20 @@ class Orbitals(object):
         Returns:
             numpy.ndarray: The orbital coefficients.
         """
-        slc = self.get_mo_slice(mo_space=mo_space, spin=spin)
+        slc = self.mo_slice(mo_space=mo_space, spin=spin)
         # Grab the appropriate set of coefficients
         if spin == 'a':
-            c = self.mo_coefficients[0]
+            c = self.mo_coeffs[0]
         elif spin == 'b':
-            c = self.mo_coefficients[1]
+            c = self.mo_coeffs[1]
         elif spin == 's':
-            spinorb_order = self.get_spinorb_order()
-            c = spla.block_diag(*self.mo_coefficients)[:, spinorb_order]
+            spinorb_order = self.spinorb_order()
+            c = spla.block_diag(*self.mo_coeffs)[:, spinorb_order]
         else:
             raise ValueError("Invalid 'spin' argument.")
         return c[:, slc]
 
-    def get_mo_fock_diagonal(self, mo_space='ov', spin='s',
-                             electric_field=None):
-        """Get the Fock operator integrals.
-
-        Returns the diagonal elements of the Fock matrix.  For canonical
-        Hartree-Fock orbitals, these will be the orbital energies.
-
-        Args:
-            mo_space (str): Any contiguous combination of 'c' (core),
-                'o' (occupied), and 'v' (virtual).  Defaults to 'ov',
-                which denotes all unfrozen orbitals.
-            spin (str): 'a' (alpha), 'b' (beta), or 's' (spin-orbital).
-            electric_field (numpy.ndarray): A three-component vector specifying
-                the magnitude of an external static electric field.  Its
-                negative dot product with the dipole integrals will be added to
-                the core Hamiltonian.
-
-        Returns:
-            numpy.ndarray: The integrals.
-        """
-        c = self.get_mo_coefficients(mo_space=mo_space, spin=spin)
-        f_ao = self.get_ao_1e_fock(mo_space='co', spin_sector=spin,
-                                   electric_field=electric_field)
-        e = tu.einsum('mn,mi,ni->i', f_ao, c, c)
-        return e
-
-    def get_mo_1e_kinetic(self, mo_block='ov,ov', spin_sector='s'):
+    def kinetic(self, mo_block='ov,ov', spin_sector='s'):
         """Get the kinetic energy integrals.
 
         Returns the representation of the electron kinetic-energy operator in
@@ -249,10 +223,10 @@ class Orbitals(object):
         Returns:
             numpy.ndarray: The integrals.
         """
-        t_ao = self.integrals.get_ao_1e_kinetic(spin_sector == 's')
-        return self._transform_ints(t_ao, mo_block, spin_sector)
+        t_ao = self.aoints.kinetic(spin_sector == 's')
+        return self._transform(t_ao, mo_block, spin_sector)
 
-    def get_mo_1e_potential(self, mo_block='ov,ov', spin_sector='s'):
+    def potential(self, mo_block='ov,ov', spin_sector='s'):
         """Get the potential energy integrals.
 
         Returns the representation of the nuclear potential operator in the
@@ -268,10 +242,10 @@ class Orbitals(object):
         Returns:
             numpy.ndarray: The integrals.
         """
-        v_ao = self.integrals.get_ao_1e_potential(spin_sector == 's')
-        return self._transform_ints(v_ao, mo_block, spin_sector)
+        v_ao = self.aoints.potential(spin_sector == 's')
+        return self._transform(v_ao, mo_block, spin_sector)
 
-    def get_mo_1e_dipole(self, mo_block='ov,ov', spin_sector='s'):
+    def dipole(self, mo_block='ov,ov', spin_sector='s'):
         """Get the dipole integrals.
 
         Returns the representation of the electric dipole operator in the
@@ -287,11 +261,11 @@ class Orbitals(object):
         Returns:
             numpy.ndarray: The integrals.
         """
-        d_ao = self.integrals.get_ao_1e_dipole(spin_sector == 's')
-        return self._transform_ints(d_ao, mo_block, spin_sector, ndim=1)
+        d_ao = self.aoints.dipole(use_spinorbs=(spin_sector == 's'))
+        return self._transform(d_ao, mo_block, spin_sector, ndim=1)
 
-    def get_mo_1e_core_hamiltonian(self, mo_block='ov,ov', spin_sector='s',
-                                   electric_field=None):
+    def core_hamiltonian(self, mo_block='ov,ov', spin_sector='s',
+                         electric_field=None):
         """Get the core Hamiltonian integrals.
 
         Returns the one-particle contribution to the Hamiltonian, i.e.
@@ -313,12 +287,12 @@ class Orbitals(object):
         Returns:
             numpy.ndarray: The integrals.
         """
-        h_ao = self.integrals.get_ao_1e_core_hamiltonian(
+        h_ao = self.aoints.core_hamiltonian(
             use_spinorbs=(spin_sector == 's'), electric_field=electric_field)
-        return self._transform_ints(h_ao, mo_block, spin_sector)
+        return self._transform(h_ao, mo_block, spin_sector)
 
-    def get_mo_1e_mean_field(self, mo_block='ov,ov', spin_sector='s',
-                             mo_space='co'):
+    def mean_field(self, mo_block='ov,ov', spin_sector='s',
+                   mo_space='co'):
         """Get the core field integrals.
 
         Returns the representation of electronic mean field of a given orbital
@@ -336,12 +310,24 @@ class Orbitals(object):
         Returns:
             numpy.ndarray: The integrals.
         """
-        w_ao = self.get_ao_1e_mean_field(mo_space=mo_space,
-                                         spin_sector=spin_sector)
-        return self._transform_ints(w_ao, mo_block, spin_sector)
+        ac = self.mo_coefficients(mo_space=mo_space, spin='a')
+        bc = self.mo_coefficients(mo_space=mo_space, spin='b')
+        if spin_sector == 'a':
+            w_ao, _ = self.aoints.mean_field(
+                alpha_coeffs=ac, beta_coeffs=bc, use_spinorbs=False)
+        elif spin_sector == 'b':
+            _, w_ao = self.aoints.mean_field(
+                alpha_coeffs=ac, beta_coeffs=bc, use_spinorbs=False)
+        elif spin_sector == 's':
+            w_ao = self.aoints.mean_field(
+                alpha_coeffs=ac, beta_coeffs=bc, use_spinorbs=True)
+        else:
+            raise ValueError("Invalid 'spin_sector' argument.")
 
-    def get_mo_1e_fock(self, mo_block='ov,ov', spin_sector='s', mo_space='co',
-                       electric_field=None):
+        return self._transform(w_ao, mo_block, spin_sector)
+
+    def fock(self, mo_block='ov,ov', spin_sector='s', mo_space='co',
+             electric_field=None, split_diagonal=False):
         """Get the Fock operator integrals.
 
         Returns the core Hamiltonian plus the mean field of an orbital space in
@@ -359,16 +345,40 @@ class Orbitals(object):
                 the magnitude of an external static electric field.  Its
                 negative dot product with the dipole integrals will be added to
                 the core Hamiltonian.
+            split_digaonal (bool): Split the matrix into a diagonal vector and
+                an off-diagonal matrix?
 
         Returns:
             numpy.ndarray: The integrals.
         """
-        f_ao = self.get_ao_1e_fock(mo_space=mo_space, spin_sector=spin_sector,
-                                   electric_field=electric_field)
-        return self._transform_ints(f_ao, mo_block, spin_sector)
+        ac = self.mo_coefficients(mo_space=mo_space, spin='a')
+        bc = self.mo_coefficients(mo_space=mo_space, spin='b')
+        if spin_sector == 'a':
+            f_ao, _ = self.aoints.fock(
+                alpha_coeffs=ac, beta_coeffs=bc, use_spinorbs=False,
+                electric_field=electric_field)
+        elif spin_sector == 'b':
+            _, f_ao = self.aoints.fock(
+                alpha_coeffs=ac, beta_coeffs=bc, use_spinorbs=False,
+                electric_field=electric_field)
+        elif spin_sector == 's':
+            f_ao = self.aoints.fock(
+                alpha_coeffs=ac, beta_coeffs=bc, use_spinorbs=True,
+                electric_field=electric_field)
+        else:
+            raise ValueError("Invalid 'spin_sector' argument.")
 
-    def get_mo_2e_repulsion(self, mo_block='ov,ov,ov,ov', spin_sector='s,s',
-                            antisymmetrize=False):
+        f_mo = self._transform(f_ao, mo_block, spin_sector)
+
+        if split_diagonal:
+            f_mo_diag = f_mo.diagonal().copy()
+            np.fill_diagonal(f_mo, 0.)
+            return f_mo_diag, f_mo
+        else:
+            return f_mo
+
+    def electron_repulsion(self, mo_block='ov,ov,ov,ov', spin_sector='s,s',
+                           antisymmetrize=False):
         """Get the electron-repulsion integrals.
 
         Returns the representation of the electron repulsion operator in the
@@ -387,89 +397,12 @@ class Orbitals(object):
             numpy.ndarray: The integrals.
         """
         s0, s1 = spin_sector.split(',')
-        g_ao = self.integrals.get_ao_2e_repulsion(
+        g_ao = self.aoints.electron_repulsion(
             use_spinorbs=(spin_sector == 's,s'),
             antisymmetrize=(antisymmetrize and s0 == s1))
-        return self._transform_ints(g_ao, mo_block, spin_sector)
+        return self._transform(g_ao, mo_block, spin_sector)
 
-    def get_ao_1e_hf_density(self, mo_space='co', spin_sector='s'):
-        """Get the electronic density matrix.
-
-        Returns the SCF density matrix, D_mu,nu = sum_i C_mu,i C_nu,i^*, in the
-        atomic-orbital basis.  This is not the same as the one-particle reduced
-        density matrix, which is S * D * S where S is the atomic orbital overlap
-        matrix.
-
-        Args:
-            mo_space (str): The MO space of the electrons, 'c' (core),
-                'o' (occupied), and 'v' (virtual).
-            spin_sector (str): The requested spin sector (diagonal spin block).
-                Spins are 'a' (alpha), 'b' (beta), or 's' (spin-orbital).
-
-        Returns:
-            numpy.ndarray: The matrix.
-        """
-        c = self.get_mo_coefficients(mo_space=mo_space, spin=spin_sector)
-        d = c.dot(c.T)
-        return d
-
-    def get_ao_1e_mean_field(self, mo_space='co', spin_sector='s'):
-        """Get the electron mean-field integrals.
-
-        Returns the representation of electronic mean field of a given orbital
-        space in the atomic-orbital basis, <mu(1)*spin|J(1) - K(1)|nu(1)*spin>.
-
-        Args:
-            mo_space (str): The MO space applying the field, 'c' (core),
-                'o' (occupied), and 'v' (virtual).
-            spin_sector (str): The requested spin sector (diagonal spin block).
-                Spins are 'a' (alpha), 'b' (beta), or 's' (spin-orbital).
-
-        Returns:
-            numpy.ndarray: The integrals
-        """
-        da = self.get_ao_1e_hf_density(mo_space=mo_space, spin_sector='a')
-        db = self.get_ao_1e_hf_density(mo_space=mo_space, spin_sector='b')
-        g = self.integrals.get_ao_2e_repulsion(use_spinorbs=False)
-        # Compute the Coulomb and exchange matrices.
-        j = np.tensordot(g, da + db, axes=[(1, 3), (1, 0)])
-        ka = np.tensordot(g, da, axes=[(1, 2), (1, 0)])
-        kb = np.tensordot(g, db, axes=[(1, 2), (1, 0)])
-        # Return the result.
-        if spin_sector == 'a':
-            return j - ka
-        elif spin_sector == 'b':
-            return j - kb
-        elif spin_sector == 's':
-            return spla.block_diag(j - ka, j - kb)
-
-    def get_ao_1e_fock(self, mo_space='co', spin_sector='s',
-                       electric_field=None):
-        """Get the Fock operator integrals.
-
-        Returns the core Hamiltonian plus the mean field of an orbital space in
-        the atomic-orbital basis, <mu(1)*spin|h(1) + J(1) - K(1)|nu(1)*spin>.
-
-        Args:
-            mo_space (str): The MO space applying the field, 'c' (core),
-                'o' (occupied), and 'v' (virtual).
-            spin_sector (str): The requested spin sector (diagonal spin block).
-                Spins are 'a' (alpha), 'b' (beta), or 's' (spin-orbital).
-            electric_field (numpy.ndarray): A three-component vector specifying
-                the magnitude of an external static electric field.  Its
-                negative dot product with the dipole integrals will be added to
-                the core Hamiltonian.
-
-        Returns:
-            numpy.ndarray: The integrals.
-        """
-        h = self.integrals.get_ao_1e_core_hamiltonian(
-            use_spinorbs=(spin_sector == 's'), electric_field=electric_field)
-        w = self.get_ao_1e_mean_field(mo_space=mo_space,
-                                      spin_sector=spin_sector)
-        return h + w
-
-    def get_energy(self, mo_space='co', electric_field=None):
+    def mean_field_energy(self, mo_space='co', electric_field=None):
         """Get the total mean-field energy of a given orbital space.
 
         Note that this does *not* include the nuclear repulsion energy.
@@ -485,11 +418,13 @@ class Orbitals(object):
         Returns:
             float: The energy.
         """
-        h = self.integrals.get_ao_1e_core_hamiltonian(
-            use_spinorbs=False, electric_field=electric_field)
-        da = self.get_ao_1e_hf_density(mo_space=mo_space, spin_sector='a')
-        db = self.get_ao_1e_hf_density(mo_space=mo_space, spin_sector='b')
-        wa = self.get_ao_1e_mean_field(mo_space=mo_space, spin_sector='a')
-        wb = self.get_ao_1e_mean_field(mo_space=mo_space, spin_sector='b')
-        e_elec = np.sum((h + wa / 2) * da + (h + wb / 2) * db)
-        return e_elec
+        blk = ','.join([mo_space, mo_space])
+        ah = self.core_hamiltonian(mo_block=blk, spin_sector='a',
+                                   electric_field=electric_field)
+        bh = self.core_hamiltonian(mo_block=blk, spin_sector='b',
+                                   electric_field=electric_field)
+        aw = self.mean_field(mo_block=blk, spin_sector='a',
+                             mo_space=mo_space)
+        bw = self.mean_field(mo_block=blk, spin_sector='b',
+                             mo_space=mo_space)
+        return np.trace(ah + aw / 2.) + np.trace(bh + bw / 2.)

@@ -1,11 +1,11 @@
 import numpy as np
 import psi4.core
 
-from .integrals import IntegralsInterface
+from .ao import AOIntegralsInterface
 from .molecule import nuclear_coordinate_string, nuclear_coordinates_in_bohr
 
 
-class Integrals(IntegralsInterface):
+class AOIntegrals(AOIntegralsInterface):
     """Molecular integrals (Psi4).
     
     Attributes:
@@ -16,7 +16,7 @@ class Integrals(IntegralsInterface):
     """
 
     def __init__(self, basis_label, nuc_labels, nuc_coords, units="bohr"):
-        """Initialize Integrals object.
+        """Initialize AOIntegrals object.
 
         Args:
             basis_label (str): What basis set to use.
@@ -38,7 +38,7 @@ class Integrals(IntegralsInterface):
         self.basis_label = basis_label
         self.nbf = int(self._mints_helper.nbf())
 
-    def get_ao_1e_overlap(self, use_spinorbs=False, recompute=False):
+    def overlap(self, use_spinorbs=False, recompute=False):
         """Get the overlap integrals.
        
         Returns the overlap matrix of the atomic-orbital basis, <mu(1)|nu(1)>.
@@ -53,10 +53,10 @@ class Integrals(IntegralsInterface):
 
         def integrate(): return np.array(self._mints_helper.ao_overlap())
 
-        s = self._get_ints('1e_overlap', integrate, use_spinorbs, recompute)
+        s = self._compute('1e_overlap', integrate, use_spinorbs, recompute)
         return s
 
-    def get_ao_1e_kinetic(self, use_spinorbs=False, recompute=False):
+    def kinetic(self, use_spinorbs=False, recompute=False):
         """Get the kinetic energy integrals.
         
         Returns the representation of the electron kinetic-energy operator in
@@ -72,10 +72,10 @@ class Integrals(IntegralsInterface):
 
         def integrate(): return np.array(self._mints_helper.ao_kinetic())
 
-        t = self._get_ints('1e_kinetic', integrate, use_spinorbs, recompute)
+        t = self._compute('1e_kinetic', integrate, use_spinorbs, recompute)
         return t
 
-    def get_ao_1e_potential(self, use_spinorbs=False, recompute=False):
+    def potential(self, use_spinorbs=False, recompute=False):
         """Get the potential energy integrals.
 
         Returns the representation of the nuclear potential operator in the
@@ -91,10 +91,10 @@ class Integrals(IntegralsInterface):
 
         def integrate(): return np.array(self._mints_helper.ao_potential())
 
-        v = self._get_ints('1e_potential', integrate, use_spinorbs, recompute)
+        v = self._compute('1e_potential', integrate, use_spinorbs, recompute)
         return v
 
-    def get_ao_1e_dipole(self, use_spinorbs=False, recompute=False):
+    def dipole(self, use_spinorbs=False, recompute=False):
         """Get the dipole integrals.
 
         Returns the representation of the electric dipole operator in the
@@ -112,12 +112,12 @@ class Integrals(IntegralsInterface):
             comps = self._mints_helper.ao_dipole()
             return np.array([np.array(comp) for comp in comps])
 
-        d = self._get_ints('1e_dipole', integrate, use_spinorbs, recompute,
-                           ncomp=3)
+        d = self._compute('1e_dipole', integrate, use_spinorbs, recompute,
+                          ncomp=3)
         return d
 
-    def get_ao_2e_repulsion(self, use_spinorbs=False, recompute=False,
-                            antisymmetrize=False):
+    def electron_repulsion(self, use_spinorbs=False, recompute=False,
+                           antisymmetrize=False):
         """Get the electron-repulsion integrals.
 
         Returns the representation of the electron repulsion operator in the 
@@ -137,16 +137,16 @@ class Integrals(IntegralsInterface):
             g_chem = np.array(self._mints_helper.ao_eri())
             return g_chem.transpose((0, 2, 1, 3))
 
-        g = self._get_ints('2e_repulsion', integrate, use_spinorbs, recompute)
+        g = self._compute('2e_repulsion', integrate, use_spinorbs, recompute)
         if antisymmetrize:
             g = g - g.transpose((0, 1, 3, 2))
         return g
 
 
-def get_hf_mo_coefficients(integrals, charge=0, multp=1,
-                           restrict_spin=False, niter=100, e_threshold=1e-12,
-                           d_threshold=1e-6, guess="auto"):
-    if not isinstance(integrals, Integrals):
+def hf_mo_coefficients(integrals, charge=0, multp=1,
+                       restrict_spin=False, niter=100, e_threshold=1e-12,
+                       d_threshold=1e-6, guess="auto"):
+    if not isinstance(integrals, AOIntegrals):
         raise ValueError("Please use an integrals object from the PySCF "
                          "interface.")
     integrals._psi4_molecule.set_molecular_charge(charge)
@@ -177,29 +177,28 @@ def get_hf_mo_coefficients(integrals, charge=0, multp=1,
 
 if __name__ == "__main__":
     import itertools as it
-    from .molecule import Nuclei, Molecule
-    from .orbitals import Orbitals
+    from .mo import MOIntegrals
+    from .molecule import electron_spin_count, nuclear_repulsion_energy
 
     labels = ("O", "H", "H")
     coordinates = np.array([[0.0000000000, 0.0000000000, -0.1247219248],
                             [0.0000000000, -1.4343021349, 0.9864370414],
                             [0.0000000000, 1.4343021349, 0.9864370414]])
-    nuclei = Nuclei(labels, coordinates)
-    integrals = Integrals(nuclei, "sto-3g")
+    e_nuc = nuclear_repulsion_energy(labels, coordinates)
+    integrals = AOIntegrals("sto-3g", labels, coordinates)
     energies = []
     iterables1 = ([(0, 1), (1, 2)], [True, False])
     iterables2 = ([0, 1], ['c', 'o', 'v', 'co', 'ov', 'cov'],
                   [(0., 0., 0.), (0., 0., 10.)])
     for (charge, multp), restr in it.product(*iterables1):
-        mo_coefficients = get_hf_mo_coefficients(integrals, charge=charge,
-                                                 multp=multp,
-                                                 restrict_spin=restr)
-        molecule = Molecule(nuclei, charge=charge, multiplicity=multp)
-        orbitals = Orbitals(integrals, mo_coefficients, molecule.nalpha,
-                            molecule.nbeta)
+        mo_coeffs = hf_mo_coefficients(integrals, charge=charge, multp=multp,
+                                       restrict_spin=restr)
+        nalpha, nbeta = electron_spin_count(labels, mol_charge=charge,
+                                            multiplicity=multp)
+        orbitals = MOIntegrals(integrals, mo_coeffs, nalpha, nbeta)
         for ncore, mo_space, e_field in it.product(*iterables2):
             orbitals.ncore = ncore
-            energy = orbitals.get_energy(mo_space=mo_space,
-                                         electric_field=e_field)
-            energies.append(energy)
+            energy = orbitals.mean_field_energy(mo_space=mo_space,
+                                                electric_field=e_field)
+            energies.append(energy + e_nuc)
     print(energies)
