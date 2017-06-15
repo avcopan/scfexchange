@@ -72,7 +72,7 @@ class RPA(object):
 
 
 if __name__ == "__main__":
-    from scfexchange import Nuclei, Orbitals
+    from scfexchange import Orbitals
     from scfexchange.pyscf_interface import Integrals, get_hf_mo_coefficients
 
     labels = ("O", "H", "H")
@@ -80,8 +80,7 @@ if __name__ == "__main__":
                             [ 1.638036840407,  1.136548822547, -0.000000000000],
                             [-1.638036840407,  1.136548822547, -0.000000000000]])
 
-    nuclei = Nuclei(labels, coordinates)
-    integrals = Integrals(nuclei, "sto-3g")
+    integrals = Integrals("sto-3g", labels, coordinates)
     mo_coefficients = get_hf_mo_coefficients(integrals, charge=0, multp=1)
     orbitals = Orbitals(integrals, mo_coefficients, naocc=5, nbocc=5)
     rpa = RPA(orbitals)

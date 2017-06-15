@@ -1,9 +1,6 @@
-import abc
-
 import more_itertools as mit
 import numpy as np
 import scipy.linalg as spla
-from six import with_metaclass
 from functools import reduce
 
 import tensorutils as tu
