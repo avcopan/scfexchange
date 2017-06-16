@@ -261,7 +261,7 @@ class MOIntegrals(object):
         Returns:
             numpy.ndarray: The integrals.
         """
-        d_ao = self.aoints.dipole(use_spinorbs=(spin_sector == 's'))
+        d_ao = self.aoints.dipole(spinorb=(spin_sector == 's'))
         return self._transform(d_ao, mo_block, spin_sector, ndim=1)
 
     def core_hamiltonian(self, mo_block='ov,ov', spin_sector='s',
@@ -288,7 +288,7 @@ class MOIntegrals(object):
             numpy.ndarray: The integrals.
         """
         h_ao = self.aoints.core_hamiltonian(
-            use_spinorbs=(spin_sector == 's'), electric_field=electric_field)
+            spinorb=(spin_sector == 's'), electric_field=electric_field)
         return self._transform(h_ao, mo_block, spin_sector)
 
     def mean_field(self, mo_block='ov,ov', spin_sector='s',
@@ -314,13 +314,13 @@ class MOIntegrals(object):
         bc = self.mo_coefficients(mo_space=mo_space, spin='b')
         if spin_sector == 'a':
             w_ao, _ = self.aoints.mean_field(
-                alpha_coeffs=ac, beta_coeffs=bc, use_spinorbs=False)
+                alpha_coeffs=ac, beta_coeffs=bc, spinorb=False)
         elif spin_sector == 'b':
             _, w_ao = self.aoints.mean_field(
-                alpha_coeffs=ac, beta_coeffs=bc, use_spinorbs=False)
+                alpha_coeffs=ac, beta_coeffs=bc, spinorb=False)
         elif spin_sector == 's':
             w_ao = self.aoints.mean_field(
-                alpha_coeffs=ac, beta_coeffs=bc, use_spinorbs=True)
+                alpha_coeffs=ac, beta_coeffs=bc, spinorb=True)
         else:
             raise ValueError("Invalid 'spin_sector' argument.")
 
@@ -355,15 +355,15 @@ class MOIntegrals(object):
         bc = self.mo_coefficients(mo_space=mo_space, spin='b')
         if spin_sector == 'a':
             f_ao, _ = self.aoints.fock(
-                alpha_coeffs=ac, beta_coeffs=bc, use_spinorbs=False,
+                alpha_coeffs=ac, beta_coeffs=bc, spinorb=False,
                 electric_field=electric_field)
         elif spin_sector == 'b':
             _, f_ao = self.aoints.fock(
-                alpha_coeffs=ac, beta_coeffs=bc, use_spinorbs=False,
+                alpha_coeffs=ac, beta_coeffs=bc, spinorb=False,
                 electric_field=electric_field)
         elif spin_sector == 's':
             f_ao = self.aoints.fock(
-                alpha_coeffs=ac, beta_coeffs=bc, use_spinorbs=True,
+                alpha_coeffs=ac, beta_coeffs=bc, spinorb=True,
                 electric_field=electric_field)
         else:
             raise ValueError("Invalid 'spin_sector' argument.")
@@ -398,11 +398,11 @@ class MOIntegrals(object):
         """
         s0, s1 = spin_sector.split(',')
         g_ao = self.aoints.electron_repulsion(
-            use_spinorbs=(spin_sector == 's,s'),
+            spinorb=(spin_sector == 's,s'),
             antisymmetrize=(antisymmetrize and s0 == s1))
         return self._transform(g_ao, mo_block, spin_sector)
 
-    def mean_field_energy(self, mo_space='co', electric_field=None):
+    def electronic_energy(self, mo_space='co', electric_field=None):
         """Get the total mean-field energy of a given orbital space.
 
         Note that this does *not* include the nuclear repulsion energy.

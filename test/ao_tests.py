@@ -102,15 +102,15 @@ def run_test__overlap(interface):
     assert (numpy.isclose(numpy.linalg.norm(s), norm))
 
     # Test spin-orbital
-    s = aoints.overlap(use_spinorbs=True)
+    s = aoints.overlap(spinorb=True)
     assert (s.shape == (2 * nbf, 2 * nbf))
     assert (numpy.isclose(numpy.linalg.norm(s), spinorb_norm))
 
     # Test spin-orbital recompute
     aoints._overlap[:] = numpy.zeros((nbf, nbf))
-    s = aoints.overlap(use_spinorbs=True)
+    s = aoints.overlap(spinorb=True)
     assert (numpy.linalg.norm(s) == 0.0)
-    s = aoints.overlap(use_spinorbs=True, recompute=True)
+    s = aoints.overlap(spinorb=True, recompute=True)
     assert (numpy.isclose(numpy.linalg.norm(s), spinorb_norm))
 
 
@@ -141,15 +141,15 @@ def run_test__kinetic(interface):
     assert (numpy.isclose(numpy.linalg.norm(s), norm))
 
     # Test spin-orbital
-    s = aoints.kinetic(use_spinorbs=True)
+    s = aoints.kinetic(spinorb=True)
     assert (s.shape == (2 * nbf, 2 * nbf))
     assert (numpy.isclose(numpy.linalg.norm(s), spinorb_norm))
 
     # Test spin-orbital recompute
     aoints._kinetic[:] = numpy.zeros((nbf, nbf))
-    s = aoints.kinetic(use_spinorbs=True)
+    s = aoints.kinetic(spinorb=True)
     assert (numpy.linalg.norm(s) == 0.0)
-    s = aoints.kinetic(use_spinorbs=True, recompute=True)
+    s = aoints.kinetic(spinorb=True, recompute=True)
     assert (numpy.isclose(numpy.linalg.norm(s), spinorb_norm))
 
 
@@ -180,15 +180,15 @@ def run_test__potential(interface):
     assert (numpy.isclose(numpy.linalg.norm(s), norm))
 
     # Test spin-orbital
-    s = aoints.potential(use_spinorbs=True)
+    s = aoints.potential(spinorb=True)
     assert (s.shape == (2 * nbf, 2 * nbf))
     assert (numpy.isclose(numpy.linalg.norm(s), spinorb_norm))
 
     # Test spin-orbital recompute
     aoints._potential[:] = numpy.zeros((nbf, nbf))
-    s = aoints.potential(use_spinorbs=True)
+    s = aoints.potential(spinorb=True)
     assert (numpy.linalg.norm(s) == 0.0)
-    s = aoints.potential(use_spinorbs=True, recompute=True)
+    s = aoints.potential(spinorb=True, recompute=True)
     assert (numpy.isclose(numpy.linalg.norm(s), spinorb_norm))
 
 
@@ -222,15 +222,15 @@ def run_test__dipole(interface):
     assert (numpy.isclose(numpy.linalg.norm(s), norm))
 
     # Test spin-orbital
-    s = aoints.dipole(use_spinorbs=True)
+    s = aoints.dipole(spinorb=True)
     assert (s.shape == (3, 2 * nbf, 2 * nbf))
     assert (numpy.isclose(numpy.linalg.norm(s), spinorb_norm))
 
     # Test spin-orbital recompute
     aoints._dipole[:] = numpy.zeros((3, nbf, nbf))
-    s = aoints.dipole(use_spinorbs=True)
+    s = aoints.dipole(spinorb=True)
     assert (numpy.linalg.norm(s) == 0.0)
-    s = aoints.dipole(use_spinorbs=True, recompute=True)
+    s = aoints.dipole(spinorb=True, recompute=True)
     assert (numpy.isclose(numpy.linalg.norm(s), spinorb_norm))
 
 
@@ -263,15 +263,15 @@ def run_test__electron_repulsion(interface):
     assert (numpy.isclose(numpy.linalg.norm(s), norm))
 
     # Test spin-orbital
-    s = aoints.electron_repulsion(use_spinorbs=True)
+    s = aoints.electron_repulsion(spinorb=True)
     assert (s.shape == (2 * nbf, 2 * nbf, 2 * nbf, 2 * nbf))
     assert (numpy.isclose(numpy.linalg.norm(s), spinorb_norm))
 
     # Test spin-orbital recompute
     aoints._electron_repulsion[:] = numpy.zeros((nbf, nbf, nbf, nbf))
-    s = aoints.electron_repulsion(use_spinorbs=True)
+    s = aoints.electron_repulsion(spinorb=True)
     assert (numpy.linalg.norm(s) == 0.0)
-    s = aoints.electron_repulsion(use_spinorbs=True, recompute=True)
+    s = aoints.electron_repulsion(spinorb=True, recompute=True)
     assert (numpy.isclose(numpy.linalg.norm(s), spinorb_norm))
 
     # Test antisymmetrize
@@ -288,15 +288,15 @@ def run_test__electron_repulsion(interface):
     assert (numpy.isclose(numpy.linalg.norm(s), asym_norm))
 
     # Test antisymmetrize spin-orbital
-    s = aoints.electron_repulsion(antisymmetrize=True, use_spinorbs=True)
+    s = aoints.electron_repulsion(antisymmetrize=True, spinorb=True)
     assert (s.shape == (2 * nbf, 2 * nbf, 2 * nbf, 2 * nbf))
     assert (numpy.isclose(numpy.linalg.norm(s), asym_spinorb_norm))
 
     # Test antisymmetrize spin-orbital recompute
     aoints._electron_repulsion[:] = numpy.zeros((nbf, nbf, nbf, nbf))
-    s = aoints.electron_repulsion(antisymmetrize=True, use_spinorbs=True)
+    s = aoints.electron_repulsion(antisymmetrize=True, spinorb=True)
     assert (numpy.linalg.norm(s) == 0.0)
-    s = aoints.electron_repulsion(antisymmetrize=True, use_spinorbs=True,
+    s = aoints.electron_repulsion(antisymmetrize=True, spinorb=True,
                                   recompute=True)
     assert (numpy.isclose(numpy.linalg.norm(s), asym_spinorb_norm))
 
@@ -332,7 +332,7 @@ def run_test__core_hamiltonian(interface):
     assert (numpy.isclose(numpy.linalg.norm(s), norm))
 
     # Test spin-orbital
-    s = aoints.core_hamiltonian(electric_field=[0., 0., 1.], use_spinorbs=True)
+    s = aoints.core_hamiltonian(electric_field=[0., 0., 1.], spinorb=True)
     assert (s.shape == (2 * nbf, 2 * nbf))
     assert (numpy.isclose(numpy.linalg.norm(s), spinorb_norm))
 
@@ -340,9 +340,9 @@ def run_test__core_hamiltonian(interface):
     aoints._kinetic[:] = numpy.zeros((nbf, nbf))
     aoints._potential[:] = numpy.zeros((nbf, nbf))
     aoints._dipole[:] = numpy.zeros((nbf, nbf))
-    s = aoints.core_hamiltonian(electric_field=[0., 0., 1.], use_spinorbs=True)
+    s = aoints.core_hamiltonian(electric_field=[0., 0., 1.], spinorb=True)
     assert (numpy.linalg.norm(s) == 0.0)
-    s = aoints.core_hamiltonian(electric_field=[0., 0., 1.], use_spinorbs=True,
+    s = aoints.core_hamiltonian(electric_field=[0., 0., 1.], spinorb=True,
                                 recompute=True)
     assert (numpy.isclose(numpy.linalg.norm(s), spinorb_norm))
 
@@ -378,17 +378,17 @@ def run_test__mean_field(interface):
 
     # Test spin-orbital
     s = aoints.mean_field(alpha_coeffs, beta_coeffs=beta_coeffs,
-                          use_spinorbs=True)
+                          spinorb=True)
     assert (s.shape == (2 * nbf, 2 * nbf))
     assert (numpy.isclose(numpy.linalg.norm(s), spinorb_norm))
 
     # Test spin-orbital recompute
     aoints._electron_repulsion[:] = numpy.zeros((nbf, nbf, nbf, nbf))
     s = aoints.mean_field(alpha_coeffs, beta_coeffs=beta_coeffs,
-                          use_spinorbs=True)
+                          spinorb=True)
     assert (numpy.linalg.norm(s) == 0.0)
     s = aoints.mean_field(alpha_coeffs, beta_coeffs=beta_coeffs,
-                          use_spinorbs=True, recompute=True)
+                          spinorb=True, recompute=True)
     assert (numpy.isclose(numpy.linalg.norm(s), spinorb_norm))
 
 
@@ -432,7 +432,7 @@ def run_test__fock(interface):
 
     # Test spin-orbital
     s = aoints.fock(alpha_coeffs, beta_coeffs=beta_coeffs,
-                    electric_field=[0., 0., 1.], use_spinorbs=True)
+                    electric_field=[0., 0., 1.], spinorb=True)
     assert (s.shape == (2 * nbf, 2 * nbf))
     assert (numpy.isclose(numpy.linalg.norm(s), spinorb_norm))
 
@@ -442,10 +442,10 @@ def run_test__fock(interface):
     aoints._dipole[:] = numpy.zeros((nbf, nbf))
     aoints._electron_repulsion[:] = numpy.zeros((nbf, nbf, nbf, nbf))
     s = aoints.fock(alpha_coeffs, beta_coeffs=beta_coeffs,
-                    electric_field=[0., 0., 1.], use_spinorbs=True)
+                    electric_field=[0., 0., 1.], spinorb=True)
     assert (numpy.linalg.norm(s) == 0.0)
     s = aoints.fock(alpha_coeffs, beta_coeffs=beta_coeffs,
-                    electric_field=[0., 0., 1.], use_spinorbs=True,
+                    electric_field=[0., 0., 1.], spinorb=True,
                     recompute=True)
     assert (numpy.isclose(numpy.linalg.norm(s), spinorb_norm))
 

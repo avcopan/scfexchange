@@ -64,7 +64,7 @@ def test__hf_mo_coefficients():
                                                    multp=multp)
             alpha_coeffs = mo_coeffs[0, :, :naocc]
             beta_coeffs = mo_coeffs[1, :, :nbocc]
-            elec_energy = aoints.mean_field_energy(alpha_coeffs,
+            elec_energy = aoints.electronic_energy(alpha_coeffs,
                                                    beta_coeffs=beta_coeffs)
             energy = elec_energy + nuc_energy
             assert(numpy.isclose(energy, next(energies)))

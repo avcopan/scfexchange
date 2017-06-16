@@ -71,13 +71,13 @@ class AOIntegrals(AOIntegralsInterface):
         self.basis_label = basis_label
         self.nbf = int(self._mints_helper.nbf())
 
-    def overlap(self, use_spinorbs=False, recompute=False):
+    def overlap(self, spinorb=False, recompute=False):
         """Get the overlap integrals.
        
         Returns the overlap matrix of the atomic-orbital basis, <mu(1)|nu(1)>.
     
         Args:
-            use_spinorbs (bool): Return the integrals in the spin-orbital basis?
+            spinorb (bool): Return the integrals in the spin-orbital basis?
             recompute (bool): Recompute the integrals, if we already have them?
     
         Returns:
@@ -86,17 +86,17 @@ class AOIntegrals(AOIntegralsInterface):
 
         def integrate(): return np.array(self._mints_helper.ao_overlap())
 
-        s = self._compute('_overlap', integrate, use_spinorbs, recompute)
+        s = self._compute('_overlap', integrate, spinorb, recompute)
         return s
 
-    def kinetic(self, use_spinorbs=False, recompute=False):
+    def kinetic(self, spinorb=False, recompute=False):
         """Get the kinetic energy integrals.
         
         Returns the representation of the electron kinetic-energy operator in
         the atomic-orbital basis, <mu(1)| - 1 / 2 * nabla_1^2 |nu(1)>.
     
         Args:
-            use_spinorbs (bool): Return the integrals in the spin-orbital basis?
+            spinorb (bool): Return the integrals in the spin-orbital basis?
             recompute (bool): Recompute the integrals, if we already have them?
     
         Returns:
@@ -105,17 +105,17 @@ class AOIntegrals(AOIntegralsInterface):
 
         def integrate(): return np.array(self._mints_helper.ao_kinetic())
 
-        t = self._compute('_kinetic', integrate, use_spinorbs, recompute)
+        t = self._compute('_kinetic', integrate, spinorb, recompute)
         return t
 
-    def potential(self, use_spinorbs=False, recompute=False):
+    def potential(self, spinorb=False, recompute=False):
         """Get the potential energy integrals.
 
         Returns the representation of the nuclear potential operator in the
         atomic-orbital basis, <mu(1)| sum_A Z_A / ||r_1 - r_A|| |nu(1)>.
     
         Args:
-            use_spinorbs (bool): Return the integrals in the spin-orbital basis?
+            spinorb (bool): Return the integrals in the spin-orbital basis?
             recompute (bool): Recompute the integrals, if we already have them?
     
         Returns:
@@ -124,17 +124,17 @@ class AOIntegrals(AOIntegralsInterface):
 
         def integrate(): return np.array(self._mints_helper.ao_potential())
 
-        v = self._compute('_potential', integrate, use_spinorbs, recompute)
+        v = self._compute('_potential', integrate, spinorb, recompute)
         return v
 
-    def dipole(self, use_spinorbs=False, recompute=False):
+    def dipole(self, spinorb=False, recompute=False):
         """Get the dipole integrals.
 
         Returns the representation of the electric dipole operator in the
         atomic-orbital basis, <mu(1)| [-x, -y, -z] |nu(1)>.
         
         Args:
-            use_spinorbs (bool): Return the integrals in the spin-orbital basis?
+            spinorb (bool): Return the integrals in the spin-orbital basis?
             recompute (bool): Recompute the integrals, if we already have them?
     
         Returns:
@@ -145,11 +145,11 @@ class AOIntegrals(AOIntegralsInterface):
             comps = self._mints_helper.ao_dipole()
             return np.array([np.array(comp) for comp in comps])
 
-        d = self._compute('_dipole', integrate, use_spinorbs, recompute,
-                          ncomp=3)
-        return d
+        m = self._compute('_dipole', integrate, spinorb, recompute,
+                          multicomp=True)
+        return m
 
-    def electron_repulsion(self, use_spinorbs=False, recompute=False,
+    def electron_repulsion(self, spinorb=False, recompute=False,
                            antisymmetrize=False):
         """Get the electron-repulsion integrals.
 
@@ -158,7 +158,7 @@ class AOIntegrals(AOIntegralsInterface):
         Note that these are returned in physicist's notation.
     
         Args:
-            use_spinorbs (bool): Return the integrals in the spin-orbital basis?
+            spinorb (bool): Return the integrals in the spin-orbital basis?
             recompute (bool): Recompute the integrals, if we already have them?
             antisymmetrize (bool): Antisymmetrize the integral tensor?
     
@@ -170,8 +170,7 @@ class AOIntegrals(AOIntegralsInterface):
             g_chem = np.array(self._mints_helper.ao_eri())
             return g_chem.transpose((0, 2, 1, 3))
 
-        g = self._compute('_electron_repulsion', integrate, use_spinorbs,
-                          recompute)
+        g = self._compute('_electron_repulsion', integrate, spinorb, recompute)
         if antisymmetrize:
             g = g - g.transpose((0, 1, 3, 2))
         return g

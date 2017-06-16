@@ -57,13 +57,13 @@ class AOIntegrals(AOIntegralsInterface):
         self.basis_label = str(basis_label)
         self.nbf = int(self._pyscf_molecule.nao_nr())
 
-    def overlap(self, use_spinorbs=False, recompute=False):
+    def overlap(self, spinorb=False, recompute=False):
         """Get the overlap integrals.
        
         Returns the overlap matrix of the atomic-orbital basis, <mu(1)|nu(1)>.
     
         Args:
-            use_spinorbs (bool): Return the integrals in the spin-orbital basis?
+            spinorb (bool): Return the integrals in the spin-orbital basis?
             recompute (bool): Recompute the integrals, if we already have them?
     
         Returns:
@@ -72,17 +72,17 @@ class AOIntegrals(AOIntegralsInterface):
 
         def integrate(): return self._pyscf_molecule.intor('cint1e_ovlp_sph')
 
-        s = self._compute('_overlap', integrate, use_spinorbs, recompute)
+        s = self._compute('_overlap', integrate, spinorb, recompute)
         return s
 
-    def kinetic(self, use_spinorbs=False, recompute=False):
+    def kinetic(self, spinorb=False, recompute=False):
         """Get the kinetic energy integrals.
         
         Returns the representation of the electron kinetic-energy operator in
         the atomic-orbital basis, <mu(1)| - 1 / 2 * nabla_1^2 |nu(1)>.
     
         Args:
-            use_spinorbs (bool): Return the integrals in the spin-orbital basis?
+            spinorb (bool): Return the integrals in the spin-orbital basis?
             recompute (bool): Recompute the integrals, if we already have them?
     
         Returns:
@@ -91,17 +91,17 @@ class AOIntegrals(AOIntegralsInterface):
 
         def integrate(): return self._pyscf_molecule.intor('cint1e_kin_sph')
 
-        t = self._compute('_kinetic', integrate, use_spinorbs, recompute)
+        t = self._compute('_kinetic', integrate, spinorb, recompute)
         return t
 
-    def potential(self, use_spinorbs=False, recompute=False):
+    def potential(self, spinorb=False, recompute=False):
         """Get the potential energy integrals.
 
         Returns the representation of the nuclear potential operator in the
         atomic-orbital basis, <mu(1)| sum_A Z_A / ||r_1 - r_A|| |nu(1)>.
     
         Args:
-            use_spinorbs (bool): Return the integrals in the spin-orbital basis?
+            spinorb (bool): Return the integrals in the spin-orbital basis?
             recompute (bool): Recompute the integrals, if we already have them?
     
         Returns:
@@ -110,17 +110,17 @@ class AOIntegrals(AOIntegralsInterface):
 
         def integrate(): return self._pyscf_molecule.intor('cint1e_nuc_sph')
 
-        v = self._compute('_potential', integrate, use_spinorbs, recompute)
+        v = self._compute('_potential', integrate, spinorb, recompute)
         return v
 
-    def dipole(self, use_spinorbs=False, recompute=False):
+    def dipole(self, spinorb=False, recompute=False):
         """Get the dipole integrals.
 
         Returns the representation of the electric dipole operator in the
         atomic-orbital basis, <mu(1)| [-x, -y, -z] |nu(1)>.
         
         Args:
-            use_spinorbs (bool): Return the integrals in the spin-orbital basis?
+            spinorb (bool): Return the integrals in the spin-orbital basis?
             recompute (bool): Recompute the integrals, if we already have them?
     
         Returns:
@@ -130,11 +130,11 @@ class AOIntegrals(AOIntegralsInterface):
         def integrate():
             return -self._pyscf_molecule.intor('cint1e_r_sph', comp=3)
 
-        d = self._compute('_dipole', integrate, use_spinorbs, recompute,
-                          ncomp=3)
-        return d
+        m = self._compute('_dipole', integrate, spinorb, recompute,
+                          multicomp=True)
+        return m
 
-    def electron_repulsion(self, use_spinorbs=False, recompute=False,
+    def electron_repulsion(self, spinorb=False, recompute=False,
                            antisymmetrize=False):
         """Get the electron-repulsion integrals.
 
@@ -143,7 +143,7 @@ class AOIntegrals(AOIntegralsInterface):
         Note that these are returned in physicist's notation.
     
         Args:
-            use_spinorbs (bool): Return the integrals in the spin-orbital basis?
+            spinorb (bool): Return the integrals in the spin-orbital basis?
             recompute (bool): Recompute the integrals, if we already have them?
             antisymmetrize (bool): Antisymmetrize the integral tensor?
     
@@ -156,8 +156,7 @@ class AOIntegrals(AOIntegralsInterface):
             g_chem = self._pyscf_molecule.intor('cint2e_sph').reshape(shape)
             return g_chem.transpose((0, 2, 1, 3))
 
-        g = self._compute('_electron_repulsion', integrate, use_spinorbs,
-                          recompute)
+        g = self._compute('_electron_repulsion', integrate, spinorb, recompute)
         if antisymmetrize:
             g = g - g.transpose((0, 1, 3, 2))
         return g
@@ -165,31 +164,15 @@ class AOIntegrals(AOIntegralsInterface):
 
 def _main():
     import numpy
-    import scfexchange.molecule as mol
 
     nuc_labels = ("O", "H", "H")
     nuc_coords = numpy.array([[0.0000000000, 0.0000000000, -0.1247219248],
                               [0.0000000000, -1.4343021349, 0.9864370414],
                               [0.0000000000, 1.4343021349, 0.9864370414]])
 
-    nuc_energy = mol.nuclear_repulsion_energy(nuc_labels, nuc_coords)
     aoints = AOIntegrals("sto-3g", nuc_labels, nuc_coords)
 
-    energies = []
-    for charge, multp in [(0, 1), (1, 2)]:
-        for restr in [True, False]:
-            mo_coeffs = hf_mo_coefficients(aoints, charge=charge, multp=multp,
-                                           restricted=restr)
-            naocc, nbocc = mol.electron_spin_count(nuc_labels,
-                                                   mol_charge=charge,
-                                                   multp=multp)
-            alpha_coeffs = mo_coeffs[0, :, :naocc]
-            beta_coeffs = mo_coeffs[1, :, :nbocc]
-            elec_energy = aoints.mean_field_energy(alpha_coeffs,
-                                                   beta_coeffs=beta_coeffs)
-            energy = elec_energy + nuc_energy
-            energies.append(energy)
-    print(energies)
+    hf_mo_coefficients(aoints, charge=1, multp=2)
 
 if __name__ == "__main__":
     _main()

@@ -6,7 +6,7 @@ import tensorutils as tu
 from six import with_metaclass
 
 
-def hf_density(alpha_coeffs, beta_coeffs=None, use_spinorbs=False):
+def hf_density(alpha_coeffs, beta_coeffs=None, spinorb=False):
     """Get the Hartree-Fock density of a set of orbitals.
 
     The AO-basis Hartree-Fock density has the form `d = c.dot(c.T)` where the
@@ -18,7 +18,7 @@ def hf_density(alpha_coeffs, beta_coeffs=None, use_spinorbs=False):
         alpha_coeffs (numpy.ndarray): Alpha orbital coefficients.
         beta_coeffs (numpy.ndarray): Beta orbital coefficients.  If `None`,
             these are assumed to be the same as the alpha coefficients.
-        use_spinorbs (bool): Return the density in the spin-orbital basis?
+        spinorb (bool): Return the density in the spin-orbital basis?
 
     Returns:
         numpy.ndarray: The alpha and beta densities.
@@ -30,7 +30,7 @@ def hf_density(alpha_coeffs, beta_coeffs=None, use_spinorbs=False):
         bc = beta_coeffs
     ad = ac.dot(ac.T)
     bd = bc.dot(bc.T)
-    if use_spinorbs:
+    if spinorb:
         return spla.block_diag(ad, bd)
     else:
         return np.array([ad, bd])
@@ -49,8 +49,8 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
         nbf (int): The number of basis functions.
     """
 
-    def _compute(self, name, integrate, use_spinorbs=False, recompute=False,
-                 ncomp=None):
+    def _compute(self, name, integrate, spinorb=False, recompute=False,
+                 multicomp=False):
         """Retrieve a set of integrals, computing them only when necessary.
         
         The first time this function is called for a given set of integrals,
@@ -65,11 +65,9 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
                 integrals.  Only gets called if `recompute` is True or if we
                 haven't previously computed integrals under this value of
                 `name`.
-            use_spinorbs (bool): Expand integrals in the spin-orbital basis?
+            spinorb (bool): Expand integrals in the spin-orbital basis?
             recompute (bool): Recompute the integrals, if we already have them?
-            ncomp (int): For multi-component integrals, this specifies the 
-                number of components.  For example, dipole integrals have three 
-                components, x, y, and z.
+            multicomp (bool): Is this a multi-component operator?
 
         Returns:
             numpy.ndarray: The integrals.
@@ -80,15 +78,15 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
             ints = integrate()
         setattr(self, name, ints)
         # If requested, construct spin-orbital integrals from the spatial ones.
-        if use_spinorbs:
-            if ncomp is None:
-                ints = tu.construct_spinorb_integrals(ints)
-            else:
+        if spinorb:
+            if multicomp:
                 ints = np.array([tu.construct_spinorb_integrals(ints_x)
                                  for ints_x in ints])
+            else:
+                ints = tu.construct_spinorb_integrals(ints)
         return ints
 
-    def core_hamiltonian(self, use_spinorbs=False, recompute=False,
+    def core_hamiltonian(self, spinorb=False, recompute=False,
                          electric_field=None):
         """Get the core Hamiltonian integrals.
 
@@ -97,7 +95,7 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
         static electric field in the dipole approximation.
         
         Args:
-            use_spinorbs (bool): Return the integrals in the spin-orbital basis?
+            spinorb (bool): Return the integrals in the spin-orbital basis?
             recompute (bool): Recompute the integrals, if we already have them?
             electric_field (tuple): A three-component vector specifying the
                 magnitude of an external static electric field.  Its negative
@@ -107,19 +105,16 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
         Returns:
             numpy.ndarray: The integrals.
         """
-        t = self.kinetic(use_spinorbs=use_spinorbs,
-                         recompute=recompute)
-        v = self.potential(use_spinorbs=use_spinorbs,
-                           recompute=recompute)
+        t = self.kinetic(spinorb=spinorb, recompute=recompute)
+        v = self.potential(spinorb=spinorb, recompute=recompute)
         h = t + v
         if electric_field is not None:
-            d = self.dipole(use_spinorbs=use_spinorbs,
-                            recompute=recompute)
+            d = self.dipole(spinorb=spinorb, recompute=recompute)
             h += -tu.contract(d, electric_field)
         return h
 
-    def mean_field(self, alpha_coeffs, beta_coeffs=None,
-                   use_spinorbs=False, recompute=False):
+    def mean_field(self, alpha_coeffs, beta_coeffs=None, spinorb=False,
+                   recompute=False):
         """Get the mean field integrals for a set of orbitals.
 
         Returns the electronic mean field of a set of orbitals, which are
@@ -130,26 +125,25 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
             alpha_coeffs (numpy.ndarray): Alpha orbital coefficients.
             beta_coeffs (numpy.ndarray): Beta orbital coefficients.  If `None`,
                 these are assumed to be the same as the alpha coefficients.
-            use_spinorbs (bool): Return the integrals in the spin-orbital basis?
+            spinorb (bool): Return the integrals in the spin-orbital basis?
             recompute (bool): Recompute the integrals, if we already have them?
 
         Returns:
             numpy.ndarray: The alpha and beta mean-field integrals.
         """
-        ad, bd = hf_density(alpha_coeffs=alpha_coeffs,
-                            beta_coeffs=beta_coeffs,
-                            use_spinorbs=False)
-        g = self.electron_repulsion(use_spinorbs=False, recompute=recompute)
+        ad, bd = hf_density(alpha_coeffs, beta_coeffs=beta_coeffs,
+                            spinorb=False)
+        g = self.electron_repulsion(spinorb=False, recompute=recompute)
         # Compute the Coulomb and exchange matrices.
         j = np.tensordot(g, ad + bd, axes=[(1, 3), (1, 0)])
         ak = np.tensordot(g, ad, axes=[(1, 2), (1, 0)])
         bk = np.tensordot(g, bd, axes=[(1, 2), (1, 0)])
-        if use_spinorbs:
+        if spinorb:
             return spla.block_diag(j - ak, j - bk)
         else:
             return np.array([j - ak, j - bk])
 
-    def fock(self, alpha_coeffs, beta_coeffs=None, use_spinorbs=False,
+    def fock(self, alpha_coeffs, beta_coeffs=None, spinorb=False,
              recompute=False, electric_field=None):
         """Get the Fock operator integrals for a set of orbitals.
 
@@ -161,7 +155,7 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
             alpha_coeffs (numpy.ndarray): Alpha orbital coefficients.
             beta_coeffs (numpy.ndarray): Beta orbital coefficients.  If `None`,
                 these are assumed to be the same as the alpha coefficients.
-            use_spinorbs (bool): Return the integrals in the spin-orbital basis?
+            spinorb (bool): Return the integrals in the spin-orbital basis?
             recompute (bool): Recompute the integrals, if we already have them?
             electric_field (tuple): A three-component vector specifying the
                 magnitude of an external static electric field.  Its negative
@@ -171,19 +165,16 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
         Returns:
             numpy.ndarray: The alpha and beta Fock integrals.
         """
-        h = self.core_hamiltonian(use_spinorbs=False,
-                                  recompute=recompute,
+        h = self.core_hamiltonian(spinorb=False, recompute=recompute,
                                   electric_field=electric_field)
-        aw, bw = self.mean_field(alpha_coeffs=alpha_coeffs,
-                                 beta_coeffs=beta_coeffs,
-                                 use_spinorbs=False,
-                                 recompute=recompute)
-        if use_spinorbs:
+        aw, bw = self.mean_field(alpha_coeffs, beta_coeffs=beta_coeffs,
+                                 spinorb=False, recompute=recompute)
+        if spinorb:
             return spla.block_diag(h + aw, h + bw)
         else:
             return np.array([h + aw, h + bw])
 
-    def mean_field_energy(self, alpha_coeffs, beta_coeffs=False,
+    def electronic_energy(self, alpha_coeffs, beta_coeffs=None,
                           electric_field=None, recompute=False):
         """Get the mean field energy of a set of orbitals.
 
@@ -200,26 +191,40 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
         Returns:
             float: The energy.
         """
-        h = self.core_hamiltonian(use_spinorbs=False,
-                                  recompute=recompute,
+        h = self.core_hamiltonian(spinorb=False, recompute=recompute,
                                   electric_field=electric_field)
-        aw, bw = self.mean_field(alpha_coeffs=alpha_coeffs,
-                                 beta_coeffs=beta_coeffs,
-                                 use_spinorbs=False,
-                                 recompute=recompute)
-        ad, bd = hf_density(alpha_coeffs=alpha_coeffs,
-                            beta_coeffs=beta_coeffs,
-                            use_spinorbs=False)
+        aw, bw = self.mean_field(alpha_coeffs, beta_coeffs=beta_coeffs,
+                                 spinorb=False, recompute=recompute)
+        ad, bd = hf_density(alpha_coeffs, beta_coeffs=beta_coeffs,
+                            spinorb=False)
         return np.sum((h + aw / 2) * ad + (h + bw / 2) * bd)
 
+    def electronic_dipole_moment(self, alpha_coeffs, beta_coeffs=None,
+                                 recompute=False):
+        """Get the electric dipole moment of a set of orbitals.
+
+        Args:
+            alpha_coeffs (numpy.ndarray): Alpha orbital coefficients.
+            beta_coeffs (numpy.ndarray): Beta orbital coefficients.  If `None`,
+                these are assumed to be the same as the alpha coefficients.
+            recompute (bool): Recompute the integrals, if we already have them?
+
+        Returns:
+            numpy.ndarray: The dipole moment.
+        """
+        m = self.dipole(spinorb=False, recompute=recompute)
+        ad, bd = hf_density(alpha_coeffs, beta_coeffs=beta_coeffs,
+                            spinorb=False)
+        return [np.sum(m_x * ad + m_x * bd) for m_x in m]
+
     @abc.abstractmethod
-    def overlap(self, use_spinorbs=False, recompute=False):
+    def overlap(self, spinorb=False, recompute=False):
         """Get the overlap integrals.
        
         Returns the overlap matrix of the atomic-orbital basis, <mu(1)|nu(1)>.
     
         Args:
-            use_spinorbs (bool): Return the integrals in the spin-orbital basis?
+            spinorb (bool): Return the integrals in the spin-orbital basis?
             recompute (bool): Recompute the integrals, if we already have them?
     
         Returns:
@@ -228,14 +233,14 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
         return
 
     @abc.abstractmethod
-    def kinetic(self, use_spinorbs=False, recompute=False):
+    def kinetic(self, spinorb=False, recompute=False):
         """Get the kinetic energy integrals.
         
         Returns the representation of the electron kinetic-energy operator in
         the atomic-orbital basis, <mu(1)| - 1 / 2 * nabla_1^2 |nu(1)>.
     
         Args:
-            use_spinorbs (bool): Return the integrals in the spin-orbital basis?
+            spinorb (bool): Return the integrals in the spin-orbital basis?
             recompute (bool): Recompute the integrals, if we already have them?
     
         Returns:
@@ -244,14 +249,14 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
         return
 
     @abc.abstractmethod
-    def potential(self, use_spinorbs=False, recompute=False):
+    def potential(self, spinorb=False, recompute=False):
         """Get the potential energy integrals.
 
         Returns the representation of the nuclear potential operator in the
         atomic-orbital basis, <mu(1)| sum_A Z_A / ||r_1 - r_A|| |nu(1)>.
     
         Args:
-            use_spinorbs (bool): Return the integrals in the spin-orbital basis?
+            spinorb (bool): Return the integrals in the spin-orbital basis?
             recompute (bool): Recompute the integrals, if we already have them?
     
         Returns:
@@ -260,14 +265,14 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
         return
 
     @abc.abstractmethod
-    def dipole(self, use_spinorbs=False, recompute=False):
+    def dipole(self, spinorb=False, recompute=False):
         """Get the dipole integrals.
 
         Returns the representation of the electric dipole operator in the
         atomic-orbital basis, <mu(1)| [-x, -y, -z] |nu(1)>.
         
         Args:
-            use_spinorbs (bool): Return the integrals in the spin-orbital basis?
+            spinorb (bool): Return the integrals in the spin-orbital basis?
             recompute (bool): Recompute the integrals, if we already have them?
     
         Returns:
@@ -276,7 +281,7 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
         pass
 
     @abc.abstractmethod
-    def electron_repulsion(self, use_spinorbs=False, recompute=False,
+    def electron_repulsion(self, spinorb=False, recompute=False,
                            antisymmetrize=False):
         """Get the electron-repulsion integrals.
 
@@ -285,7 +290,7 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
         Note that these are returned in physicist's notation.
     
         Args:
-            use_spinorbs (bool): Return the integrals in the spin-orbital basis?
+            spinorb (bool): Return the integrals in the spin-orbital basis?
             recompute (bool): Recompute the integrals, if we already have them?
             antisymmetrize (bool): Antisymmetrize the integral tensor?
     

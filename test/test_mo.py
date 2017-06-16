@@ -4362,6 +4362,6 @@ def test__mean_field_energy():
         orbitals = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, mo_space, e_field in it.product(*iterables2):
             orbitals.ncore = ncore
-            energy = orbitals.mean_field_energy(mo_space=mo_space,
+            energy = orbitals.electronic_energy(mo_space=mo_space,
                                                 electric_field=e_field)
             assert (np.isclose(energy + e_nuc, next(energies)))
