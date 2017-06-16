@@ -9,8 +9,8 @@ def electron_count(nuc_labels, mol_charge=0):
     """The number of electrons in a molecule.
 
     Args:
-        nuc_labels (`tuple`): Atomic symbols.:
-        mol_charge (`int`): Total molecular charge.
+        nuc_labels (tuple): Atomic symbols.:
+        mol_charge (int): Total molecular charge.
 
     Returns:
         int: The number of electrons.
@@ -19,21 +19,21 @@ def electron_count(nuc_labels, mol_charge=0):
     return nuc_charge - mol_charge
 
 
-def electron_spin_count(nuc_labels, mol_charge=0, multiplicity=1):
+def electron_spin_count(nuc_labels, mol_charge=0, multp=1):
     """The number of electrons in a molecule, by spin.
 
     Assumes a high-spin (M_S = S) state.
 
     Args:
-        nuc_labels (`tuple`): Atomic symbols.:
-        mol_charge (`int`): Total molecular charge.
-        multiplicity (`int): Electronic spin multiplicity.
+        nuc_labels (tuple): Atomic symbols.:
+        mol_charge (int): Total molecular charge.
+        multp (int): Electronic spin multiplicity.
 
     Returns:
         tuple: The number of alpha and beta electrons.
     """
     nelec = electron_count(nuc_labels, mol_charge)
-    nsocc = multiplicity - 1
+    nsocc = multp - 1
     ndocc = (nelec - nsocc) // 2
     nalpha = ndocc + nsocc
     nbeta = ndocc
@@ -55,8 +55,8 @@ def nuclear_coordinate_string(nuc_labels, nuc_coords, units=None):
     """A string displaying the nuclear coordinates.
 
     Args:
-        nuc_labels (`tuple`): Atomic symbols.
-        nuc_coords (`numpy.ndarray`): Atomic coordinates.
+        nuc_labels (tuple): Atomic symbols.
+        nuc_coords (numpy.ndarray): Atomic coordinates.
 
     Returns:
         str: The coordinate string.
@@ -73,9 +73,9 @@ def nuclear_repulsion_energy(nuc_labels, nuc_coords, units="bohr"):
     """The Coulomb repulsion energy of some nuclei.
 
     Args:
-        nuc_labels (`tuple`): Atomic symbols.
-        nuc_coords (`numpy.ndarray`): Atomic coordinates.
-        units (`str`): The units of `nuc_coords`, "angstrom" or "bohr".
+        nuc_labels (tuple): Atomic symbols.
+        nuc_coords (numpy.ndarray): Atomic coordinates.
+        units (str): The units of `nuc_coords`, "angstrom" or "bohr".
 
     Returns:
         float: The nuclear repulsion energy.
@@ -93,9 +93,9 @@ def nuclear_dipole_moment(nuc_labels, nuc_coords, units="bohr"):
     """The dipole moment of some nuclei.
 
     Args:
-        nuc_labels (`tuple`): Atomic symbols.
-        nuc_coords (`numpy.ndarray`): Atomic coordinates.
-        units (`str`): The units of `nuc_coords`, "angstrom" or "bohr".
+        nuc_labels (tuple): Atomic symbols.
+        nuc_coords (numpy.ndarray): Atomic coordinates.
+        units (str): The units of `nuc_coords`, "angstrom" or "bohr".
 
     Returns:
         numpy.ndarray: The dipole moment.
@@ -111,9 +111,9 @@ def nuclear_center_of_charge(nuc_labels, nuc_coords, units="bohr"):
     """The center of charge of some nuclei.
 
     Args:
-        nuc_labels (`tuple`): Atomic symbols.
-        nuc_coords (`numpy.ndarray`): Atomic coordinates.
-        units (`str`): The units of `nuc_coords`, "angstrom" or "bohr".
+        nuc_labels (tuple): Atomic symbols.
+        nuc_coords (numpy.ndarray): Atomic coordinates.
+        units (str): The units of `nuc_coords`, "angstrom" or "bohr".
 
     Returns:
         numpy.ndarray: The center of charge.
@@ -129,9 +129,9 @@ def nuclear_center_of_mass(nuc_labels, nuc_coords, units="bohr"):
     """The center of mass of some nuclei.
 
     Args:
-        nuc_labels (`tuple`): Atomic symbols.
-        nuc_coords (`numpy.ndarray`): Atomic coordinates.
-        units (`str`): The units of `nuc_coords`, "angstrom" or "bohr".
+        nuc_labels (tuple): Atomic symbols.
+        nuc_coords (numpy.ndarray): Atomic coordinates.
+        units (str): The units of `nuc_coords`, "angstrom" or "bohr".
 
     Returns:
         numpy.ndarray: The center of mass.

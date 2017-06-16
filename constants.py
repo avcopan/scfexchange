@@ -1105,8 +1105,13 @@ ISOTOPE_MASSES = [
     291.194384, 292.199786, 289.198862, 290.198590, 291.200011, 292.199786,
     291.206564, 291.206564, 292.207549, 293.214670, 293.214670]
 
-if __name__ == "__main__":
+
+def _main():
     print(nuclear_charge("UUO293"))
     print(isotopic_mass("UUO293"))
     print(core_electron_count("FR"))
     print(core_electron_count("RN"))
+
+if __name__ == "__main__":
+    _main()
+

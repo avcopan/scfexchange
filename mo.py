@@ -279,10 +279,10 @@ class MOIntegrals(object):
                 combination of 'c' (core), 'o' (occupied), and 'v' (virtual).
             spin_sector (str): The requested spin sector (diagonal spin block).
                 Spins are 'a' (alpha), 'b' (beta), or 's' (spin-orbital).
-            electric_field (numpy.ndarray): A three-component vector specifying
-                the magnitude of an external static electric field.  Its
-                negative dot product with the dipole integrals will be added to
-                the core Hamiltonian.
+            electric_field (tuple): A three-component vector specifying the
+                magnitude of an external static electric field.  Its negative
+                dot product with the dipole integrals will be added to the core
+                Hamiltonian.
 
         Returns:
             numpy.ndarray: The integrals.
@@ -341,10 +341,10 @@ class MOIntegrals(object):
                 Spins are 'a' (alpha), 'b' (beta), or 's' (spin-orbital).
             mo_space (str): The MO space applying the field, 'c' (core),
                 'o' (occupied), and 'v' (virtual).
-            electric_field (numpy.ndarray): A three-component vector specifying
-                the magnitude of an external static electric field.  Its
-                negative dot product with the dipole integrals will be added to
-                the core Hamiltonian.
+            electric_field (tuple): A three-component vector specifying the
+                magnitude of an external static electric field.  Its negative
+                dot product with the dipole integrals will be added to the core
+                Hamiltonian.
             split_digaonal (bool): Split the matrix into a diagonal vector and
                 an off-diagonal matrix?
 
@@ -410,10 +410,10 @@ class MOIntegrals(object):
         Args:
             mo_space (str): The MO space of the electrons, 'c' (core),
                 'o' (occupied), and 'v' (virtual).
-            electric_field (numpy.ndarray): A three-component vector specifying
-                the magnitude of an external static electric field.  Its
-                negative dot product with the dipole integrals will be added to
-                the core Hamiltonian.
+            electric_field (tuple): A three-component vector specifying the
+                magnitude of an external static electric field.  Its negative
+                dot product with the dipole integrals will be added to the core
+                Hamiltonian.
 
         Returns:
             float: The energy.

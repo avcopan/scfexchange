@@ -5,6 +5,28 @@ from .ao import AOIntegralsInterface
 from .molecule import nuclear_coordinates_in_bohr
 
 
+# Functions
+def hf_mo_coefficients(aoints, charge=0, multp=1, restricted=False, niter=100,
+                       e_threshold=1e-12, d_threshold=1e-6):
+    if not isinstance(aoints, AOIntegrals):
+        raise ValueError("Please use an aoints object from the PySCF "
+                         "interface.")
+    aoints._pyscf_molecule.build(charge=charge, spin=multp - 1)
+    if restricted:
+        pyscf_hf = pyscf.scf.RHF(aoints._pyscf_molecule)
+    else:
+        pyscf_hf = pyscf.scf.UHF(aoints._pyscf_molecule)
+    pyscf_hf.conv_tol = e_threshold
+    pyscf_hf.conv_tol_grad = d_threshold
+    pyscf_hf.max_cycle = niter
+    pyscf_hf.kernel()
+    mo_coefficients = pyscf_hf.mo_coeff
+    if restricted:
+        mo_coefficients = np.array([mo_coefficients] * 2)
+    return mo_coefficients
+
+
+# Classes
 class AOIntegrals(AOIntegralsInterface):
     """Molecular integrals (PySCF).
     
@@ -141,40 +163,34 @@ class AOIntegrals(AOIntegralsInterface):
         return g
 
 
-def hf_mo_coefficients(aoints, charge=0, multp=1, restrict_spin=False,
-                       niter=100, e_threshold=1e-12, d_threshold=1e-6):
-    if not isinstance(aoints, AOIntegrals):
-        raise ValueError("Please use an aoints object from the PySCF "
-                         "interface.")
-    aoints._pyscf_molecule.build(charge=charge, spin=multp - 1)
-    if restrict_spin:
-        pyscf_hf = pyscf.scf.RHF(aoints._pyscf_molecule)
-    else:
-        pyscf_hf = pyscf.scf.UHF(aoints._pyscf_molecule)
-    pyscf_hf.conv_tol = e_threshold
-    pyscf_hf.conv_tol_grad = d_threshold
-    pyscf_hf.max_cycle = niter
-    pyscf_hf.kernel()
-    mo_coefficients = pyscf_hf.mo_coeff
-    if restrict_spin:
-        mo_coefficients = np.array([mo_coefficients] * 2)
-    return mo_coefficients
-
-
-if __name__ == "__main__":
+def _main():
     import numpy
+    import scfexchange.molecule as mol
 
     nuc_labels = ("O", "H", "H")
     nuc_coords = numpy.array([[0.0000000000, 0.0000000000, -0.1247219248],
                               [0.0000000000, -1.4343021349, 0.9864370414],
                               [0.0000000000, 1.4343021349, 0.9864370414]])
-    aoints = AOIntegrals("sto-3g", nuc_labels, nuc_coords)
-    mo_coeffs = hf_mo_coefficients(aoints, charge=1, multp=2,
-                                   restrict_spin=False)
-    alpha_coeffs = mo_coeffs[0, :, :5]
-    beta_coeffs = mo_coeffs[1, :, :4]
 
-    # Test default
-    s = aoints.fock(alpha_coeffs, beta_coeffs=beta_coeffs,
-                    electric_field=[0., 0., 1.])
-    print(numpy.linalg.norm(s))
+    nuc_energy = mol.nuclear_repulsion_energy(nuc_labels, nuc_coords)
+    aoints = AOIntegrals("sto-3g", nuc_labels, nuc_coords)
+
+    energies = []
+    for charge, multp in [(0, 1), (1, 2)]:
+        for restr in [True, False]:
+            mo_coeffs = hf_mo_coefficients(aoints, charge=charge, multp=multp,
+                                           restricted=restr)
+            naocc, nbocc = mol.electron_spin_count(nuc_labels,
+                                                   mol_charge=charge,
+                                                   multp=multp)
+            alpha_coeffs = mo_coeffs[0, :, :naocc]
+            beta_coeffs = mo_coeffs[1, :, :nbocc]
+            elec_energy = aoints.mean_field_energy(alpha_coeffs,
+                                                   beta_coeffs=beta_coeffs)
+            energy = elec_energy + nuc_energy
+            energies.append(energy)
+    print(energies)
+
+if __name__ == "__main__":
+    _main()
+

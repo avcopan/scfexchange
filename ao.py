@@ -99,10 +99,10 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
         Args:
             use_spinorbs (bool): Return the integrals in the spin-orbital basis?
             recompute (bool): Recompute the integrals, if we already have them?
-            electric_field (numpy.ndarray): A three-component vector specifying 
-                the magnitude of an external static electric field.  Its 
-                negative dot product with the dipole integrals will be added 
-                to the core Hamiltonian.
+            electric_field (tuple): A three-component vector specifying the
+                magnitude of an external static electric field.  Its negative
+                dot product with the dipole integrals will be added to the core
+                Hamiltonian.
 
         Returns:
             numpy.ndarray: The integrals.
@@ -163,10 +163,10 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
                 these are assumed to be the same as the alpha coefficients.
             use_spinorbs (bool): Return the integrals in the spin-orbital basis?
             recompute (bool): Recompute the integrals, if we already have them?
-            electric_field (numpy.ndarray): A three-component vector specifying
-                the magnitude of an external static electric field.  Its
-                negative dot product with the dipole integrals will be added
-                to the core Hamiltonian.
+            electric_field (tuple): A three-component vector specifying the
+                magnitude of an external static electric field.  Its negative
+                dot product with the dipole integrals will be added to the core
+                Hamiltonian.
 
         Returns:
             numpy.ndarray: The alpha and beta Fock integrals.
@@ -191,10 +191,10 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
             alpha_coeffs (numpy.ndarray): Alpha orbital coefficients.
             beta_coeffs (numpy.ndarray): Beta orbital coefficients.  If `None`,
                 these are assumed to be the same as the alpha coefficients.
-            electric_field (numpy.ndarray): A three-component vector specifying
-                the magnitude of an external static electric field.  Its
-                negative dot product with the dipole integrals will be added
-                to the core Hamiltonian.
+            electric_field (tuple): A three-component vector specifying the
+                magnitude of an external static electric field.  Its negative
+                dot product with the dipole integrals will be added to the core
+                Hamiltonian.
             recompute (bool): Recompute the integrals, if we already have them?
 
         Returns:

@@ -1,7 +1,7 @@
 def check_interface(aoints_instance):
     import inspect
     import numpy
-    from scfexchange import AOIntegralsInterface
+    from scfexchange.ao import AOIntegralsInterface
 
     # Check attributes
     assert (hasattr(aoints_instance, 'basis_label'))
@@ -360,7 +360,7 @@ def run_test__mean_field(interface):
     spinorb_norm = norm
     nbf = aoints.nbf
     mo_coeffs = interface.hf_mo_coefficients(aoints, charge=1, multp=2,
-                                             restrict_spin=False)
+                                             restricted=False)
     alpha_coeffs = mo_coeffs[0, :, :5]
     beta_coeffs = mo_coeffs[1, :, :4]
 
@@ -408,7 +408,7 @@ def run_test__fock(interface):
     spinorb_norm = norm
     nbf = aoints.nbf
     mo_coeffs = interface.hf_mo_coefficients(aoints, charge=1, multp=2,
-                                             restrict_spin=False)
+                                             restricted=False)
     alpha_coeffs = mo_coeffs[0, :, :5]
     beta_coeffs = mo_coeffs[1, :, :4]
 
