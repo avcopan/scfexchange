@@ -1,10 +1,10 @@
-import more_itertools as mit
-import numpy as np
-import scipy.linalg as spla
 from functools import reduce
 
-import tensorutils as tu
+import more_itertools as mit
+import numpy as np
 import permutils as pu
+import scipy.linalg as spla
+import tensorutils as tu
 
 from .ao import AOIntegralsInterface
 
@@ -32,7 +32,7 @@ class MOIntegrals(object):
         if not isinstance(aoints, AOIntegralsInterface):
             raise ValueError("Invalid 'integrals' argument.")
         if not (isinstance(self.mo_coeffs, np.ndarray) and
-                self.mo_coeffs.shape == (2, self.norb, self.norb)):
+                        self.mo_coeffs.shape == (2, self.norb, self.norb)):
             raise ValueError("Invalid 'mo_coeffs' argument.")
 
     def block_keys(self, mo_block, spin_sector):
@@ -68,7 +68,7 @@ class MOIntegrals(object):
 
         # Before transforming, move the component axes to the end.
         ao_ints = np.moveaxis(ao_ints, range(0, ndim), range(-ndim, 0))
-        assert(ao_ints.ndim is len(cs) + ndim)
+        assert (ao_ints.ndim is len(cs) + ndim)
         mo_ints = reduce(tu.contract, cs, ao_ints)
         return mo_ints
 
@@ -367,7 +367,7 @@ class MOIntegrals(object):
                 magnitude of an external static electric field.  Its negative
                 dot product with the dipole integrals will be added to the core
                 Hamiltonian.
-            split_digaonal (bool): Split the matrix into a diagonal vector and
+            split_diagonal (bool): Split the matrix into a diagonal vector and
                 an off-diagonal matrix?
 
         Returns:
@@ -442,4 +442,3 @@ class MOIntegrals(object):
         am = np.trace(ap, axis1=1, axis2=2)
         bm = np.trace(bp, axis1=1, axis2=2)
         return am + bm
-

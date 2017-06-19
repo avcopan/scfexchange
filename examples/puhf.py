@@ -12,10 +12,13 @@ def mo_coefficients(aoints, charge=0, multp=1, electric_field=None,
     x = spla.inv(spla.sqrtm(s))
     naocc, nbocc = mol.electron_spin_count(aoints.nuc_labels, mol_charge=charge,
                                            multp=multp)
-    ac_o = np.zeros((aoints.nbf, naocc))
-    bc_o = np.zeros((aoints.nbf, nbocc))
+    ac = np.zeros((aoints.nbf, aoints.nbf))
+    bc = np.zeros((aoints.nbf, aoints.nbf))
+    ac_o = ac[:, :naocc]
+    bc_o = bc[:, :nbocc]
 
-    last_elec_energy = 0.
+    elec_energy = last_elec_energy = energy_change = orb_grad_norm = 0.
+    iteration = 0
     converged = False
     for iteration in range(niter):
         # Update orbitals
@@ -67,7 +70,7 @@ def electronic_energy_function(aoints, charge=0, multp=1, niter=100,
                                e_threshold=1e-12, d_threshold=1e-6,
                                print_info=False):
 
-    def electronic_energy_function(electric_field=(0., 0., 0.)):
+    def energy_fn(electric_field=(0., 0., 0.)):
         mo_coeffs = mo_coefficients(aoints, charge=charge, multp=multp,
                                     electric_field=electric_field,
                                     niter=niter, e_threshold=e_threshold,
@@ -81,7 +84,7 @@ def electronic_energy_function(aoints, charge=0, multp=1, niter=100,
                                                electric_field=electric_field)
         return elec_energy
 
-    return electronic_energy_function
+    return energy_fn
 
 
 def _main():

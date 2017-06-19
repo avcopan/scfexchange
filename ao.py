@@ -43,8 +43,8 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
     arrays (such as `kinetic`).
     
     Attributes:
-        nuc_labels (`tuple`): Atomic symbols.
-        nuc_coords (`numpy.ndarray`): Atomic coordinates.
+        nuc_labels (tuple): Atomic symbols.
+        nuc_coords (numpy.ndarray): Atomic coordinates.
         basis_label (str): The basis set label (e.g. 'sto-3g').
         nbf (int): The number of basis functions.
     """

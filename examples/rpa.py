@@ -24,9 +24,8 @@ def a_matrix(moints):
 
 
 def b_matrix(moints):
-    g_oovv = moints.electron_repulsion(mo_block='o,o,v,v',
-                                            spin_sector='s,s',
-                                            antisymmetrize=True)
+    g_oovv = moints.electron_repulsion(mo_block='o,o,v,v', spin_sector='s,s',
+                                       antisymmetrize=True)
     nocc = moints.mo_count(mo_space='o')
     nvir = moints.mo_count(mo_space='v')
     b = tu.einsum('ijab->iajb', g_oovv)

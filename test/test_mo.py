@@ -375,8 +375,7 @@ def test__kinetic():
             moints.ncore = ncore
             for block_key in it.combinations(mo_spaces, 2):
                 mo_block = ','.join(block_key)
-                s = moints.kinetic(mo_block=mo_block,
-                                     spin_sector=spin_sector)
+                s = moints.kinetic(mo_block=mo_block, spin_sector=spin_sector)
                 assert (s.shape == next(shapes))
                 assert (np.isclose(np.linalg.norm(s), next(norms)))
 
@@ -553,8 +552,7 @@ def test__potential():
             moints.ncore = ncore
             for block_key in it.combinations(mo_spaces, 2):
                 mo_block = ','.join(block_key)
-                s = moints.potential(mo_block=mo_block,
-                                       spin_sector=spin_sector)
+                s = moints.potential(mo_block=mo_block, spin_sector=spin_sector)
                 assert (s.shape == next(shapes))
                 assert (np.isclose(np.linalg.norm(s), next(norms)))
 
@@ -749,8 +747,7 @@ def test__dipole():
             moints.ncore = ncore
             for block_key in it.combinations(mo_spaces, 2):
                 mo_block = ','.join(block_key)
-                s = moints.dipole(mo_block=mo_block,
-                                    spin_sector=spin_sector)
+                s = moints.dipole(mo_block=mo_block, spin_sector=spin_sector)
                 assert (s.shape == next(shapes))
                 assert (np.isclose(np.linalg.norm(s), next(norms)))
 
@@ -1074,8 +1071,8 @@ def test__core_hamiltonian():
             for block_key in it.combinations(mo_spaces, 2):
                 mo_block = ','.join(block_key)
                 s = moints.core_hamiltonian(mo_block=mo_block,
-                                              spin_sector=spin_sector,
-                                              electric_field=e_field)
+                                            spin_sector=spin_sector,
+                                            electric_field=e_field)
                 assert (s.shape == next(shapes))
                 assert (np.isclose(np.linalg.norm(s), next(norms)))
 
@@ -1952,8 +1949,8 @@ def test__mean_field():
             for block_key in it.combinations(mo_spaces, 2):
                 mo_block = ','.join(block_key)
                 s = moints.mean_field(mo_block=mo_block,
-                                        spin_sector=spin_sector,
-                                        mo_space=mo_space)
+                                      spin_sector=spin_sector,
+                                      mo_space=mo_space)
                 assert (s.shape == next(shapes))
                 assert (np.isclose(np.linalg.norm(s), next(norms)))
 
@@ -3738,10 +3735,8 @@ def test__fock():
             moints.ncore = ncore
             for block_key in it.combinations(mo_spaces, 2):
                 mo_block = ','.join(block_key)
-                s = moints.fock(mo_block=mo_block,
-                                  spin_sector=spin_sector,
-                                  mo_space=mo_space,
-                                  electric_field=e_field)
+                s = moints.fock(mo_block=mo_block, spin_sector=spin_sector,
+                                mo_space=mo_space, electric_field=e_field)
                 assert (s.shape == next(shapes))
                 assert (np.isclose(np.linalg.norm(s), next(norms)))
 
@@ -3829,8 +3824,8 @@ def test__fock_diagonal():
         for ncore, spin, mo_space in it.product(*iterables2):
             moints.ncore = ncore
             blk = ','.join([mo_space, mo_space])
-            e, _ = moints.fock(mo_block=blk, spin_sector=spin,
-                                 mo_space='co', split_diagonal=True)
+            e, _ = moints.fock(mo_block=blk, spin_sector=spin, mo_space='co',
+                               split_diagonal=True)
             assert (e.shape == next(shapes))
             norm_ref = next(norms)
             assert (np.isclose(np.linalg.norm(e), norm_ref))
@@ -4301,8 +4296,8 @@ def test__electron_repulsion():
             for block_key in it.combinations(mo_spaces, 4):
                 mo_block = ','.join(block_key)
                 s = moints.electron_repulsion(mo_block=mo_block,
-                                                spin_sector=spin_sector,
-                                                antisymmetrize=antisymmetrize)
+                                              spin_sector=spin_sector,
+                                              antisymmetrize=antisymmetrize)
                 assert (s.shape == next(shapes))
                 assert (np.isclose(np.linalg.norm(s), next(norms)))
 
@@ -4363,5 +4358,5 @@ def test__electronic_energy():
         for ncore, mo_space, e_field in it.product(*iterables2):
             moints.ncore = ncore
             energy = moints.electronic_energy(mo_space=mo_space,
-                                                electric_field=e_field)
+                                              electric_field=e_field)
             assert (np.isclose(energy + e_nuc, next(energies)))

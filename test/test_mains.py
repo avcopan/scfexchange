@@ -1,16 +1,14 @@
 def test__mains():
     import importlib
 
-    names = ('ao', 'mo', 'constants', 'chem', 'psi4_interface',
-             'pyscf_interface', 'examples.rpa', 'examples.puhf')
-    module_names = ('.'.join(['scfexchange', name]) for name in names)
+    names = ('_constants', 'chem', 'ao', 'mo', 'psi4_interface',
+             'pyscf_interface', 'examples.puhf', 'examples.rpa')
+    mod_names = ('.'.join(['scfexchange', name]) for name in names)
 
-    for module_name in module_names:
-        module = importlib.import_module(module_name)
-        if hasattr(module, '_main'):
-            print(module)
-            module._main()
+    for mod_name in mod_names:
+        mod = importlib.import_module(mod_name)
+        if hasattr(mod, '_main'):
+            print(mod)
+            mod._main()
 
 
-if __name__ == "__main__":
-    test__mains()
