@@ -314,8 +314,8 @@ class MOIntegrals(object):
         return self._transform(h_ao, mo_block, spin_sector)
 
     def mean_field(self, mo_block='ov,ov', spin_sector='s',
-                   mo_space='co'):
-        """Get the core field integrals.
+                   src_mo_space='co'):
+        """Get the mean field integrals of an orbital space.
 
         Returns the representation of electronic mean field of a given orbital
         space in the molecular-orbital basis, <p(1)*spin|J(1) - K(1)|q(1)*spin>.
@@ -326,14 +326,14 @@ class MOIntegrals(object):
                 combination of 'c' (core), 'o' (occupied), and 'v' (virtual).
             spin_sector (str): The requested spin sector (diagonal spin block).
                 Spins are 'a' (alpha), 'b' (beta), or 's' (spin-orbital).
-            mo_space (str): The MO space applying the field, 'c' (core),
-                'o' (occupied), and 'v' (virtual).
+            src_mo_space (str): The MO space generating the field, a contiguous
+                combination of 'c' (core), 'o' (occupied), and 'v' (virtual).
 
         Returns:
             numpy.ndarray: The integrals.
         """
-        ac = self.mo_coefficients(mo_space=mo_space, spin='a')
-        bc = self.mo_coefficients(mo_space=mo_space, spin='b')
+        ac = self.mo_coefficients(mo_space=src_mo_space, spin='a')
+        bc = self.mo_coefficients(mo_space=src_mo_space, spin='b')
         if spin_sector == 'a':
             w_ao, _ = self.aoints.mean_field(
                 alpha_coeffs=ac, beta_coeffs=bc, spinorb=False)
@@ -348,9 +348,9 @@ class MOIntegrals(object):
 
         return self._transform(w_ao, mo_block, spin_sector)
 
-    def fock(self, mo_block='ov,ov', spin_sector='s', mo_space='co',
-             electric_field=None, split_diagonal=False):
-        """Get the Fock operator integrals.
+    def fock(self, mo_block='ov,ov', spin_sector='s', src_mo_space='co',
+             electric_field=None):
+        """Get the Fock integrals of an orbital space.
 
         Returns the core Hamiltonian plus the mean field of an orbital space in
         the molecular-orbital basis, <p(1)*spin|h(1) + J(1) - K(1)|q(1)*spin>.
@@ -361,20 +361,18 @@ class MOIntegrals(object):
                 combination of 'c' (core), 'o' (occupied), and 'v' (virtual).
             spin_sector (str): The requested spin sector (diagonal spin block).
                 Spins are 'a' (alpha), 'b' (beta), or 's' (spin-orbital).
-            mo_space (str): The MO space applying the field, 'c' (core),
-                'o' (occupied), and 'v' (virtual).
+            src_mo_space (str): The MO space generating the field, a contiguous
+                combination of 'c' (core), 'o' (occupied), and 'v' (virtual).
             electric_field (tuple): A three-component vector specifying the
                 magnitude of an external static electric field.  Its negative
                 dot product with the dipole integrals will be added to the core
                 Hamiltonian.
-            split_diagonal (bool): Split the matrix into a diagonal vector and
-                an off-diagonal matrix?
 
         Returns:
             numpy.ndarray: The integrals.
         """
-        ac = self.mo_coefficients(mo_space=mo_space, spin='a')
-        bc = self.mo_coefficients(mo_space=mo_space, spin='b')
+        ac = self.mo_coefficients(mo_space=src_mo_space, spin='a')
+        bc = self.mo_coefficients(mo_space=src_mo_space, spin='b')
         if spin_sector == 'a':
             f_ao, _ = self.aoints.fock(
                 alpha_coeffs=ac, beta_coeffs=bc, spinorb=False,
@@ -390,14 +388,46 @@ class MOIntegrals(object):
         else:
             raise ValueError("Invalid 'spin_sector' argument.")
 
-        f_mo = self._transform(f_ao, mo_block, spin_sector)
+        return self._transform(f_ao, mo_block, spin_sector)
 
-        if split_diagonal:
-            f_mo_diag = f_mo.diagonal().copy()
-            np.fill_diagonal(f_mo, 0.)
-            return f_mo_diag, f_mo
+    def fock_diagonal(self, mo_space='ov', spin='s', src_mo_space='co',
+                      electric_field=None):
+        """Get the Fock integral diagonals of an orbital space.
+
+        Args:
+            mo_space (str): Any contiguous combination of 'c' (core),
+                'o' (occupied), and 'v' (virtual).  Defaults to 'ov',
+                which denotes all unfrozen moints.
+            spin (str): 'a' (alpha), 'b' (beta), or 's' (spin-orbital).
+            src_mo_space (str): The MO space generating the field, a contiguous
+                combination of 'c' (core), 'o' (occupied), and 'v' (virtual).
+            electric_field (tuple): A three-component vector specifying the
+                magnitude of an external static electric field.  Its negative
+                dot product with the dipole integrals will be added to the core
+                Hamiltonian.
+
+        Returns:
+            numpy.ndarray: The Fock diagonal.
+        """
+        ac = self.mo_coefficients(mo_space=src_mo_space, spin='a')
+        bc = self.mo_coefficients(mo_space=src_mo_space, spin='b')
+        if spin == 'a':
+            f_ao, _ = self.aoints.fock(
+                alpha_coeffs=ac, beta_coeffs=bc, spinorb=False,
+                electric_field=electric_field)
+        elif spin == 'b':
+            _, f_ao = self.aoints.fock(
+                alpha_coeffs=ac, beta_coeffs=bc, spinorb=False,
+                electric_field=electric_field)
+        elif spin == 's':
+            f_ao = self.aoints.fock(
+                alpha_coeffs=ac, beta_coeffs=bc, spinorb=True,
+                electric_field=electric_field)
         else:
-            return f_mo
+            raise ValueError("Invalid 'spin' argument.")
+
+        mo_block = ','.join([mo_space, mo_space])
+        return self._transform(f_ao, mo_block, spin).diagonal()
 
     def electronic_energy(self, mo_space='co', electric_field=None):
         """Get the total mean-field energy of a given orbital space.
@@ -421,9 +451,9 @@ class MOIntegrals(object):
         bh = self.core_hamiltonian(mo_block=blk, spin_sector='b',
                                    electric_field=electric_field)
         aw = self.mean_field(mo_block=blk, spin_sector='a',
-                             mo_space=mo_space)
+                             src_mo_space=mo_space)
         bw = self.mean_field(mo_block=blk, spin_sector='b',
-                             mo_space=mo_space)
+                             src_mo_space=mo_space)
         return np.trace(ah + aw / 2.) + np.trace(bh + bw / 2.)
 
     def electronic_dipole_moment(self, mo_space='co'):

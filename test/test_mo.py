@@ -1950,7 +1950,7 @@ def test__mean_field():
                 mo_block = ','.join(block_key)
                 s = moints.mean_field(mo_block=mo_block,
                                       spin_sector=spin_sector,
-                                      mo_space=mo_space)
+                                      src_mo_space=mo_space)
                 assert (s.shape == next(shapes))
                 assert (np.isclose(np.linalg.norm(s), next(norms)))
 
@@ -3736,7 +3736,7 @@ def test__fock():
             for block_key in it.combinations(mo_spaces, 2):
                 mo_block = ','.join(block_key)
                 s = moints.fock(mo_block=mo_block, spin_sector=spin_sector,
-                                mo_space=mo_space, electric_field=e_field)
+                                src_mo_space=mo_space, electric_field=e_field)
                 assert (s.shape == next(shapes))
                 assert (np.isclose(np.linalg.norm(s), next(norms)))
 
@@ -3823,9 +3823,8 @@ def test__fock_diagonal():
         moints = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, spin, mo_space in it.product(*iterables2):
             moints.ncore = ncore
-            blk = ','.join([mo_space, mo_space])
-            e, _ = moints.fock(mo_block=blk, spin_sector=spin, mo_space='co',
-                               split_diagonal=True)
+            e = moints.fock_diagonal(mo_space=mo_space, spin=spin,
+                                     src_mo_space='co')
             assert (e.shape == next(shapes))
             norm_ref = next(norms)
             assert (np.isclose(np.linalg.norm(e), norm_ref))
