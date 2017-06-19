@@ -1,6 +1,6 @@
 from scfexchange.pyscf_interface import AOIntegrals, hf_mo_coefficients
 from scfexchange.mo import MOIntegrals
-from scfexchange.molecule import electron_spin_count, nuclear_repulsion_energy
+from scfexchange.chem import electron_spin_count, nuclear_repulsion_energy
 
 
 def test__rotate():
@@ -15,21 +15,21 @@ def test__rotate():
     integrals = AOIntegrals("sto-3g", labels, coordinates)
     mo_coefficients = hf_mo_coefficients(integrals)
     nalpha, nbeta = electron_spin_count(labels)
-    orbitals = MOIntegrals(integrals, mo_coefficients, nalpha, nbeta)
+    moints = MOIntegrals(integrals, mo_coefficients, nalpha, nbeta)
 
     two = 2 * np.identity(integrals.nbf)
-    sp_order = orbitals.spinorb_order()
+    sp_order = moints.spinorb_order()
     sp_two = spla.block_diag(two, two)[sp_order, :]
     iterables = (two, [two, two], sp_two)
     for rotation_matrix in iterables:
-        orbitals.mo_coeffs = mo_coefficients
-        norm = spla.norm(orbitals.mo_coeffs)
-        orbitals.rotate(rotation_matrix)
-        new_norm = spla.norm(orbitals.mo_coeffs)
+        moints.mo_coeffs = mo_coefficients
+        norm = spla.norm(moints.mo_coeffs)
+        moints.rotate(rotation_matrix)
+        new_norm = spla.norm(moints.mo_coeffs)
         assert new_norm == 2 * norm
     with pt.raises(ValueError):
         rotation_matrix = np.ones(sp_two.shape)
-        orbitals.rotate(rotation_matrix)
+        moints.rotate(rotation_matrix)
 
 
 def test__mo_count():
@@ -54,10 +54,10 @@ def test__mo_count():
                                              multp=multp)
         nalpha, nbeta = electron_spin_count(labels, mol_charge=charge,
                                             multp=multp)
-        orbitals = MOIntegrals(integrals, mo_coefficients, nalpha, nbeta)
+        moints = MOIntegrals(integrals, mo_coefficients, nalpha, nbeta)
         for ncore, spin, mo_space in it.product(*iterables):
-            orbitals.ncore = ncore
-            count = orbitals.mo_count(mo_space, spin)
+            moints.ncore = ncore
+            count = moints.mo_count(mo_space, spin)
             assert (count == next(counts))
 
 
@@ -103,10 +103,10 @@ def test__mo_slice():
                                              multp=multp)
         naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
                                            multp=multp)
-        orbitals = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
+        moints = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, spin, mo_space in it.product(*iterables):
-            orbitals.ncore = ncore
-            slc = orbitals.mo_slice(mo_space, spin)
+            moints.ncore = ncore
+            slc = moints.mo_slice(mo_space, spin)
             assert (slc == next(slices))
 
 
@@ -194,10 +194,10 @@ def test__mo_coefficients():
                                              restricted=restr)
         naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
                                            multp=multp)
-        orbitals = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
+        moints = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, spin, mo_space in it.product(*iterables2):
-            orbitals.ncore = ncore
-            c = orbitals.mo_coefficients(mo_space, spin)
+            moints.ncore = ncore
+            c = moints.mo_coefficients(mo_space, spin)
             assert (c.shape == next(shapes))
             norm_ref = next(norms)
             assert (np.isclose(np.linalg.norm(c), norm_ref))
@@ -370,12 +370,12 @@ def test__kinetic():
                                              restricted=restr)
         naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
                                            multp=multp)
-        orbitals = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
+        moints = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, spin_sector in it.product(*iterables2):
-            orbitals.ncore = ncore
+            moints.ncore = ncore
             for block_key in it.combinations(mo_spaces, 2):
                 mo_block = ','.join(block_key)
-                s = orbitals.kinetic(mo_block=mo_block,
+                s = moints.kinetic(mo_block=mo_block,
                                      spin_sector=spin_sector)
                 assert (s.shape == next(shapes))
                 assert (np.isclose(np.linalg.norm(s), next(norms)))
@@ -548,12 +548,12 @@ def test__potential():
                                              restricted=restr)
         naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
                                            multp=multp)
-        orbitals = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
+        moints = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, spin_sector in it.product(*iterables2):
-            orbitals.ncore = ncore
+            moints.ncore = ncore
             for block_key in it.combinations(mo_spaces, 2):
                 mo_block = ','.join(block_key)
-                s = orbitals.potential(mo_block=mo_block,
+                s = moints.potential(mo_block=mo_block,
                                        spin_sector=spin_sector)
                 assert (s.shape == next(shapes))
                 assert (np.isclose(np.linalg.norm(s), next(norms)))
@@ -744,12 +744,12 @@ def test__dipole():
                                              restricted=restr)
         naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
                                            multp=multp)
-        orbitals = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
+        moints = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, spin_sector in it.product(*iterables2):
-            orbitals.ncore = ncore
+            moints.ncore = ncore
             for block_key in it.combinations(mo_spaces, 2):
                 mo_block = ','.join(block_key)
-                s = orbitals.dipole(mo_block=mo_block,
+                s = moints.dipole(mo_block=mo_block,
                                     spin_sector=spin_sector)
                 assert (s.shape == next(shapes))
                 assert (np.isclose(np.linalg.norm(s), next(norms)))
@@ -1068,12 +1068,12 @@ def test__core_hamiltonian():
                                              restricted=restr)
         naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
                                            multp=multp)
-        orbitals = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
+        moints = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, spin_sector, e_field in it.product(*iterables2):
-            orbitals.ncore = ncore
+            moints.ncore = ncore
             for block_key in it.combinations(mo_spaces, 2):
                 mo_block = ','.join(block_key)
-                s = orbitals.core_hamiltonian(mo_block=mo_block,
+                s = moints.core_hamiltonian(mo_block=mo_block,
                                               spin_sector=spin_sector,
                                               electric_field=e_field)
                 assert (s.shape == next(shapes))
@@ -1946,12 +1946,12 @@ def test__mean_field():
                                              restricted=restr)
         naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
                                            multp=multp)
-        orbitals = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
+        moints = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, spin_sector, mo_space in it.product(*iterables2):
-            orbitals.ncore = ncore
+            moints.ncore = ncore
             for block_key in it.combinations(mo_spaces, 2):
                 mo_block = ','.join(block_key)
-                s = orbitals.mean_field(mo_block=mo_block,
+                s = moints.mean_field(mo_block=mo_block,
                                         spin_sector=spin_sector,
                                         mo_space=mo_space)
                 assert (s.shape == next(shapes))
@@ -3733,12 +3733,12 @@ def test__fock():
                                              restricted=restr)
         naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
                                            multp=multp)
-        orbitals = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
+        moints = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, spin_sector, mo_space, e_field in it.product(*iterables2):
-            orbitals.ncore = ncore
+            moints.ncore = ncore
             for block_key in it.combinations(mo_spaces, 2):
                 mo_block = ','.join(block_key)
-                s = orbitals.fock(mo_block=mo_block,
+                s = moints.fock(mo_block=mo_block,
                                   spin_sector=spin_sector,
                                   mo_space=mo_space,
                                   electric_field=e_field)
@@ -3825,11 +3825,11 @@ def test__fock_diagonal():
                                              restricted=restr)
         naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
                                            multp=multp)
-        orbitals = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
+        moints = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, spin, mo_space in it.product(*iterables2):
-            orbitals.ncore = ncore
+            moints.ncore = ncore
             blk = ','.join([mo_space, mo_space])
-            e, _ = orbitals.fock(mo_block=blk, spin_sector=spin,
+            e, _ = moints.fock(mo_block=blk, spin_sector=spin,
                                  mo_space='co', split_diagonal=True)
             assert (e.shape == next(shapes))
             norm_ref = next(norms)
@@ -4295,12 +4295,12 @@ def test__electron_repulsion():
                                              restricted=restr)
         naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
                                            multp=multp)
-        orbitals = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
+        moints = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, spin_sector, antisymmetrize in it.product(*iterables2):
-            orbitals.ncore = ncore
+            moints.ncore = ncore
             for block_key in it.combinations(mo_spaces, 4):
                 mo_block = ','.join(block_key)
-                s = orbitals.electron_repulsion(mo_block=mo_block,
+                s = moints.electron_repulsion(mo_block=mo_block,
                                                 spin_sector=spin_sector,
                                                 antisymmetrize=antisymmetrize)
                 assert (s.shape == next(shapes))
@@ -4359,9 +4359,9 @@ def test__electronic_energy():
                                              restricted=restr)
         naocc, nbocc = electron_spin_count(labels, mol_charge=charge,
                                            multp=multp)
-        orbitals = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
+        moints = MOIntegrals(integrals, mo_coefficients, naocc, nbocc)
         for ncore, mo_space, e_field in it.product(*iterables2):
-            orbitals.ncore = ncore
-            energy = orbitals.electronic_energy(mo_space=mo_space,
+            moints.ncore = ncore
+            energy = moints.electronic_energy(mo_space=mo_space,
                                                 electric_field=e_field)
             assert (np.isclose(energy + e_nuc, next(energies)))

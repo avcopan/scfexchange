@@ -1,10 +1,9 @@
-from scfexchange.examples.puhf import (
-    puhf_mo_coefficients, puhf_electronic_energy_function)
+import scfexchange.examples.puhf as puhf
 
 
 def test__hf_mo_coefficients():
     import numpy
-    import scfexchange.molecule as scfxmol
+    import scfexchange.chem as scfxmol
     import scfexchange.pyscf_interface as scfxif
 
     nuc_labels = ("O", "H", "H")
@@ -18,7 +17,7 @@ def test__hf_mo_coefficients():
     energies = iter([-74.963343795087553, -74.656730208992315])
 
     for charge, multp in [(0, 1), (1, 2)]:
-        mo_coeffs = puhf_mo_coefficients(aoints, charge=charge, multp=multp)
+        mo_coeffs = puhf.mo_coefficients(aoints, charge=charge, multp=multp)
         naocc, nbocc = scfxmol.electron_spin_count(nuc_labels,
                                                    mol_charge=charge,
                                                    multp=multp)
@@ -29,10 +28,10 @@ def test__hf_mo_coefficients():
         assert(numpy.isclose(energy, next(energies)))
 
 
-def test__hellmann_feynman_theorem():
+def test__hellmann_feynman():
     import numpy
     import numdifftools
-    import scfexchange.molecule as scfxmol
+    import scfexchange.chem as scfxmol
     import scfexchange.pyscf_interface as scfxif
 
     nuc_labels = ("O", "H", "H")
@@ -56,12 +55,12 @@ def test__hellmann_feynman_theorem():
     m = aoints.electronic_dipole_moment(ac_o, beta_coeffs=bc_o)
 
     # Compute the electric field gradient numerically
-    energy_fn = puhf_electronic_energy_function(aoints, charge=mol_charge,
+    energy_fn = puhf.electronic_energy_function(aoints, charge=mol_charge,
                                                 multp=multp, niter=150,
                                                 e_threshold=1e-14,
                                                 d_threshold=1e-12)
     grad_fn = numdifftools.Gradient(energy_fn, step=0.005, order=4)
     grad = grad_fn(numpy.r_[0., 0., 0.])
 
-    # By the Hellmann-Feynman theorem, we should have `grad == -m`
+    # By the Hellmann-Feynman theorem, `grad == -m`
     assert(numpy.allclose(grad, -m))

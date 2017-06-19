@@ -2,12 +2,12 @@ import warnings
 
 import numpy as np
 import scipy.linalg as spla
-from scfexchange import molecule as mol
+from scfexchange import chem as mol
 
 
-def puhf_mo_coefficients(aoints, charge=0, multp=1, electric_field=None,
-                         niter=100, e_threshold=1e-12, d_threshold=1e-6,
-                         print_info=False):
+def mo_coefficients(aoints, charge=0, multp=1, electric_field=None,
+                    niter=100, e_threshold=1e-12, d_threshold=1e-6,
+                    print_info=False):
     s = aoints.overlap()
     x = spla.inv(spla.sqrtm(s))
     naocc, nbocc = mol.electron_spin_count(aoints.nuc_labels, mol_charge=charge,
@@ -63,16 +63,16 @@ def puhf_mo_coefficients(aoints, charge=0, multp=1, electric_field=None,
     return np.array([ac, bc])
 
 
-def puhf_electronic_energy_function(aoints, charge=0, multp=1, niter=100,
-                                    e_threshold=1e-12, d_threshold=1e-6,
-                                    print_info=False):
+def electronic_energy_function(aoints, charge=0, multp=1, niter=100,
+                               e_threshold=1e-12, d_threshold=1e-6,
+                               print_info=False):
 
     def electronic_energy_function(electric_field=(0., 0., 0.)):
-        mo_coeffs = puhf_mo_coefficients(aoints, charge=charge, multp=multp,
-                                         electric_field=electric_field,
-                                         niter=niter, e_threshold=e_threshold,
-                                         d_threshold=d_threshold,
-                                         print_info=print_info)
+        mo_coeffs = mo_coefficients(aoints, charge=charge, multp=multp,
+                                    electric_field=electric_field,
+                                    niter=niter, e_threshold=e_threshold,
+                                    d_threshold=d_threshold,
+                                    print_info=print_info)
         naocc, nbocc = mol.electron_spin_count(aoints.nuc_labels,
                                                mol_charge=charge, multp=multp)
         ac_o = mo_coeffs[0, :, :naocc]
@@ -87,7 +87,7 @@ def puhf_electronic_energy_function(aoints, charge=0, multp=1, niter=100,
 def _main():
     import numpy
     import numdifftools
-    import scfexchange.molecule as scfxmol
+    import scfexchange as scfx
     import scfexchange.pyscf_interface as scfxif
 
     nuc_labels = ("O", "H", "H")
@@ -101,20 +101,20 @@ def _main():
     mo_coeffs = scfxif.hf_mo_coefficients(aoints, charge=mol_charge,
                                           multp=multp, restricted=False,
                                           d_threshold=1e-9)
-    naocc, nbocc = scfxmol.electron_spin_count(nuc_labels,
-                                               mol_charge=mol_charge,
-                                               multp=multp)
+    naocc, nbocc = scfx.chem.electron_spin_count(nuc_labels,
+                                                 mol_charge=mol_charge,
+                                                 multp=multp)
     ac_o = mo_coeffs[0, :, :naocc]
     bc_o = mo_coeffs[1, :, :nbocc]
 
     m = aoints.electronic_dipole_moment(ac_o, beta_coeffs=bc_o)
 
-    energy_fn = puhf_electronic_energy_function(aoints,
-                                                charge=mol_charge,
-                                                multp=multp,
-                                                niter=150,
-                                                e_threshold=1e-14,
-                                                d_threshold=1e-12)
+    energy_fn = electronic_energy_function(aoints,
+                                           charge=mol_charge,
+                                           multp=multp,
+                                           niter=150,
+                                           e_threshold=1e-14,
+                                           d_threshold=1e-12)
     grad_fn = numdifftools.Gradient(energy_fn, step=0.005, order=4)
     grad = grad_fn(np.r_[0., 0., 0.])
     print(m.round(12))

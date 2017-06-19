@@ -2,7 +2,7 @@ import numpy as np
 import pyscf
 
 from .ao import AOIntegralsInterface
-from .molecule import nuclear_coordinates_in_bohr
+from .chem import nuclear_coordinates_in_bohr
 
 
 # Functions

@@ -2,7 +2,7 @@ import numpy as np
 import psi4.core
 
 from .ao import AOIntegralsInterface
-from .molecule import nuclear_coordinate_string, nuclear_coordinates_in_bohr
+from .chem import nuclear_coordinate_string, nuclear_coordinates_in_bohr
 
 
 # Functions

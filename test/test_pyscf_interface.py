@@ -48,7 +48,7 @@ def test__ao_electronic_dipole_moment():
 
 def test__hf_mo_coefficients():
     import numpy
-    import scfexchange.molecule as mol
+    import scfexchange.chem as mol
 
     nuc_labels = ("O", "H", "H")
     nuc_coords = numpy.array([[0.0000000000, 0.0000000000, -0.1247219248],

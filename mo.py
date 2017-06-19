@@ -10,18 +10,15 @@ from .ao import AOIntegralsInterface
 
 
 class MOIntegrals(object):
-    """Molecular orbitals class.
+    """Molecular moints class.
 
     Subclasses should override the `solve` method, which sets the value
     of `mo_coeffs`.
 
     Attributes:
         aoints (:obj:`scfexchange.AOIntegralsInterface`): The integrals.
-        molecule (:obj:`scfexchange.Molecule`): A Molecule object specifying
-            the total molecular charge and spin multiplicity of the system.
         mo_coeffs (numpy.ndarray): The orbital expansion coefficients.
-        spin_is_restricted (bool): Are the orbital spin-restricted?
-        ncore (int): The number of low-energy orbitals assigned to the core
+        ncore (int): The number of low-energy moints assigned to the core
             orbital space.
     """
 
@@ -76,14 +73,14 @@ class MOIntegrals(object):
         return mo_ints
 
     def rotate(self, rotation_matrix):
-        """Rotate the orbitals with a unitary transformation.
+        """Rotate the moints with a unitary transformation.
 
         Args:
             rotation_matrix (numpy.ndarray): Orbital rotation matrix. This can
                 be a single square matrix of dimension `nbf`, a pair of such
                 matrices for alpha and beta spins, or a square matrix of
                 dimension `2 * nbf`, where `nbf` is the total number of
-                spatial orbitals.  The final case corresponds to a rotation
+                spatial moints.  The final case corresponds to a rotation
                 in the spin-orbital basis, but note that it must not combine
                 alpha and beta spins.
         """
@@ -129,16 +126,16 @@ class MOIntegrals(object):
         return spinorb_order if not invert else spinorb_inv_order
 
     def mo_count(self, mo_space='ov', spin='s'):
-        """Return the number of orbitals in a given space.
+        """Return the number of moints in a given space.
 
         Args:
             mo_space (str): Any contiguous combination of 'c' (core),
                 'o' (occupied), and 'v' (virtual).  Defaults to 'ov',
-                which denotes all unfrozen orbitals.
+                which denotes all unfrozen moints.
             spin (str): 'a' (alpha), 'b' (beta), or 's' (spin-orbital).
 
         Returns:
-            int: The number of orbitals.
+            int: The number of moints.
         """
         count = 0
         if spin in ('a', 's'):
@@ -163,7 +160,7 @@ class MOIntegrals(object):
         Args:
             mo_space (str): Any contiguous combination of 'c' (core),
                 'o' (occupied), and 'v' (virtual).  Defaults to 'ov',
-                which denotes all unfrozen orbitals.
+                which denotes all unfrozen moints.
             spin (str): 'a' (alpha), 'b' (beta), or 's' (spin-orbital).
 
         Returns:
@@ -188,7 +185,7 @@ class MOIntegrals(object):
         Args:
             mo_space (str): Any contiguous combination of 'c' (core),
                 'o' (occupied), and 'v' (virtual).  Defaults to 'ov',
-                which denotes all unfrozen orbitals.
+                which denotes all unfrozen moints.
             spin (str): 'a' (alpha), 'b' (beta), or 's' (spin-orbital).
 
         Returns:

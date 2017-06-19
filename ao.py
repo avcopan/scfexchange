@@ -7,7 +7,7 @@ from six import with_metaclass
 
 
 def hf_density(alpha_coeffs, beta_coeffs=None, spinorb=False):
-    """Get the Hartree-Fock density of a set of orbitals.
+    """Get the Hartree-Fock density of a set of moints.
 
     The AO-basis Hartree-Fock density has the form `d = c.dot(c.T)` where the
     `c` is the orbital coefficient matrix.  This is not the same as the one-
@@ -197,9 +197,9 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
 
     def mean_field(self, alpha_coeffs, beta_coeffs=None, spinorb=False,
                    recompute=False):
-        """Get the mean field integrals for a set of orbitals.
+        """Get the mean field integrals for a set of moints.
 
-        Returns the electronic mean field of a set of orbitals, which are
+        Returns the electronic mean field of a set of moints, which are
         <mu(1)|J(1) - K(1)|nu(1)> where J and K are the corresponding
         Coulomb and exchange operators.
 
@@ -227,9 +227,9 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
 
     def fock(self, alpha_coeffs, beta_coeffs=None, spinorb=False,
              recompute=False, electric_field=None):
-        """Get the Fock operator integrals for a set of orbitals.
+        """Get the Fock operator integrals for a set of moints.
 
-        Returns the core Hamiltonian plus the mean field of the orbitals.  The
+        Returns the core Hamiltonian plus the mean field of the moints.  The
         core Hamiltonian may include an external static electric field in the
         dipole approximation.
 
@@ -258,7 +258,7 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
 
     def electronic_energy(self, alpha_coeffs, beta_coeffs=None,
                           electric_field=None, recompute=False):
-        """Get the mean field energy of a set of orbitals.
+        """Get the mean field energy of a set of moints.
 
         Args:
             alpha_coeffs (numpy.ndarray): Alpha orbital coefficients.
@@ -283,7 +283,7 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
 
     def electronic_dipole_moment(self, alpha_coeffs, beta_coeffs=None,
                                  recompute=False):
-        """Get the electric dipole moment of a set of orbitals.
+        """Get the electric dipole moment of a set of moints.
 
         Args:
             alpha_coeffs (numpy.ndarray): Alpha orbital coefficients.
