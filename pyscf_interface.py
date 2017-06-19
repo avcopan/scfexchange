@@ -169,10 +169,24 @@ def _main():
     nuc_coords = numpy.array([[0.0000000000, 0.0000000000, -0.1247219248],
                               [0.0000000000, -1.4343021349, 0.9864370414],
                               [0.0000000000, 1.4343021349, 0.9864370414]])
-
     aoints = AOIntegrals("sto-3g", nuc_labels, nuc_coords)
 
-    hf_mo_coefficients(aoints, charge=1, multp=2)
+    mo_coeffs = hf_mo_coefficients(aoints, charge=1, multp=2, restricted=False)
+    alpha_coeffs = mo_coeffs[0, :, :5]
+    beta_coeffs = mo_coeffs[1, :, :4]
+
+    # Test default
+    m = aoints.electronic_dipole_moment(alpha_coeffs, beta_coeffs=beta_coeffs)
+    print(m.round(10))
+
+    # Test recompute
+    nbf = aoints.nbf
+    aoints._dipole[:] = numpy.zeros((nbf, nbf))
+    m = aoints.electronic_dipole_moment(alpha_coeffs, beta_coeffs=beta_coeffs)
+    print(m)
+    m = aoints.electronic_dipole_moment(alpha_coeffs, beta_coeffs=beta_coeffs,
+                                        recompute=True)
+    print(m.round(10))
 
 if __name__ == "__main__":
     _main()

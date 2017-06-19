@@ -2,7 +2,7 @@ def test__mains():
     import importlib
 
     names = ('ao', 'mo', 'constants', 'molecule', 'psi4_interface',
-             'pyscf_interface', 'examples.rpa', 'examples.phf')
+             'pyscf_interface', 'examples.rpa', 'examples.puhf')
     module_names = ('.'.join(['scfexchange', name]) for name in names)
 
     for module_name in module_names:

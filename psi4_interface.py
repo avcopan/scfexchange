@@ -184,15 +184,13 @@ def _main():
                               [0.0000000000, -1.4343021349, 0.9864370414],
                               [0.0000000000, 1.4343021349, 0.9864370414]])
     aoints = AOIntegrals("sto-3g", nuc_labels, nuc_coords)
-    mo_coeffs = hf_mo_coefficients(aoints, charge=1, multp=2,
-                                   restricted=False)
+
+    mo_coeffs = hf_mo_coefficients(aoints, charge=1, multp=2, restricted=False)
     alpha_coeffs = mo_coeffs[0, :, :5]
     beta_coeffs = mo_coeffs[1, :, :4]
 
-    # Test default
-    s = aoints.fock(alpha_coeffs, beta_coeffs=beta_coeffs,
-                    electric_field=(0., 0., 1.))
-    print(numpy.linalg.norm(s))
+    e = aoints.electronic_energy(alpha_coeffs, beta_coeffs=beta_coeffs)
+    print(e)
 
 if __name__ == "__main__":
     _main()

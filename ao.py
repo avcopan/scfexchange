@@ -86,6 +86,88 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
                 ints = tu.construct_spinorb_integrals(ints)
         return ints
 
+    @abc.abstractmethod
+    def overlap(self, spinorb=False, recompute=False):
+        """Get the overlap integrals.
+       
+        Returns the overlap matrix of the atomic-orbital basis, <mu(1)|nu(1)>.
+    
+        Args:
+            spinorb (bool): Return the integrals in the spin-orbital basis?
+            recompute (bool): Recompute the integrals, if we already have them?
+    
+        Returns:
+            numpy.ndarray: The integrals.
+        """
+        return
+
+    @abc.abstractmethod
+    def kinetic(self, spinorb=False, recompute=False):
+        """Get the kinetic energy integrals.
+        
+        Returns the representation of the electron kinetic-energy operator in
+        the atomic-orbital basis, <mu(1)| - 1 / 2 * nabla_1^2 |nu(1)>.
+    
+        Args:
+            spinorb (bool): Return the integrals in the spin-orbital basis?
+            recompute (bool): Recompute the integrals, if we already have them?
+    
+        Returns:
+            numpy.ndarray: The integrals.
+        """
+        return
+
+    @abc.abstractmethod
+    def potential(self, spinorb=False, recompute=False):
+        """Get the potential energy integrals.
+
+        Returns the representation of the nuclear potential operator in the
+        atomic-orbital basis, <mu(1)| sum_A Z_A / ||r_1 - r_A|| |nu(1)>.
+    
+        Args:
+            spinorb (bool): Return the integrals in the spin-orbital basis?
+            recompute (bool): Recompute the integrals, if we already have them?
+    
+        Returns:
+            numpy.ndarray: The integrals.
+        """
+        return
+
+    @abc.abstractmethod
+    def dipole(self, spinorb=False, recompute=False):
+        """Get the dipole integrals.
+
+        Returns the representation of the electric dipole operator in the
+        atomic-orbital basis, <mu(1)| [-x, -y, -z] |nu(1)>.
+        
+        Args:
+            spinorb (bool): Return the integrals in the spin-orbital basis?
+            recompute (bool): Recompute the integrals, if we already have them?
+    
+        Returns:
+            numpy.ndarray: The integrals.
+        """
+        pass
+
+    @abc.abstractmethod
+    def electron_repulsion(self, spinorb=False, recompute=False,
+                           antisymmetrize=False):
+        """Get the electron-repulsion integrals.
+
+        Returns the representation of the electron repulsion operator in the 
+        atomic-orbital basis, <mu(1) nu(2)| 1 / ||r_1 - r_2|| |rh(1) si(2)>.
+        Note that these are returned in physicist's notation.
+    
+        Args:
+            spinorb (bool): Return the integrals in the spin-orbital basis?
+            recompute (bool): Recompute the integrals, if we already have them?
+            antisymmetrize (bool): Antisymmetrize the integral tensor?
+    
+        Returns:
+            numpy.ndarray: The integrals.
+        """
+        return
+
     def core_hamiltonian(self, spinorb=False, recompute=False,
                          electric_field=None):
         """Get the core Hamiltonian integrals.
@@ -93,7 +175,7 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
         Returns the one-particle contribution to the Hamiltonian, i.e.
         everything except for two-electron repulsion.  May include an external
         static electric field in the dipole approximation.
-        
+
         Args:
             spinorb (bool): Return the integrals in the spin-orbital basis?
             recompute (bool): Recompute the integrals, if we already have them?
@@ -212,89 +294,7 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
         Returns:
             numpy.ndarray: The dipole moment.
         """
-        m = self.dipole(spinorb=False, recompute=recompute)
+        p = self.dipole(spinorb=False, recompute=recompute)
         ad, bd = hf_density(alpha_coeffs, beta_coeffs=beta_coeffs,
                             spinorb=False)
-        return [np.sum(m_x * ad + m_x * bd) for m_x in m]
-
-    @abc.abstractmethod
-    def overlap(self, spinorb=False, recompute=False):
-        """Get the overlap integrals.
-       
-        Returns the overlap matrix of the atomic-orbital basis, <mu(1)|nu(1)>.
-    
-        Args:
-            spinorb (bool): Return the integrals in the spin-orbital basis?
-            recompute (bool): Recompute the integrals, if we already have them?
-    
-        Returns:
-            numpy.ndarray: The integrals.
-        """
-        return
-
-    @abc.abstractmethod
-    def kinetic(self, spinorb=False, recompute=False):
-        """Get the kinetic energy integrals.
-        
-        Returns the representation of the electron kinetic-energy operator in
-        the atomic-orbital basis, <mu(1)| - 1 / 2 * nabla_1^2 |nu(1)>.
-    
-        Args:
-            spinorb (bool): Return the integrals in the spin-orbital basis?
-            recompute (bool): Recompute the integrals, if we already have them?
-    
-        Returns:
-            numpy.ndarray: The integrals.
-        """
-        return
-
-    @abc.abstractmethod
-    def potential(self, spinorb=False, recompute=False):
-        """Get the potential energy integrals.
-
-        Returns the representation of the nuclear potential operator in the
-        atomic-orbital basis, <mu(1)| sum_A Z_A / ||r_1 - r_A|| |nu(1)>.
-    
-        Args:
-            spinorb (bool): Return the integrals in the spin-orbital basis?
-            recompute (bool): Recompute the integrals, if we already have them?
-    
-        Returns:
-            numpy.ndarray: The integrals.
-        """
-        return
-
-    @abc.abstractmethod
-    def dipole(self, spinorb=False, recompute=False):
-        """Get the dipole integrals.
-
-        Returns the representation of the electric dipole operator in the
-        atomic-orbital basis, <mu(1)| [-x, -y, -z] |nu(1)>.
-        
-        Args:
-            spinorb (bool): Return the integrals in the spin-orbital basis?
-            recompute (bool): Recompute the integrals, if we already have them?
-    
-        Returns:
-            numpy.ndarray: The integrals.
-        """
-        pass
-
-    @abc.abstractmethod
-    def electron_repulsion(self, spinorb=False, recompute=False,
-                           antisymmetrize=False):
-        """Get the electron-repulsion integrals.
-
-        Returns the representation of the electron repulsion operator in the 
-        atomic-orbital basis, <mu(1) nu(2)| 1 / ||r_1 - r_2|| |rh(1) si(2)>.
-        Note that these are returned in physicist's notation.
-    
-        Args:
-            spinorb (bool): Return the integrals in the spin-orbital basis?
-            recompute (bool): Recompute the integrals, if we already have them?
-            antisymmetrize (bool): Antisymmetrize the integral tensor?
-    
-        Returns:
-            numpy.ndarray: The integrals.
-        """
-        return
+        return np.array([np.sum(p_x * ad + p_x * bd) for p_x in p])

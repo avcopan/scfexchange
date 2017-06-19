@@ -38,6 +38,14 @@ def test__ao_fock():
     ao_tests.run_test__fock(interface)
 
 
+def test__ao_electronic_energy():
+    ao_tests.run_test__electronic_energy(interface)
+
+
+def test__ao_electronic_dipole_moment():
+    ao_tests.run_test__electronic_dipole_moment(interface)
+
+
 def test__hf_mo_coefficients():
     import numpy
     import scfexchange.molecule as mol

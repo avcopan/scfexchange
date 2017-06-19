@@ -4307,7 +4307,7 @@ def test__electron_repulsion():
                 assert (np.isclose(np.linalg.norm(s), next(norms)))
 
 
-def test__mean_field_energy():
+def test__electronic_energy():
     import numpy as np
     import itertools as it
 

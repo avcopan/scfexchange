@@ -27,15 +27,15 @@ class MOIntegrals(object):
 
     def __init__(self, aoints, mo_coeffs, naocc, nbocc, ncore=0):
         self.aoints = aoints
-        self.mo_coeffs = mo_coeffs
-        self.naocc = naocc
-        self.nbocc = nbocc
-        self.ncore = ncore
-        self.norb = self.aoints.nbf
+        self.mo_coeffs = np.array(mo_coeffs)
+        self.naocc = int(naocc)
+        self.nbocc = int(nbocc)
+        self.ncore = int(ncore)
+        self.norb = int(self.aoints.nbf)
         if not isinstance(aoints, AOIntegralsInterface):
             raise ValueError("Invalid 'integrals' argument.")
-        if not (isinstance(mo_coeffs, np.ndarray) and
-                mo_coeffs.shape == (2, self.norb, self.norb)):
+        if not (isinstance(self.mo_coeffs, np.ndarray) and
+                self.mo_coeffs.shape == (2, self.norb, self.norb)):
             raise ValueError("Invalid 'mo_coeffs' argument.")
 
     def block_keys(self, mo_block, spin_sector):
@@ -264,6 +264,31 @@ class MOIntegrals(object):
         d_ao = self.aoints.dipole(spinorb=(spin_sector == 's'))
         return self._transform(d_ao, mo_block, spin_sector, ndim=1)
 
+    def electron_repulsion(self, mo_block='ov,ov,ov,ov', spin_sector='s,s',
+                           antisymmetrize=False):
+        """Get the electron-repulsion integrals.
+
+        Returns the representation of the electron repulsion operator in the
+        molecular-orbital basis, <mu(1) nu(2)| 1 / ||r_1 - r_2|| |rh(1) si(2)>.
+        Note that these are returned in physicist's notation.
+
+        Args:
+            mo_block (str): A comma-separated list of characters specifying the
+                MO space block.  Each MO space is identified by a contiguous
+                combination of 'c' (core), 'o' (occupied), and 'v' (virtual).
+            spin_sector (str): The requested spin sector (diagonal spin block).
+                Spins are 'a' (alpha), 'b' (beta), or 's' (spin-orbital).
+            antisymmetrize (bool): Antisymmetrize the integral tensor?
+
+        Returns:
+            numpy.ndarray: The integrals.
+        """
+        s0, s1 = spin_sector.split(',')
+        g_ao = self.aoints.electron_repulsion(
+            spinorb=(spin_sector == 's,s'),
+            antisymmetrize=(antisymmetrize and s0 == s1))
+        return self._transform(g_ao, mo_block, spin_sector)
+
     def core_hamiltonian(self, mo_block='ov,ov', spin_sector='s',
                          electric_field=None):
         """Get the core Hamiltonian integrals.
@@ -377,31 +402,6 @@ class MOIntegrals(object):
         else:
             return f_mo
 
-    def electron_repulsion(self, mo_block='ov,ov,ov,ov', spin_sector='s,s',
-                           antisymmetrize=False):
-        """Get the electron-repulsion integrals.
-
-        Returns the representation of the electron repulsion operator in the
-        molecular-orbital basis, <mu(1) nu(2)| 1 / ||r_1 - r_2|| |rh(1) si(2)>.
-        Note that these are returned in physicist's notation.
-
-        Args:
-            mo_block (str): A comma-separated list of characters specifying the
-                MO space block.  Each MO space is identified by a contiguous
-                combination of 'c' (core), 'o' (occupied), and 'v' (virtual).
-            spin_sector (str): The requested spin sector (diagonal spin block).
-                Spins are 'a' (alpha), 'b' (beta), or 's' (spin-orbital).
-            antisymmetrize (bool): Antisymmetrize the integral tensor?
-
-        Returns:
-            numpy.ndarray: The integrals.
-        """
-        s0, s1 = spin_sector.split(',')
-        g_ao = self.aoints.electron_repulsion(
-            spinorb=(spin_sector == 's,s'),
-            antisymmetrize=(antisymmetrize and s0 == s1))
-        return self._transform(g_ao, mo_block, spin_sector)
-
     def electronic_energy(self, mo_space='co', electric_field=None):
         """Get the total mean-field energy of a given orbital space.
 
@@ -428,3 +428,21 @@ class MOIntegrals(object):
         bw = self.mean_field(mo_block=blk, spin_sector='b',
                              mo_space=mo_space)
         return np.trace(ah + aw / 2.) + np.trace(bh + bw / 2.)
+
+    def electronic_dipole_moment(self, mo_space='co'):
+        """Get the electronic dipole moment of a given orbital space.
+
+        Args:
+            mo_space (str): The MO space of the electrons, 'c' (core),
+                'o' (occupied), and 'v' (virtual).
+
+        Returns:
+            numpy.ndarray: The dipole moment.
+        """
+        blk = ','.join([mo_space, mo_space])
+        ap = self.dipole(mo_block=blk, spin_sector='a')
+        bp = self.dipole(mo_block=blk, spin_sector='b')
+        am = np.trace(ap, axis1=1, axis2=2)
+        bm = np.trace(bp, axis1=1, axis2=2)
+        return am + bm
+
