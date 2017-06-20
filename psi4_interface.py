@@ -1,18 +1,18 @@
 import numpy as np
 import psi4.core
-
-from .ao import AOIntegralsInterface
-from .chem import nuclear_coordinate_string, nuclear_coordinates_in_bohr
+from . import chem
+from . import ao
 
 
 # Functions
-def hf_mo_coefficients(aoints, charge=0, multp=1, restricted=False, niter=100,
-                       e_threshold=1e-12, d_threshold=1e-6, guess="auto"):
+def hf_mo_coefficients(aoints, mol_charge=0, nunp=0, restricted=False,
+                       niter=100, e_threshold=1e-12, d_threshold=1e-6,
+                       guess="auto"):
     if not isinstance(aoints, AOIntegrals):
         raise ValueError("Please use an aoints object from the PySCF "
                          "interface.")
-    aoints._psi4_molecule.set_molecular_charge(charge)
-    aoints._psi4_molecule.set_multiplicity(multp)
+    aoints._psi4_molecule.set_molecular_charge(mol_charge)
+    aoints._psi4_molecule.set_multiplicity(nunp + 1)
     wfn = psi4.core.Wavefunction.build(aoints._psi4_molecule,
                                        aoints.basis_label)
     sf, _ = psi4.driver.dft_funcs.build_superfunctional("HF", False)
@@ -21,7 +21,7 @@ def hf_mo_coefficients(aoints, charge=0, multp=1, restricted=False, niter=100,
     psi4.core.set_global_option("d_convergence", d_threshold)
     psi4.core.set_global_option("maxiter", niter)
     if restricted:
-        if multp is 1:
+        if nunp is 0:
             psi4.core.set_global_option("reference", "RHF")
             psi4_hf = psi4.core.RHF(wfn, sf)
         else:
@@ -38,7 +38,7 @@ def hf_mo_coefficients(aoints, charge=0, multp=1, restricted=False, niter=100,
 
 
 # Classes
-class AOIntegrals(AOIntegralsInterface):
+class AOIntegrals(ao.AOIntegralsInterface):
     """Molecular integrals (Psi4).
     
     Attributes:
@@ -57,8 +57,9 @@ class AOIntegrals(AOIntegralsInterface):
             nuc_coords (numpy.ndarray): Atomic coordinates.
             units (str): The units of `nuc_coords`, "angstrom" or "bohr".
         """
-        s = nuclear_coordinate_string(nuc_labels, nuc_coords, units)
-        self._psi4_molecule = psi4.core.Molecule.create_molecule_from_string(s)
+        coord_str = chem.nuc.coordinate_string(nuc_labels, nuc_coords, units)
+        self._psi4_molecule = psi4.core.Molecule.create_molecule_from_string(
+            coord_str)
         self._psi4_molecule.reset_point_group("c1")
         self._psi4_molecule.update_geometry()
         basis, _ = psi4.core.BasisSet.build(self._psi4_molecule, "BASIS",
@@ -66,7 +67,7 @@ class AOIntegrals(AOIntegralsInterface):
         self._mints_helper = psi4.core.MintsHelper(basis)
 
         self.nuc_labels = tuple(nuc_labels)
-        self.nuc_coords = nuclear_coordinates_in_bohr(nuc_coords, units)
+        self.nuc_coords = chem.nuc.coordinates_in_bohr(nuc_coords, units)
         self.basis_label = str(basis_label)
         self.basis_label = basis_label
         self.nbf = int(self._mints_helper.nbf())
@@ -185,11 +186,12 @@ def _main():
                               [0.0000000000, 1.4343021349, 0.9864370414]])
     aoints = AOIntegrals("sto-3g", nuc_labels, nuc_coords)
 
-    mo_coeffs = hf_mo_coefficients(aoints, charge=1, multp=2, restricted=False)
+    mo_coeffs = hf_mo_coefficients(aoints, mol_charge=1, nunp=1,
+                                   restricted=False)
     alpha_coeffs = mo_coeffs[0, :, :5]
     beta_coeffs = mo_coeffs[1, :, :4]
 
-    e = aoints.electronic_energy(alpha_coeffs, beta_coeffs=beta_coeffs)
+    e = aoints.electronic_energy(alpha_coeffs, bc=beta_coeffs)
     print(e)
 
 if __name__ == "__main__":

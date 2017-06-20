@@ -1,6 +1,6 @@
 import numpy as np
-import tensorutils as tu
 import scipy.linalg as spla
+import tensorutils as tu
 
 
 def a_matrix(moints):
@@ -76,27 +76,26 @@ def _main():
                               [0.0000000000, -1.4343021349, 0.9864370414],
                               [0.0000000000, 1.4343021349, 0.9864370414]])
     mol_charge = 1
-    multp = 2
+    nunp = 1
 
     # Compute the dipole polarizability analytically
     aoints = scfxif.AOIntegrals("sto-3g", nuc_labels, nuc_coords)
-    mo_coeffs = scfxif.hf_mo_coefficients(aoints, charge=mol_charge,
-                                          multp=multp, restricted=False,
+    mo_coeffs = scfxif.hf_mo_coefficients(aoints, mol_charge=mol_charge,
+                                          nunp=nunp, restricted=False,
                                           d_threshold=1e-9)
-    naocc, nbocc = scfx.chem.electron_spin_count(nuc_labels,
-                                                 mol_charge=mol_charge,
-                                                 multp=multp)
-    moints = scfx.mo.MOIntegrals(aoints, mo_coeffs, naocc=naocc, nbocc=nbocc)
+    nao, nbo = scfx.chem.elec.count_spins(nuc_labels, mol_charge=mol_charge,
+                                          nunp=nunp)
+    moints = scfx.mo.MOIntegrals(aoints, mo_coeffs, nao=nao, nbo=nbo)
     t = dipole_gradient(moints)
     r = property_response(moints, prop_grad=t)
     alpha = t.T.dot(r)
     alphadiag = alpha.diagonal()
 
     # Compute the electric field Hessian numerically
-    energy_fn = puhf.electronic_energy_function(aoints, charge=mol_charge,
-                                                multp=multp, niter=150,
-                                                e_threshold=1e-14,
-                                                d_threshold=1e-12)
+    energy_fn = puhf.energy_function(aoints, mol_charge=mol_charge,
+                                     nunp=nunp, niter=150,
+                                     e_threshold=1e-14,
+                                     d_threshold=1e-12)
     hessdiag_fn = numdifftools.Hessdiag(energy_fn, step=0.005, order=6)
     hessdiag = hessdiag_fn(numpy.r_[0., 0., 0.])
 

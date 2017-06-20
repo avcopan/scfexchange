@@ -6,7 +6,7 @@ import permutils as pu
 import scipy.linalg as spla
 import tensorutils as tu
 
-from .ao import AOIntegralsInterface
+from . import ao
 
 
 class MOIntegrals(object):
@@ -16,23 +16,35 @@ class MOIntegrals(object):
     of `mo_coeffs`.
 
     Attributes:
-        aoints (:obj:`scfexchange.AOIntegralsInterface`): The integrals.
-        mo_coeffs (numpy.ndarray): The orbital expansion coefficients.
-        ncore (int): The number of low-energy moints assigned to the core
-            orbital space.
+        aoints (:obj:`scfexchange.ao.AOIntegralsInterface`): The integrals.
+        mo_coeffs (numpy.ndarray): The orbital expansion coefficients, as a pair
+            of alpha and beta arrays.
+        nao: The number of alpha electrons.
+        nbo: The number of beta electrons.
+        nc: The number of electron pairs to be designated 'c' (core).
     """
 
-    def __init__(self, aoints, mo_coeffs, naocc, nbocc, ncore=0):
+    def __init__(self, aoints, mo_coeffs, nao, nbo, nc=0):
+        """Initalize an MOIntegrals object.
+
+        Args:
+            aoints (:obj:`scfexchange.ao.AOIntegralsInterface`): The integrals.
+            mo_coeffs (numpy.ndarray): The orbital expansion coefficients,
+                as a pair of alpha and beta arrays.
+            nao: The number of alpha electrons.
+            nbo: The number of beta electrons.
+            nc: The number of electron pairs to be designated 'c' (core).
+        """
         self.aoints = aoints
         self.mo_coeffs = np.array(mo_coeffs)
-        self.naocc = int(naocc)
-        self.nbocc = int(nbocc)
-        self.ncore = int(ncore)
-        self.norb = int(self.aoints.nbf)
-        if not isinstance(aoints, AOIntegralsInterface):
+        self.nao = int(nao)
+        self.nbo = int(nbo)
+        self.nc = int(nc)
+        self.nbf = int(self.aoints.nbf)
+        if not isinstance(aoints, ao.AOIntegralsInterface):
             raise ValueError("Invalid 'integrals' argument.")
         if not (isinstance(self.mo_coeffs, np.ndarray) and
-                        self.mo_coeffs.shape == (2, self.norb, self.norb)):
+                        self.mo_coeffs.shape == (2, self.nbf, self.nbf)):
             raise ValueError("Invalid 'mo_coeffs' argument.")
 
     def block_keys(self, mo_block, spin_sector):
@@ -112,16 +124,16 @@ class MOIntegrals(object):
         Returns:
             tuple: The sorting indices.
         """
-        alumo_idx = self.naocc
-        blumo_idx = self.nbocc + self.norb
+        alumo_idx = self.nao
+        blumo_idx = self.nbo + self.nbf
         occ_indices = mit.interleave_longest(range(0, alumo_idx),
-                                             range(self.norb, blumo_idx))
-        vir_indices = mit.interleave_longest(range(alumo_idx, self.norb),
-                                             range(blumo_idx, 2 * self.norb))
+                                             range(self.nbf, blumo_idx))
+        vir_indices = mit.interleave_longest(range(alumo_idx, self.nbf),
+                                             range(blumo_idx, 2 * self.nbf))
         spinorb_order = tuple(occ_indices) + tuple(vir_indices)
 
         # If requested, return the inverse of the sorting permutation.
-        perm_helper = pu.PermutationHelper(range(2 * self.norb))
+        perm_helper = pu.PermutationHelper(range(2 * self.nbf))
         spinorb_inv_order = perm_helper.get_inverse(spinorb_order)
         return spinorb_order if not invert else spinorb_inv_order
 
@@ -137,21 +149,27 @@ class MOIntegrals(object):
         Returns:
             int: The number of moints.
         """
+        # Check the arguments to make sure all is kosher
+        if spin not in ('a', 'b', 's'):
+            raise ValueError("Invalid 'mo_type' argument.")
+        if mo_space not in ('', 'c', 'o', 'v', 'co', 'ov', 'cov'):
+            raise ValueError("Invalid 'mo_space' argument.")
+
         count = 0
         if spin in ('a', 's'):
             if 'c' in mo_space:
-                count += self.ncore
+                count += self.nc
             if 'o' in mo_space:
-                count += self.naocc - self.ncore
+                count += self.nao - self.nc
             if 'v' in mo_space:
-                count += self.norb - self.naocc
+                count += self.nbf - self.nao
         if spin in ('b', 's'):
             if 'c' in mo_space:
-                count += self.ncore
+                count += self.nc
             if 'o' in mo_space:
-                count += self.nbocc - self.ncore
+                count += self.nbo - self.nc
             if 'v' in mo_space:
-                count += self.norb - self.nbocc
+                count += self.nbf - self.nbo
         return count
 
     def mo_slice(self, mo_space='ov', spin='s'):
@@ -166,12 +184,7 @@ class MOIntegrals(object):
         Returns:
             slice: The slice.
         """
-        # Check the arguments to make sure all is kosher
-        if spin not in ('a', 'b', 's'):
-            raise ValueError("Invalid 'mo_type' argument.")
-        if mo_space not in ('', 'c', 'o', 'v', 'co', 'ov', 'cov'):
-            raise ValueError("Invalid 'mo_space' argument.")
-        if mo_space == '':
+        if mo_space is '':
             return slice(0)
         start_str = 'cov'[:'cov'.index(mo_space[0])]
         end_str = 'cov'[:'cov'.index(mo_space[-1]) + 1]
@@ -336,13 +349,13 @@ class MOIntegrals(object):
         bc = self.mo_coefficients(mo_space=src_mo_space, spin='b')
         if spin_sector == 'a':
             w_ao, _ = self.aoints.mean_field(
-                alpha_coeffs=ac, beta_coeffs=bc, spinorb=False)
+                ac=ac, bc=bc, spinorb=False)
         elif spin_sector == 'b':
             _, w_ao = self.aoints.mean_field(
-                alpha_coeffs=ac, beta_coeffs=bc, spinorb=False)
+                ac=ac, bc=bc, spinorb=False)
         elif spin_sector == 's':
             w_ao = self.aoints.mean_field(
-                alpha_coeffs=ac, beta_coeffs=bc, spinorb=True)
+                ac=ac, bc=bc, spinorb=True)
         else:
             raise ValueError("Invalid 'spin_sector' argument.")
 
@@ -375,15 +388,15 @@ class MOIntegrals(object):
         bc = self.mo_coefficients(mo_space=src_mo_space, spin='b')
         if spin_sector == 'a':
             f_ao, _ = self.aoints.fock(
-                alpha_coeffs=ac, beta_coeffs=bc, spinorb=False,
+                ac=ac, bc=bc, spinorb=False,
                 electric_field=electric_field)
         elif spin_sector == 'b':
             _, f_ao = self.aoints.fock(
-                alpha_coeffs=ac, beta_coeffs=bc, spinorb=False,
+                ac=ac, bc=bc, spinorb=False,
                 electric_field=electric_field)
         elif spin_sector == 's':
             f_ao = self.aoints.fock(
-                alpha_coeffs=ac, beta_coeffs=bc, spinorb=True,
+                ac=ac, bc=bc, spinorb=True,
                 electric_field=electric_field)
         else:
             raise ValueError("Invalid 'spin_sector' argument.")
@@ -413,15 +426,15 @@ class MOIntegrals(object):
         bc = self.mo_coefficients(mo_space=src_mo_space, spin='b')
         if spin == 'a':
             f_ao, _ = self.aoints.fock(
-                alpha_coeffs=ac, beta_coeffs=bc, spinorb=False,
+                ac=ac, bc=bc, spinorb=False,
                 electric_field=electric_field)
         elif spin == 'b':
             _, f_ao = self.aoints.fock(
-                alpha_coeffs=ac, beta_coeffs=bc, spinorb=False,
+                ac=ac, bc=bc, spinorb=False,
                 electric_field=electric_field)
         elif spin == 's':
             f_ao = self.aoints.fock(
-                alpha_coeffs=ac, beta_coeffs=bc, spinorb=True,
+                ac=ac, bc=bc, spinorb=True,
                 electric_field=electric_field)
         else:
             raise ValueError("Invalid 'spin' argument.")

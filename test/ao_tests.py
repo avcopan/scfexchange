@@ -358,36 +358,36 @@ def run_test__mean_field(interface):
 
     norm = 28.0934572781
     spinorb_norm = norm
-    mo_coeffs = interface.hf_mo_coefficients(aoints, charge=1, multp=2,
+    mo_coeffs = interface.hf_mo_coefficients(aoints, mol_charge=1, nunp=1,
                                              restricted=False)
     alpha_coeffs = mo_coeffs[0, :, :5]
     beta_coeffs = mo_coeffs[1, :, :4]
     nbf = aoints.nbf
 
     # Test default
-    s = aoints.mean_field(alpha_coeffs, beta_coeffs=beta_coeffs)
+    s = aoints.mean_field(alpha_coeffs, bc=beta_coeffs)
     assert (s.shape == (2, nbf, nbf))
     assert (numpy.isclose(numpy.linalg.norm(s), norm))
 
     # Test recompute
     aoints._electron_repulsion[:] = numpy.zeros((nbf, nbf, nbf, nbf))
-    s = aoints.mean_field(alpha_coeffs, beta_coeffs=beta_coeffs)
+    s = aoints.mean_field(alpha_coeffs, bc=beta_coeffs)
     assert (numpy.linalg.norm(s) == 0.0)
-    s = aoints.mean_field(alpha_coeffs, beta_coeffs=beta_coeffs, recompute=True)
+    s = aoints.mean_field(alpha_coeffs, bc=beta_coeffs, recompute=True)
     assert (numpy.isclose(numpy.linalg.norm(s), norm))
 
     # Test spin-orbital
-    s = aoints.mean_field(alpha_coeffs, beta_coeffs=beta_coeffs,
+    s = aoints.mean_field(alpha_coeffs, bc=beta_coeffs,
                           spinorb=True)
     assert (s.shape == (2 * nbf, 2 * nbf))
     assert (numpy.isclose(numpy.linalg.norm(s), spinorb_norm))
 
     # Test spin-orbital recompute
     aoints._electron_repulsion[:] = numpy.zeros((nbf, nbf, nbf, nbf))
-    s = aoints.mean_field(alpha_coeffs, beta_coeffs=beta_coeffs,
+    s = aoints.mean_field(alpha_coeffs, bc=beta_coeffs,
                           spinorb=True)
     assert (numpy.linalg.norm(s) == 0.0)
-    s = aoints.mean_field(alpha_coeffs, beta_coeffs=beta_coeffs,
+    s = aoints.mean_field(alpha_coeffs, bc=beta_coeffs,
                           spinorb=True, recompute=True)
     assert (numpy.isclose(numpy.linalg.norm(s), spinorb_norm))
 
@@ -406,14 +406,14 @@ def run_test__fock(interface):
     elif hasattr(aoints, '_psi4_molecule'):
         norm = 32.5537247982
     spinorb_norm = norm
-    mo_coeffs = interface.hf_mo_coefficients(aoints, charge=1, multp=2,
+    mo_coeffs = interface.hf_mo_coefficients(aoints, mol_charge=1, nunp=1,
                                              restricted=False)
     alpha_coeffs = mo_coeffs[0, :, :5]
     beta_coeffs = mo_coeffs[1, :, :4]
     nbf = aoints.nbf
 
     # Test default
-    s = aoints.fock(alpha_coeffs, beta_coeffs=beta_coeffs,
+    s = aoints.fock(alpha_coeffs, bc=beta_coeffs,
                     electric_field=(0., 0., 1.))
     assert (s.shape == (2, nbf, nbf))
     assert (numpy.isclose(numpy.linalg.norm(s), norm))
@@ -423,15 +423,15 @@ def run_test__fock(interface):
     aoints._potential[:] = numpy.zeros((nbf, nbf))
     aoints._dipole[:] = numpy.zeros((nbf, nbf))
     aoints._electron_repulsion[:] = numpy.zeros((nbf, nbf, nbf, nbf))
-    s = aoints.fock(alpha_coeffs, beta_coeffs=beta_coeffs,
+    s = aoints.fock(alpha_coeffs, bc=beta_coeffs,
                     electric_field=(0., 0., 1.))
     assert (numpy.linalg.norm(s) == 0.0)
-    s = aoints.fock(alpha_coeffs, beta_coeffs=beta_coeffs,
+    s = aoints.fock(alpha_coeffs, bc=beta_coeffs,
                     electric_field=(0., 0., 1.), recompute=True)
     assert (numpy.isclose(numpy.linalg.norm(s), norm))
 
     # Test spin-orbital
-    s = aoints.fock(alpha_coeffs, beta_coeffs=beta_coeffs,
+    s = aoints.fock(alpha_coeffs, bc=beta_coeffs,
                     electric_field=(0., 0., 1.), spinorb=True)
     assert (s.shape == (2 * nbf, 2 * nbf))
     assert (numpy.isclose(numpy.linalg.norm(s), spinorb_norm))
@@ -441,10 +441,10 @@ def run_test__fock(interface):
     aoints._potential[:] = numpy.zeros((nbf, nbf))
     aoints._dipole[:] = numpy.zeros((nbf, nbf))
     aoints._electron_repulsion[:] = numpy.zeros((nbf, nbf, nbf, nbf))
-    s = aoints.fock(alpha_coeffs, beta_coeffs=beta_coeffs,
+    s = aoints.fock(alpha_coeffs, bc=beta_coeffs,
                     electric_field=(0., 0., 1.), spinorb=True)
     assert (numpy.linalg.norm(s) == 0.0)
-    s = aoints.fock(alpha_coeffs, beta_coeffs=beta_coeffs,
+    s = aoints.fock(alpha_coeffs, bc=beta_coeffs,
                     electric_field=(0., 0., 1.), spinorb=True,
                     recompute=True)
     assert (numpy.isclose(numpy.linalg.norm(s), spinorb_norm))
@@ -459,7 +459,7 @@ def run_test__electronic_energy(interface):
                               [0.0000000000, 1.4343021349, 0.9864370414]])
     aoints = interface.AOIntegrals("sto-3g", nuc_labels, nuc_coords)
 
-    mo_coeffs = interface.hf_mo_coefficients(aoints, charge=1, multp=2,
+    mo_coeffs = interface.hf_mo_coefficients(aoints, mol_charge=1, nunp=1,
                                              restricted=False)
     alpha_coeffs = mo_coeffs[0, :, :5]
     beta_coeffs = mo_coeffs[1, :, :4]
@@ -471,11 +471,11 @@ def run_test__electronic_energy(interface):
         field_ref = -0.089432335365
 
     # Test default
-    e = aoints.electronic_energy(alpha_coeffs, beta_coeffs=beta_coeffs)
+    e = aoints.electronic_energy(alpha_coeffs, bc=beta_coeffs)
     assert(numpy.isclose(e, e_ref))
 
     # Test with field
-    e = aoints.electronic_energy(alpha_coeffs, beta_coeffs=beta_coeffs,
+    e = aoints.electronic_energy(alpha_coeffs, bc=beta_coeffs,
                                  electric_field=(0., 0., 1.))
     assert(numpy.isclose(e, e_ref + field_ref))
 
@@ -485,10 +485,10 @@ def run_test__electronic_energy(interface):
     aoints._potential[:] = numpy.zeros((nbf, nbf))
     aoints._dipole[:] = numpy.zeros((nbf, nbf))
     aoints._electron_repulsion[:] = numpy.zeros((nbf, nbf, nbf, nbf))
-    e = aoints.electronic_energy(alpha_coeffs, beta_coeffs=beta_coeffs,
+    e = aoints.electronic_energy(alpha_coeffs, bc=beta_coeffs,
                                  electric_field=(0., 0., 1.))
     assert(numpy.isclose(e, 0.))
-    e = aoints.electronic_energy(alpha_coeffs, beta_coeffs=beta_coeffs,
+    e = aoints.electronic_energy(alpha_coeffs, bc=beta_coeffs,
                                  electric_field=(0., 0., 1.), recompute=True)
     assert(numpy.isclose(e, e_ref + field_ref))
 
@@ -502,21 +502,21 @@ def run_test__electronic_dipole_moment(interface):
                               [0.0000000000, 1.4343021349, 0.9864370414]])
     aoints = interface.AOIntegrals("sto-3g", nuc_labels, nuc_coords)
 
-    mo_coeffs = interface.hf_mo_coefficients(aoints, charge=1, multp=2,
+    mo_coeffs = interface.hf_mo_coefficients(aoints, mol_charge=1, nunp=1,
                                              restricted=False)
     alpha_coeffs = mo_coeffs[0, :, :5]
     beta_coeffs = mo_coeffs[1, :, :4]
 
     # Test default
-    m = aoints.electronic_dipole_moment(alpha_coeffs, beta_coeffs=beta_coeffs)
+    m = aoints.electronic_dipole_moment(alpha_coeffs, bc=beta_coeffs)
     numpy.allclose(m, (0., 0., 0.09273273))
 
     # Test recompute
     nbf = aoints.nbf
     aoints._dipole[:] = numpy.zeros((nbf, nbf))
-    m = aoints.electronic_dipole_moment(alpha_coeffs, beta_coeffs=beta_coeffs)
+    m = aoints.electronic_dipole_moment(alpha_coeffs, bc=beta_coeffs)
     numpy.allclose(m, (0., 0., 0.))
-    m = aoints.electronic_dipole_moment(alpha_coeffs, beta_coeffs=beta_coeffs,
+    m = aoints.electronic_dipole_moment(alpha_coeffs, bc=beta_coeffs,
                                         recompute=True)
     numpy.allclose(m, (0., 0., 0.09273273))
 

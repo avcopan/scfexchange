@@ -195,8 +195,7 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
             h += -tu.contract(d, electric_field)
         return h
 
-    def mean_field(self, alpha_coeffs, beta_coeffs=None, spinorb=False,
-                   recompute=False):
+    def mean_field(self, ac, bc=None, spinorb=False, recompute=False):
         """Get the mean field integrals for a set of moints.
 
         Returns the electronic mean field of a set of moints, which are
@@ -204,8 +203,8 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
         Coulomb and exchange operators.
 
         Args:
-            alpha_coeffs (numpy.ndarray): Alpha orbital coefficients.
-            beta_coeffs (numpy.ndarray): Beta orbital coefficients.  If `None`,
+            ac (numpy.ndarray): Alpha orbital coefficients.
+            bc (numpy.ndarray): Beta orbital coefficients.  If `None`,
                 these are assumed to be the same as the alpha coefficients.
             spinorb (bool): Return the integrals in the spin-orbital basis?
             recompute (bool): Recompute the integrals, if we already have them?
@@ -213,7 +212,7 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
         Returns:
             numpy.ndarray: The alpha and beta mean-field integrals.
         """
-        ad, bd = hf_density(alpha_coeffs, beta_coeffs=beta_coeffs,
+        ad, bd = hf_density(ac, beta_coeffs=bc,
                             spinorb=False)
         g = self.electron_repulsion(spinorb=False, recompute=recompute)
         # Compute the Coulomb and exchange matrices.
@@ -225,8 +224,8 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
         else:
             return np.array([j - ak, j - bk])
 
-    def fock(self, alpha_coeffs, beta_coeffs=None, spinorb=False,
-             recompute=False, electric_field=None):
+    def fock(self, ac, bc=None, spinorb=False, recompute=False,
+             electric_field=None):
         """Get the Fock operator integrals for a set of moints.
 
         Returns the core Hamiltonian plus the mean field of the moints.  The
@@ -234,8 +233,8 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
         dipole approximation.
 
         Args:
-            alpha_coeffs (numpy.ndarray): Alpha orbital coefficients.
-            beta_coeffs (numpy.ndarray): Beta orbital coefficients.  If `None`,
+            ac (numpy.ndarray): Alpha orbital coefficients.
+            bc (numpy.ndarray): Beta orbital coefficients.  If `None`,
                 these are assumed to be the same as the alpha coefficients.
             spinorb (bool): Return the integrals in the spin-orbital basis?
             recompute (bool): Recompute the integrals, if we already have them?
@@ -249,20 +248,20 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
         """
         h = self.core_hamiltonian(spinorb=False, recompute=recompute,
                                   electric_field=electric_field)
-        aw, bw = self.mean_field(alpha_coeffs, beta_coeffs=beta_coeffs,
+        aw, bw = self.mean_field(ac, bc=bc,
                                  spinorb=False, recompute=recompute)
         if spinorb:
             return spla.block_diag(h + aw, h + bw)
         else:
             return np.array([h + aw, h + bw])
 
-    def electronic_energy(self, alpha_coeffs, beta_coeffs=None,
-                          electric_field=None, recompute=False):
+    def electronic_energy(self, ac, bc=None, electric_field=None,
+                          recompute=False):
         """Get the mean field energy of a set of moints.
 
         Args:
-            alpha_coeffs (numpy.ndarray): Alpha orbital coefficients.
-            beta_coeffs (numpy.ndarray): Beta orbital coefficients.  If `None`,
+            ac (numpy.ndarray): Alpha orbital coefficients.
+            bc (numpy.ndarray): Beta orbital coefficients.  If `None`,
                 these are assumed to be the same as the alpha coefficients.
             electric_field (tuple): A three-component vector specifying the
                 magnitude of an external static electric field.  Its negative
@@ -275,19 +274,18 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
         """
         h = self.core_hamiltonian(spinorb=False, recompute=recompute,
                                   electric_field=electric_field)
-        aw, bw = self.mean_field(alpha_coeffs, beta_coeffs=beta_coeffs,
+        aw, bw = self.mean_field(ac, bc=bc,
                                  spinorb=False, recompute=recompute)
-        ad, bd = hf_density(alpha_coeffs, beta_coeffs=beta_coeffs,
+        ad, bd = hf_density(ac, beta_coeffs=bc,
                             spinorb=False)
         return np.sum((h + aw / 2) * ad + (h + bw / 2) * bd)
 
-    def electronic_dipole_moment(self, alpha_coeffs, beta_coeffs=None,
-                                 recompute=False):
+    def electronic_dipole_moment(self, ac, bc=None, recompute=False):
         """Get the electric dipole moment of a set of moints.
 
         Args:
-            alpha_coeffs (numpy.ndarray): Alpha orbital coefficients.
-            beta_coeffs (numpy.ndarray): Beta orbital coefficients.  If `None`,
+            ac (numpy.ndarray): Alpha orbital coefficients.
+            bc (numpy.ndarray): Beta orbital coefficients.  If `None`,
                 these are assumed to be the same as the alpha coefficients.
             recompute (bool): Recompute the integrals, if we already have them?
 
@@ -295,6 +293,6 @@ class AOIntegralsInterface(with_metaclass(abc.ABCMeta)):
             numpy.ndarray: The dipole moment.
         """
         p = self.dipole(spinorb=False, recompute=recompute)
-        ad, bd = hf_density(alpha_coeffs, beta_coeffs=beta_coeffs,
+        ad, bd = hf_density(ac, beta_coeffs=bc,
                             spinorb=False)
         return np.array([np.sum(p_x * ad + p_x * bd) for p_x in p])

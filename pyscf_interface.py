@@ -1,17 +1,16 @@
 import numpy as np
 import pyscf
-
-from .ao import AOIntegralsInterface
-from .chem import nuclear_coordinates_in_bohr
+from . import chem
+from . import ao
 
 
 # Functions
-def hf_mo_coefficients(aoints, charge=0, multp=1, restricted=False, niter=100,
-                       e_threshold=1e-12, d_threshold=1e-6):
+def hf_mo_coefficients(aoints, mol_charge=0, nunp=0, restricted=False,
+                       niter=100, e_threshold=1e-12, d_threshold=1e-6):
     if not isinstance(aoints, AOIntegrals):
         raise ValueError("Please use an aoints object from the PySCF "
                          "interface.")
-    aoints._pyscf_molecule.build(charge=charge, spin=multp - 1)
+    aoints._pyscf_molecule.build(charge=mol_charge, spin=nunp)
     if restricted:
         pyscf_hf = pyscf.scf.RHF(aoints._pyscf_molecule)
     else:
@@ -27,7 +26,7 @@ def hf_mo_coefficients(aoints, charge=0, multp=1, restricted=False, niter=100,
 
 
 # Classes
-class AOIntegrals(AOIntegralsInterface):
+class AOIntegrals(ao.AOIntegralsInterface):
     """Molecular integrals (PySCF).
     
     Attributes:
@@ -53,7 +52,7 @@ class AOIntegrals(AOIntegralsInterface):
         self._pyscf_molecule.build()
 
         self.nuc_labels = tuple(nuc_labels)
-        self.nuc_coords = nuclear_coordinates_in_bohr(nuc_coords, units)
+        self.nuc_coords = chem.nuc.coordinates_in_bohr(nuc_coords, units)
         self.basis_label = str(basis_label)
         self.nbf = int(self._pyscf_molecule.nao_nr())
 
@@ -171,20 +170,21 @@ def _main():
                               [0.0000000000, 1.4343021349, 0.9864370414]])
     aoints = AOIntegrals("sto-3g", nuc_labels, nuc_coords)
 
-    mo_coeffs = hf_mo_coefficients(aoints, charge=1, multp=2, restricted=False)
+    mo_coeffs = hf_mo_coefficients(aoints, mol_charge=1, nunp=1,
+                                   restricted=False)
     alpha_coeffs = mo_coeffs[0, :, :5]
     beta_coeffs = mo_coeffs[1, :, :4]
 
     # Test default
-    m = aoints.electronic_dipole_moment(alpha_coeffs, beta_coeffs=beta_coeffs)
+    m = aoints.electronic_dipole_moment(alpha_coeffs, bc=beta_coeffs)
     print(m.round(10))
 
     # Test recompute
     nbf = aoints.nbf
     aoints._dipole[:] = numpy.zeros((nbf, nbf))
-    m = aoints.electronic_dipole_moment(alpha_coeffs, beta_coeffs=beta_coeffs)
+    m = aoints.electronic_dipole_moment(alpha_coeffs, bc=beta_coeffs)
     print(m)
-    m = aoints.electronic_dipole_moment(alpha_coeffs, beta_coeffs=beta_coeffs,
+    m = aoints.electronic_dipole_moment(alpha_coeffs, bc=beta_coeffs,
                                         recompute=True)
     print(m.round(10))
 
